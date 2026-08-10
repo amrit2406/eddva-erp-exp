@@ -1,4 +1,4 @@
-import { Users, GraduationCap, DollarSign, Calendar } from 'lucide-react';
+import { Users, GraduationCap, IndianRupee, Calendar } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
 import StatCard from '../components/StatCard';
 import AttendanceOverview from '../components/AttendanceOverview';
@@ -28,8 +28,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-600">Welcome back! Here's what's happening today.</p>
+        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+        <p className="text-sm text-slate-600">Welcome back! Here's what's happening today.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -53,7 +53,7 @@ export default function DashboardPage() {
         <StatCard
           title="Pending Fees"
           value={`$${stats.pendingFees.toLocaleString()}`}
-          icon={DollarSign}
+          icon={IndianRupee}
           trend={{ value: 8, isPositive: false }}
         />
       </div>

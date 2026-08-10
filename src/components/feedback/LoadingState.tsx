@@ -8,7 +8,7 @@ export default function LoadingState({ message = 'Loading...' }: LoadingStatePro
   return (
     <div className="flex flex-col items-center justify-center py-12">
       <Spinner size="lg" />
-      <p className="mt-4 text-sm text-gray-600">{message}</p>
+      <p className="mt-4 text-sm text-slate-600">{message}</p>
     </div>
   );
 }

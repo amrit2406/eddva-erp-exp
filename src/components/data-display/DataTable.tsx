@@ -20,14 +20,14 @@ export default function DataTable<T>({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent text-[#008BE9]" />
       </div>
     );
   }
 
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center py-8 text-gray-500">
+      <div className="flex items-center justify-center py-8 text-slate-500">
         {emptyMessage}
       </div>
     );

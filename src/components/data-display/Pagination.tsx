@@ -7,7 +7,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
 
   return (
     <div className="flex items-center justify-between">
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-slate-600">
         Page {currentPage} of {totalPages}
       </div>
       <div className="flex items-center gap-2">

@@ -22,7 +22,7 @@ export function TableBody({ className, ...props }: HTMLAttributes<HTMLTableSecti
 export function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
   return (
     <tr
-      className={cn('border-b border-gray-200 transition-colors hover:bg-gray-50', className)}
+      className={cn('border-b border-slate-200 transition-colors hover:bg-slate-50', className)}
       {...props}
     />
   );
@@ -32,7 +32,7 @@ export function TableHead({ className, ...props }: HTMLAttributes<HTMLTableCellE
   return (
     <th
       className={cn(
-        'h-12 px-4 text-left align-middle font-medium text-gray-900 [&:has([role=checkbox])]:pr-0',
+        'h-12 px-4 text-left align-middle font-medium text-slate-900 [&:has([role=checkbox])]:pr-0',
         className
       )}
       {...props}

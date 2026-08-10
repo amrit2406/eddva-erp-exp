@@ -15,11 +15,11 @@ interface StatCardProps {
 
 export default function StatCard({ title, value, icon: Icon, trend, className }: StatCardProps) {
   return (
-    <Card className={cn('p-6', className)}>
+    <Card className={cn('p-6 border-slate-200 shadow-sm', className)}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm font-medium text-slate-600">{title}</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
           {trend && (
             <p
               className={cn(
@@ -31,8 +31,8 @@ export default function StatCard({ title, value, icon: Icon, trend, className }:
             </p>
           )}
         </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-          <Icon className="h-6 w-6 text-blue-600" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#008BE9]/10">
+          <Icon className="h-6 w-6 text-[#002C6D]" />
         </div>
       </div>
     </Card>
