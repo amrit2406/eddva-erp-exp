@@ -1,6 +1,16 @@
 export const ROUTES = {
   LOGIN: '/login',
   DASHBOARD: '/dashboard',
+  FRONT_OFFICE: '/front-office',
+  FRONT_OFFICE_VISITORS: '/front-office/visitors',
+  FRONT_OFFICE_VISITORS_NEW: '/front-office/visitors/new',
+  FRONT_OFFICE_ENQUIRIES: '/front-office/enquiries',
+  FRONT_OFFICE_ENQUIRIES_NEW: '/front-office/enquiries/new',
+  FRONT_OFFICE_APPOINTMENTS: '/front-office/appointments',
+  FRONT_OFFICE_APPOINTMENTS_NEW: '/front-office/appointments/new',
+  FRONT_OFFICE_APPOINTMENTS_CALENDAR: '/front-office/appointments/calendar',
+  FRONT_OFFICE_COMPLAINTS: '/front-office/complaints',
+  FRONT_OFFICE_COMPLAINTS_NEW: '/front-office/complaints/new',
   // Future routes will be added here
   // STUDENTS: '/students',
   // TEACHERS: '/teachers',

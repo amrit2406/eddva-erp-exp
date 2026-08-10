@@ -5,10 +5,11 @@ import { cn } from '../../utils/cn';
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
   options: { value: string; label: string }[];
+  placeholder?: string;
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, error, options, children, ...props }, ref) => {
+  ({ className, error, options, placeholder, children, ...props }, ref) => {
     return (
       <select
         ref={ref}
@@ -19,6 +20,9 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         )}
         {...props}
       >
+        {placeholder && (
+          <option value="">{placeholder}</option>
+        )}
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

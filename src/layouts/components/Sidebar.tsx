@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, GraduationCap, Calendar, IndianRupee, BookOpen, Bus, FileText, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, GraduationCap, Calendar, IndianRupee, BookOpen, Bus, FileText, Settings, Building } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 
@@ -12,6 +12,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/front-office', label: 'Front Office', icon: Building },
   { path: '/students', label: 'Students', icon: Users },
   { path: '/teachers', label: 'Teachers', icon: GraduationCap },
   { path: '/attendance', label: 'Attendance', icon: Calendar },
