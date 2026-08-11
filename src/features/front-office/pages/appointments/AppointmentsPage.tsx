@@ -8,7 +8,7 @@ import AppointmentFilters from '../../components/appointments/AppointmentFilters
 export default function AppointmentsPage() {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Appointment Management</h1>
           <p className="text-slate-600 mt-1">Manage appointments and schedules</p>

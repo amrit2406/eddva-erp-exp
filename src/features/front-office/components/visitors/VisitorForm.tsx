@@ -101,11 +101,11 @@ export default function VisitorForm({
           />
         </div>
       </div>
-      <div className="flex justify-end gap-3 pt-4">
-        <Button variant="secondary" type="button">
+      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+        <Button variant="secondary" type="button" className="w-full sm:w-auto">
           Cancel
         </Button>
-        <Button variant="primary" type="submit" disabled={isSubmitting}>
+        <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
           {isSubmitting ? 'Saving...' : submitText}
         </Button>
       </div>

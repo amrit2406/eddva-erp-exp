@@ -15,14 +15,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="min-h-screen bg-slate-50">
       <Sidebar />
       <div
-        className={`transition-all duration-300 ease-in-out ${
-          sidebarOpen ? 'ml-64' : 'ml-0'
+        className={`transition-all duration-300 ease-in-out ml-0 ${
+          sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'
         }`}
       >
         <Header />
-        <main className="p-6">
+        <main className="p-4 sm:p-6">
           <Breadcrumbs />
-          <div className="mt-6">{children}</div>
+          <div className="mt-4 sm:mt-6">{children}</div>
         </main>
       </div>
     </div>

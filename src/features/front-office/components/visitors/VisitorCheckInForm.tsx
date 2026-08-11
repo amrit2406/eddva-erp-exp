@@ -71,7 +71,7 @@ export default function VisitorCheckInForm({ onSubmit, isSubmitting = false, cla
           defaultValue={new Date().toISOString().slice(0, 16)}
         />
       </div>
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
         <Button variant="secondary" type="button">
           Cancel
         </Button>

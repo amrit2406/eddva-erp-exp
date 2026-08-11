@@ -10,8 +10,8 @@ interface VisitorFiltersProps {
 
 export default function VisitorFilters({ className }: VisitorFiltersProps) {
   return (
-    <div className={cn('flex flex-wrap gap-4 items-center', className)}>
-      <div className="flex-1 min-w-[200px]">
+    <div className={cn('flex flex-wrap gap-3 sm:gap-4 items-center', className)}>
+      <div className="flex-1 min-w-[200px] w-full sm:w-auto w-full sm:w-auto">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
@@ -20,16 +20,16 @@ export default function VisitorFilters({ className }: VisitorFiltersProps) {
           />
         </div>
       </div>
-      <Input placeholder="Phone" className="w-40" />
-      <Input placeholder="Email" className="w-40" />
-      <Input placeholder="Organization" className="w-40" />
-      <Input placeholder="Host" className="w-40" />
+      <Input placeholder="Phone" className="w-full sm:w-40" />
+      <Input placeholder="Email" className="w-full sm:w-40" />
+      <Input placeholder="Organization" className="w-full sm:w-40" />
+      <Input placeholder="Host" className="w-full sm:w-40" />
       <Select
         placeholder="Status"
         options={VISITOR_STATUS_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
-        className="w-40"
+        className="w-full sm:w-40"
       />
-      <Input type="date" className="w-40" />
+      <Input type="date" className="w-full sm:w-40" />
     </div>
   );
 }

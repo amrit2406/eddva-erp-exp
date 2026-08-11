@@ -44,7 +44,7 @@ export default function FrontOfficeDashboardPage() {
   const StatCard = ({ title, value, icon: Icon, color }: { title: string; value: number; icon: any; color: string }) => (
     <Card className="border-slate-200">
       <div className="p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-slate-600">{title}</p>
             <p className="text-3xl font-bold text-slate-900 mt-2">{value}</p>
@@ -60,20 +60,20 @@ export default function FrontOfficeDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Front Office Overview</h1>
-          <p className="text-slate-600 mt-1">Manage visitors, enquiries, appointments, and complaints</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Front Office Overview</h1>
+          <p className="text-slate-600 mt-1 text-sm sm:text-base">Manage visitors, enquiries, appointments, and complaints</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Link to="/front-office/visitors/new">
-            <Button variant="primary" size="sm">
+            <Button variant="primary" size="sm" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Register Visitor
             </Button>
           </Link>
           <Link to="/front-office/enquiries/new">
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               New Enquiry
             </Button>
@@ -95,33 +95,33 @@ export default function FrontOfficeDashboardPage() {
       {/* Today's Visitors */}
       <Card className="border-slate-200">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <h2 className="text-lg font-semibold text-slate-900">Today's Visitors</h2>
             <Link to="/front-office/visitors" className="text-[#008BE9] hover:text-[#002C6D] text-sm font-medium flex items-center">
               View All <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Visitor</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Host</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Purpose</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Badge</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Check-in</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Status</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700">Visitor</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700 hidden sm:table-cell">Host</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700 hidden md:table-cell">Purpose</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700 hidden md:table-cell">Badge</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700">Check-in</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {todayVisitors.map((visitor) => (
                   <tr key={visitor.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-3 px-4 text-sm text-slate-900">{visitor.name}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{visitor.host}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{visitor.purpose}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{visitor.badge}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{visitor.checkInTime}</td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-900">{visitor.name}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600 hidden sm:table-cell">{visitor.host}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600 hidden md:table-cell">{visitor.purpose}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600 hidden md:table-cell">{visitor.badge}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600">{visitor.checkInTime}</td>
+                    <td className="py-3 px-2 sm:px-4">
                       <span className={cn(
                         'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
                         visitor.status === 'checked_in' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'
@@ -140,35 +140,35 @@ export default function FrontOfficeDashboardPage() {
       {/* Upcoming Appointments */}
       <Card className="border-slate-200">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <h2 className="text-lg font-semibold text-slate-900">Upcoming Appointments</h2>
             <Link to="/front-office/appointments" className="text-[#008BE9] hover:text-[#002C6D] text-sm font-medium flex items-center">
               View All <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Visitor</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Host</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Department</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Date</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Time</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Purpose</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Status</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700">Visitor</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700 hidden sm:table-cell">Host</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700 hidden md:table-cell">Department</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700">Date</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700 hidden sm:table-cell">Time</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700 hidden md:table-cell">Purpose</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {upcomingAppointments.map((appointment) => (
                   <tr key={appointment.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-3 px-4 text-sm text-slate-900">{appointment.visitor}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{appointment.host}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{appointment.department}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{appointment.date}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{appointment.time}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{appointment.purpose}</td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-900">{appointment.visitor}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600 hidden sm:table-cell">{appointment.host}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600 hidden md:table-cell">{appointment.department}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600">{appointment.date}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600 hidden sm:table-cell">{appointment.time}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600 hidden md:table-cell">{appointment.purpose}</td>
+                    <td className="py-3 px-2 sm:px-4">
                       <span className={cn(
                         'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
                         appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'
@@ -187,31 +187,31 @@ export default function FrontOfficeDashboardPage() {
       {/* Enquiry Follow-ups */}
       <Card className="border-slate-200">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <h2 className="text-lg font-semibold text-slate-900">Enquiry Follow-ups</h2>
             <Link to="/front-office/enquiries" className="text-[#008BE9] hover:text-[#002C6D] text-sm font-medium flex items-center">
               View All <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <table className="w-full min-w-[500px]">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Enquirer</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Category</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Assigned To</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Next Follow-up</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Status</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700">Enquirer</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700 hidden sm:table-cell">Category</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700 hidden md:table-cell">Assigned To</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700">Next Follow-up</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium text-slate-700">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {enquiryFollowups.map((enquiry) => (
                   <tr key={enquiry.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-3 px-4 text-sm text-slate-900">{enquiry.enquirer}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{enquiry.category}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{enquiry.assignedTo}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{enquiry.nextFollowup}</td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-900">{enquiry.enquirer}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600 hidden sm:table-cell">{enquiry.category}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600 hidden md:table-cell">{enquiry.assignedTo}</td>
+                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-600">{enquiry.nextFollowup}</td>
+                    <td className="py-3 px-2 sm:px-4">
                       <span className={cn(
                         'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
                         enquiry.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'
@@ -230,7 +230,7 @@ export default function FrontOfficeDashboardPage() {
       {/* Complaint Summary */}
       <Card className="border-slate-200">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <h2 className="text-lg font-semibold text-slate-900">Complaint Summary</h2>
             <Link to="/front-office/complaints" className="text-[#008BE9] hover:text-[#002C6D] text-sm font-medium flex items-center">
               View All <ChevronRight className="h-4 w-4 ml-1" />

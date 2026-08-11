@@ -26,8 +26,8 @@ export default function EnquiryDetailsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <Link to="/front-office/enquiries">
             <Button variant="secondary" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
