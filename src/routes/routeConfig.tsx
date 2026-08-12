@@ -19,6 +19,28 @@ import ComplaintsPage from '../features/front-office/pages/complaints/Complaints
 import CreateComplaintPage from '../features/front-office/pages/complaints/CreateComplaintPage';
 import ComplaintDetailsPage from '../features/front-office/pages/complaints/ComplaintDetailsPage';
 import EditComplaintPage from '../features/front-office/pages/complaints/EditComplaintPage';
+import {
+  SalesPurchaseIndexPage,
+  SalesPurchaseDashboardPage,
+  VendorsPage,
+  CreateVendorPage,
+  ViewVendorPage,
+  EditVendorPage,
+  PurchaseOrdersPage,
+  CreatePurchaseOrderPage,
+  ViewPurchaseOrderPage,
+  EditPurchaseOrderPage,
+  PurchaseRegisterPage,
+  CustomersPage,
+  CreateCustomerPage,
+  ViewCustomerPage,
+  EditCustomerPage,
+  SalesOrdersPage,
+  CreateSalesOrderPage,
+  ViewSalesOrderPage,
+  EditSalesOrderPage,
+  SalesRegisterPage,
+} from '../features/sales-purchase/pages/index';
 
 export const routeConfig = [
   {
@@ -120,6 +142,107 @@ export const routeConfig = [
   {
     path: '/front-office/complaints/:id/edit',
     element: EditComplaintPage,
+    isProtected: true,
+  },
+  // Sales & Purchase Routes
+  {
+    path: '/sales-purchase',
+    element: SalesPurchaseIndexPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/dashboard',
+    element: SalesPurchaseDashboardPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/vendors',
+    element: VendorsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/vendors/new',
+    element: CreateVendorPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/vendors/:id',
+    element: ViewVendorPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/vendors/:id/edit',
+    element: EditVendorPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/purchase-orders',
+    element: PurchaseOrdersPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/purchase-orders/new',
+    element: CreatePurchaseOrderPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/purchase-orders/:id',
+    element: ViewPurchaseOrderPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/purchase-orders/:id/edit',
+    element: EditPurchaseOrderPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/purchase-register',
+    element: PurchaseRegisterPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/customers',
+    element: CustomersPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/customers/new',
+    element: CreateCustomerPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/customers/:id',
+    element: ViewCustomerPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/customers/:id/edit',
+    element: EditCustomerPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-orders',
+    element: SalesOrdersPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-orders/new',
+    element: CreateSalesOrderPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-orders/:id',
+    element: ViewSalesOrderPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-orders/:id/edit',
+    element: EditSalesOrderPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-register',
+    element: SalesRegisterPage,
     isProtected: true,
   },
   // Future routes will be added here

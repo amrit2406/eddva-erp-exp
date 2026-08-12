@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, GraduationCap, Calendar, IndianRupee, BookOpen, Bus, FileText, Settings, Building } from 'lucide-react';
+import { useState } from 'react';
+import { LayoutDashboard, Users, GraduationCap, IndianRupee, FileText, Building, ShoppingCart, ArrowRight, ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 
@@ -8,25 +9,116 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   badge?: string;
+  children?: NavItem[];
 }
 
 const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/front-office', label: 'Front Office', icon: Building },
-  { path: '/students', label: 'Students', icon: Users },
-  { path: '/teachers', label: 'Teachers', icon: GraduationCap },
-  { path: '/attendance', label: 'Attendance', icon: Calendar },
-  { path: '/fees', label: 'Fees', icon: IndianRupee },
-  { path: '/examinations', label: 'Examinations', icon: FileText },
-  { path: '/library', label: 'Library', icon: BookOpen },
-  { path: '/transport', label: 'Transport', icon: Bus },
-  { path: '/reports', label: 'Reports', icon: FileText },
-  { path: '/settings', label: 'Settings', icon: Settings },
+  { 
+    path: '/sales-purchase', 
+    label: 'Sales & Purchase', 
+    icon: ShoppingCart,
+    children: [
+      { path: '/sales-purchase/vendors', label: 'Vendor Management', icon: Building },
+      { path: '/sales-purchase/purchase-orders', label: 'Purchase Orders', icon: FileText },
+      { path: '/sales-purchase/purchase-register', label: 'Purchase Register', icon: IndianRupee },
+      { path: '/sales-purchase/customers', label: 'Customer Management', icon: Users },
+      { path: '/sales-purchase/sales-orders', label: 'Sales Orders', icon: FileText },
+      { path: '/sales-purchase/sales-register', label: 'Sales Register', icon: IndianRupee },
+    ]
+  },
+  // { path: '/students', label: 'Students', icon: Users },
+  // { path: '/teachers', label: 'Teachers', icon: GraduationCap },
+  // { path: '/attendance', label: 'Attendance', icon: Calendar },
+  // { path: '/fees', label: 'Fees', icon: IndianRupee },
+  // { path: '/examinations', label: 'Examinations', icon: FileText },
+  // { path: '/library', label: 'Library', icon: BookOpen },
+  // { path: '/transport', label: 'Transport', icon: Bus },
+  // { path: '/reports', label: 'Reports', icon: FileText },
+  // { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function Sidebar() {
   const sidebarOpen = useUIStore((state) => state.sidebarOpen);
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
+
+  const toggleMenu = (path: string) => {
+    setExpandedMenus((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(path)) {
+        newSet.delete(path);
+      } else {
+        newSet.add(path);
+      }
+      return newSet;
+    });
+  };
+
+  const renderNavItem = (item: NavItem, level: number = 0) => {
+    const hasChildren = item.children && item.children.length > 0;
+    const isExpanded = expandedMenus.has(item.path);
+
+    if (hasChildren) {
+      return (
+        <li key={item.path}>
+          <button
+            onClick={() => toggleMenu(item.path)}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors w-full',
+              'text-slate-700 hover:bg-slate-100'
+            )}
+          >
+            <item.icon className="h-5 w-5" />
+            <span className="flex-1 text-left">{item.label}</span>
+            <ChevronDown 
+              className={cn(
+                'h-4 w-4 transition-transform',
+                isExpanded ? 'rotate-180' : ''
+              )}
+            />
+          </button>
+          {isExpanded && (
+            <ul className={cn('mt-1 space-y-1', level > 0 ? 'ml-4' : '')}>
+              {item.children?.map((child) => renderNavItem(child, level + 1))}
+            </ul>
+          )}
+        </li>
+      );
+    }
+
+    return (
+      <li key={item.path}>
+        <NavLink
+          to={item.path}
+          onClick={() => {
+            // Close sidebar on mobile after navigation
+            if (window.innerWidth < 1024) {
+              toggleSidebar();
+            }
+          }}
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-[#008BE9]/10 text-[#002C6D]'
+                : 'text-slate-700 hover:bg-slate-100'
+            )
+          }
+        >
+          {level > 0 && <ArrowRight className="h-4 w-4 text-slate-400" />}
+          <item.icon className={cn('h-5 w-5', level > 0 ? 'h-4 w-4' : '')} />
+          <span>{item.label}</span>
+          {item.badge && (
+            <span className="ml-auto rounded-full bg-[#008BE9]/10 px-2 py-0.5 text-xs text-[#002C6D]">
+              {item.badge}
+            </span>
+          )}
+        </NavLink>
+      </li>
+    );
+  };
 
   return (
     <>
@@ -56,35 +148,7 @@ export default function Sidebar() {
 
           <nav className="flex-1 overflow-y-auto p-4">
             <ul className="space-y-1">
-              {navItems.map((item) => (
-                <li key={item.path}>
-                  <NavLink
-                    to={item.path}
-                    onClick={() => {
-                      // Close sidebar on mobile after navigation
-                      if (window.innerWidth < 1024) {
-                        toggleSidebar();
-                      }
-                    }}
-                    className={({ isActive }) =>
-                      cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                        isActive
-                          ? 'bg-[#008BE9]/10 text-[#002C6D]'
-                          : 'text-slate-700 hover:bg-slate-100'
-                      )
-                    }
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                    {item.badge && (
-                      <span className="ml-auto rounded-full bg-[#008BE9]/10 px-2 py-0.5 text-xs text-[#002C6D]">
-                        {item.badge}
-                      </span>
-                    )}
-                  </NavLink>
-                </li>
-              ))}
+              {navItems.map((item) => renderNavItem(item))}
             </ul>
           </nav>
         </div>

@@ -1,0 +1,106 @@
+// Mock Vendor Data
+
+import type { Vendor, VendorContact, VendorBankDetail } from '../types';
+
+export const mockVendors: Vendor[] = [
+  {
+    vendorId: 'V001',
+    vendorCode: 'VEN001',
+    vendorName: 'ABC Electronics Ltd',
+    gstin: '29ABCDE1234F1Z5',
+    taxId: 'ABCDE1234F',
+    addressLine1: '123 Industrial Area',
+    addressLine2: 'Phase 2',
+    city: 'Bangalore',
+    state: 'Karnataka',
+    pincode: '560001',
+    paymentTermId: 'PT001',
+    paymentTermName: 'Net 30',
+    creditLimit: 500000,
+    status: 'active',
+    createdAt: '2024-01-15T10:00:00Z',
+    updatedAt: '2024-01-15T10:00:00Z',
+  },
+  {
+    vendorId: 'V002',
+    vendorCode: 'VEN002',
+    vendorName: 'XYZ Materials Corp',
+    gstin: '27FGHIJ5678K2L9',
+    taxId: 'FGHIJ5678K',
+    addressLine1: '456 Business Park',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    pincode: '400001',
+    paymentTermId: 'PT002',
+    paymentTermName: 'Net 45',
+    creditLimit: 750000,
+    status: 'active',
+    createdAt: '2024-02-20T14:30:00Z',
+    updatedAt: '2024-02-20T14:30:00Z',
+  },
+  {
+    vendorId: 'V003',
+    vendorCode: 'VEN003',
+    vendorName: 'Global Supplies Inc',
+    gstin: '33LMNOP9012M3N7',
+    addressLine1: '789 Trade Center',
+    city: 'Chennai',
+    state: 'Tamil Nadu',
+    pincode: '600001',
+    paymentTermId: 'PT001',
+    paymentTermName: 'Net 30',
+    creditLimit: 300000,
+    status: 'inactive',
+    createdAt: '2024-03-10T09:15:00Z',
+    updatedAt: '2024-04-01T11:20:00Z',
+  },
+];
+
+export const mockVendorContacts: VendorContact[] = [
+  {
+    contactId: 'VC001',
+    vendorId: 'V001',
+    name: 'Rajesh Kumar',
+    designation: 'Sales Manager',
+    phone: '+91 98765 43210',
+    email: 'rajesh@abcelectronics.com',
+    isPrimary: true,
+  },
+  {
+    contactId: 'VC002',
+    vendorId: 'V001',
+    name: 'Priya Sharma',
+    designation: 'Accounts Officer',
+    phone: '+91 98765 43211',
+    email: 'priya@abcelectronics.com',
+    isPrimary: false,
+  },
+  {
+    contactId: 'VC003',
+    vendorId: 'V002',
+    name: 'Amit Patel',
+    designation: 'Regional Manager',
+    phone: '+91 98765 43212',
+    email: 'amit@xyzmaterials.com',
+    isPrimary: true,
+  },
+];
+
+export const mockVendorBankDetails: VendorBankDetail[] = [
+  {
+    bankId: 'VB001',
+    vendorId: 'V001',
+    accountNo: '1234567890123456',
+    ifscCode: 'ABCD0123456',
+    bankName: 'HDFC Bank',
+    isPrimary: true,
+  },
+  {
+    bankId: 'VB002',
+    vendorId: 'V002',
+    accountNo: '9876543210987654',
+    ifscCode: 'EFGH7890123',
+    bankName: 'ICICI Bank',
+    isPrimary: true,
+  },
+];
