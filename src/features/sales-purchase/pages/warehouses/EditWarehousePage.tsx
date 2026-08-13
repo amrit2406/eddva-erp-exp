@@ -3,15 +3,15 @@ import { ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import VendorForm from '../../components/vendors/VendorForm';
-import { getVendor, updateVendor } from '../../api/sales-purchase.api';
-import type { VendorFormData } from '../../types/sales-purchase.types';
+import WarehouseForm from '../../components/warehouses/WarehouseForm';
+import { getWarehouse, updateWarehouse } from '../../api/sales-purchase.api';
+import type { WarehouseFormData } from '../../types/sales-purchase.types';
 
-export default function EditVendorPage() {
+export default function EditWarehousePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<VendorFormData | null>(null);
+  const [defaultValues, setDefaultValues] = useState<WarehouseFormData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,24 +20,14 @@ export default function EditVendorPage() {
     }
   }, [id]);
 
-  async function loadData(vendorId: string) {
+  async function loadData(warehouseId: string) {
     try {
       setLoading(true);
-      const data = await getVendor(vendorId);
+      const data = await getWarehouse(warehouseId);
       setDefaultValues({
-        vendorName: data.vendorName,
-        gstin: data.gstin,
-        taxId: data.taxId,
-        addressLine1: data.addressLine1,
-        addressLine2: data.addressLine2,
-        city: data.city,
-        state: data.state,
-        pincode: data.pincode,
-        paymentTermId: data.paymentTermId,
-        creditLimit: data.creditLimit,
-        status: data.status,
-        contacts: data.contacts,
-        bankDetails: data.bankDetails,
+        name: data.name,
+        address: data.address,
+        isDefault: data.isDefault,
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);
@@ -49,18 +39,18 @@ export default function EditVendorPage() {
     }
   }
 
-  const handleSubmit = async (data: VendorFormData) => {
+  const handleSubmit = async (data: WarehouseFormData) => {
     if (!id) return;
     try {
       setIsSubmitting(true);
-      await updateVendor(id, data);
-      navigate('/sales-purchase/vendors');
+      await updateWarehouse(id, data);
+      navigate('/sales-purchase/warehouses');
     } catch (error: any) {
-      console.error('Failed to update vendor:', error);
+      console.error('Failed to update warehouse:', error);
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update vendor');
+      alert(error instanceof Error ? error.message : 'Failed to update warehouse');
     } finally {
       setIsSubmitting(false);
     }
@@ -69,15 +59,15 @@ export default function EditVendorPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/vendors">
+        <Link to="/sales-purchase/warehouses">
           <Button variant="secondary" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Vendor</h1>
-          <p className="text-slate-600 mt-1">Update vendor information</p>
+          <h1 className="text-2xl font-bold text-slate-900">Edit Warehouse</h1>
+          <p className="text-slate-600 mt-1">Update warehouse information</p>
         </div>
       </div>
 
@@ -89,11 +79,11 @@ export default function EditVendorPage() {
         <Card className="border-slate-200">
           <div className="p-6">
             {defaultValues && (
-              <VendorForm
+              <WarehouseForm
                 defaultValues={defaultValues}
                 onSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
-                submitText="Update Vendor"
+                submitText="Update Warehouse"
               />
             )}
           </div>

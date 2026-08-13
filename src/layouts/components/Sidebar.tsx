@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutDashboard, Users, GraduationCap, IndianRupee, FileText, Building, ShoppingCart, ArrowRight, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Users, GraduationCap, IndianRupee, FileText, Building, ShoppingCart, ArrowRight, ChevronDown, Database } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 
@@ -20,12 +20,14 @@ const navItems: NavItem[] = [
     label: 'Sales & Purchase', 
     icon: ShoppingCart,
     children: [
-      { path: '/sales-purchase/vendors', label: 'Vendor Management', icon: Building },
-      { path: '/sales-purchase/purchase-orders', label: 'Purchase Orders', icon: FileText },
-      { path: '/sales-purchase/purchase-register', label: 'Purchase Register', icon: IndianRupee },
-      { path: '/sales-purchase/customers', label: 'Customer Management', icon: Users },
-      { path: '/sales-purchase/sales-orders', label: 'Sales Orders', icon: FileText },
-      { path: '/sales-purchase/sales-register', label: 'Sales Register', icon: IndianRupee },
+      { path: '/sales-purchase/item-categories', label: 'Item Categories', icon: Database },
+      { path: '/sales-purchase/uom', label: 'Units of Measure', icon: Database },
+      { path: '/sales-purchase/tax-codes', label: 'Tax Codes', icon: Database },
+      { path: '/sales-purchase/payment-terms', label: 'Payment Terms', icon: Database },
+      { path: '/sales-purchase/warehouses', label: 'Warehouses', icon: Database },
+      { path: '/sales-purchase/items', label: 'Items', icon: Database },
+      { path: '/sales-purchase/vendors', label: 'Vendors', icon: Database },
+      { path: '/sales-purchase/customers', label: 'Customers', icon: Database },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },

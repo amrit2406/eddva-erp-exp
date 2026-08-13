@@ -3,25 +3,25 @@ import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import CustomerForm from '../../components/customers/CustomerForm';
-import { createCustomer } from '../../api/sales-purchase.api';
-import type { CustomerFormData } from '../../types/sales-purchase.types';
+import TaxCodeForm from '../../components/tax-codes/TaxCodeForm';
+import { createTaxCode } from '../../api/sales-purchase.api';
+import type { TaxCodeFormData } from '../../types/sales-purchase.types';
 
-export default function CreateCustomerPage() {
+export default function CreateTaxCodePage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: CustomerFormData) => {
+  const handleSubmit = async (data: TaxCodeFormData) => {
     try {
       setIsSubmitting(true);
-      await createCustomer(data);
-      navigate('/sales-purchase/customers');
+      await createTaxCode(data);
+      navigate('/sales-purchase/tax-codes');
     } catch (error: any) {
-      console.error('Failed to create customer:', error);
+      console.error('Failed to create tax code:', error);
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to create customer');
+      alert(error instanceof Error ? error.message : 'Failed to create tax code');
     } finally {
       setIsSubmitting(false);
     }
@@ -30,25 +30,21 @@ export default function CreateCustomerPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/customers">
+        <Link to="/sales-purchase/tax-codes">
           <Button variant="secondary" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Add Customer</h1>
-          <p className="text-slate-600 mt-1">Create a new customer</p>
+          <h1 className="text-2xl font-bold text-slate-900">Add Tax Code</h1>
+          <p className="text-slate-600 mt-1">Create a new tax code</p>
         </div>
       </div>
 
       <Card className="border-slate-200">
         <div className="p-6">
-          <CustomerForm
-            onSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-            submitText="Create Customer"
-          />
+          <TaxCodeForm onSubmit={handleSubmit} submitText="Create Tax Code" isSubmitting={isSubmitting} />
         </div>
       </Card>
     </div>

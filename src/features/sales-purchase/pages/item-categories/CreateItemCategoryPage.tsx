@@ -3,25 +3,26 @@ import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import CustomerForm from '../../components/customers/CustomerForm';
-import { createCustomer } from '../../api/sales-purchase.api';
-import type { CustomerFormData } from '../../types/sales-purchase.types';
+import ItemCategoryForm from '../../components/item-categories/ItemCategoryForm';
+import { createItemCategory } from '../../api/sales-purchase.api';
+import type { ItemCategoryFormData } from '../../types/sales-purchase.types';
 
-export default function CreateCustomerPage() {
+export default function CreateItemCategoryPage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: CustomerFormData) => {
+  const handleSubmit = async (data: ItemCategoryFormData) => {
     try {
       setIsSubmitting(true);
-      await createCustomer(data);
-      navigate('/sales-purchase/customers');
+      await createItemCategory(data);
+      navigate('/sales-purchase/item-categories');
     } catch (error: any) {
-      console.error('Failed to create customer:', error);
+      console.error('Failed to create item category:', error);
       if (error.response?.status === 401) {
+        // Let the axios interceptor handle 401
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to create customer');
+      alert(error instanceof Error ? error.message : 'Failed to create item category');
     } finally {
       setIsSubmitting(false);
     }
@@ -30,25 +31,21 @@ export default function CreateCustomerPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/customers">
+        <Link to="/sales-purchase/item-categories">
           <Button variant="secondary" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Add Customer</h1>
-          <p className="text-slate-600 mt-1">Create a new customer</p>
+          <h1 className="text-2xl font-bold text-slate-900">Add Item Category</h1>
+          <p className="text-slate-600 mt-1">Create a new item category</p>
         </div>
       </div>
 
       <Card className="border-slate-200">
         <div className="p-6">
-          <CustomerForm
-            onSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-            submitText="Create Customer"
-          />
+          <ItemCategoryForm onSubmit={handleSubmit} submitText="Create Category" isSubmitting={isSubmitting} />
         </div>
       </Card>
     </div>

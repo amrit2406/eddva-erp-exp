@@ -19,28 +19,39 @@ import ComplaintsPage from '../features/front-office/pages/complaints/Complaints
 import CreateComplaintPage from '../features/front-office/pages/complaints/CreateComplaintPage';
 import ComplaintDetailsPage from '../features/front-office/pages/complaints/ComplaintDetailsPage';
 import EditComplaintPage from '../features/front-office/pages/complaints/EditComplaintPage';
-import {
-  SalesPurchaseIndexPage,
-  SalesPurchaseDashboardPage,
-  VendorsPage,
-  CreateVendorPage,
-  ViewVendorPage,
-  EditVendorPage,
-  PurchaseOrdersPage,
-  CreatePurchaseOrderPage,
-  ViewPurchaseOrderPage,
-  EditPurchaseOrderPage,
-  PurchaseRegisterPage,
-  CustomersPage,
-  CreateCustomerPage,
-  ViewCustomerPage,
-  EditCustomerPage,
-  SalesOrdersPage,
-  CreateSalesOrderPage,
-  ViewSalesOrderPage,
-  EditSalesOrderPage,
-  SalesRegisterPage,
-} from '../features/sales-purchase/pages/index';
+// Sales & Purchase Routes
+import ItemCategoriesPage from '../features/sales-purchase/pages/item-categories/ItemCategoriesPage';
+import CreateItemCategoryPage from '../features/sales-purchase/pages/item-categories/CreateItemCategoryPage';
+import ItemCategoryDetailsPage from '../features/sales-purchase/pages/item-categories/ItemCategoryDetailsPage';
+import EditItemCategoryPage from '../features/sales-purchase/pages/item-categories/EditItemCategoryPage';
+import UOMPage from '../features/sales-purchase/pages/uom/UOMPage';
+import CreateUOMPage from '../features/sales-purchase/pages/uom/CreateUOMPage';
+import UOMDetailsPage from '../features/sales-purchase/pages/uom/UOMDetailsPage';
+import EditUOMPage from '../features/sales-purchase/pages/uom/EditUOMPage';
+import TaxCodesPage from '../features/sales-purchase/pages/tax-codes/TaxCodesPage';
+import CreateTaxCodePage from '../features/sales-purchase/pages/tax-codes/CreateTaxCodePage';
+import TaxCodeDetailsPage from '../features/sales-purchase/pages/tax-codes/TaxCodeDetailsPage';
+import EditTaxCodePage from '../features/sales-purchase/pages/tax-codes/EditTaxCodePage';
+import PaymentTermsPage from '../features/sales-purchase/pages/payment-terms/PaymentTermsPage';
+import CreatePaymentTermPage from '../features/sales-purchase/pages/payment-terms/CreatePaymentTermPage';
+import PaymentTermDetailsPage from '../features/sales-purchase/pages/payment-terms/PaymentTermDetailsPage';
+import EditPaymentTermPage from '../features/sales-purchase/pages/payment-terms/EditPaymentTermPage';
+import WarehousesPage from '../features/sales-purchase/pages/warehouses/WarehousesPage';
+import CreateWarehousePage from '../features/sales-purchase/pages/warehouses/CreateWarehousePage';
+import WarehouseDetailsPage from '../features/sales-purchase/pages/warehouses/WarehouseDetailsPage';
+import EditWarehousePage from '../features/sales-purchase/pages/warehouses/EditWarehousePage';
+import ItemsPage from '../features/sales-purchase/pages/items/ItemsPage';
+import CreateItemPage from '../features/sales-purchase/pages/items/CreateItemPage';
+import ItemDetailsPage from '../features/sales-purchase/pages/items/ItemDetailsPage';
+import EditItemPage from '../features/sales-purchase/pages/items/EditItemPage';
+import VendorsPage from '../features/sales-purchase/pages/vendors/VendorsPage';
+import CreateVendorPage from '../features/sales-purchase/pages/vendors/CreateVendorPage';
+import VendorDetailsPage from '../features/sales-purchase/pages/vendors/VendorDetailsPage';
+import EditVendorPage from '../features/sales-purchase/pages/vendors/EditVendorPage';
+import CustomersPage from '../features/sales-purchase/pages/customers/CustomersPage';
+import CreateCustomerPage from '../features/sales-purchase/pages/customers/CreateCustomerPage';
+import CustomerDetailsPage from '../features/sales-purchase/pages/customers/CustomerDetailsPage';
+import EditCustomerPage from '../features/sales-purchase/pages/customers/EditCustomerPage';
 
 export const routeConfig = [
   {
@@ -144,15 +155,126 @@ export const routeConfig = [
     element: EditComplaintPage,
     isProtected: true,
   },
+  
   // Sales & Purchase Routes
   {
-    path: '/sales-purchase',
-    element: SalesPurchaseIndexPage,
+    path: '/sales-purchase/item-categories',
+    element: ItemCategoriesPage,
     isProtected: true,
   },
   {
-    path: '/sales-purchase/dashboard',
-    element: SalesPurchaseDashboardPage,
+    path: '/sales-purchase/item-categories/new',
+    element: CreateItemCategoryPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/item-categories/:id',
+    element: ItemCategoryDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/item-categories/:id/edit',
+    element: EditItemCategoryPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/uom',
+    element: UOMPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/uom/new',
+    element: CreateUOMPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/uom/:id',
+    element: UOMDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/uom/:id/edit',
+    element: EditUOMPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/tax-codes',
+    element: TaxCodesPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/tax-codes/new',
+    element: CreateTaxCodePage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/tax-codes/:id',
+    element: TaxCodeDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/tax-codes/:id/edit',
+    element: EditTaxCodePage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/payment-terms',
+    element: PaymentTermsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/payment-terms/new',
+    element: CreatePaymentTermPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/payment-terms/:id',
+    element: PaymentTermDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/payment-terms/:id/edit',
+    element: EditPaymentTermPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/warehouses',
+    element: WarehousesPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/warehouses/new',
+    element: CreateWarehousePage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/warehouses/:id',
+    element: WarehouseDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/warehouses/:id/edit',
+    element: EditWarehousePage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/items',
+    element: ItemsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/items/new',
+    element: CreateItemPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/items/:id',
+    element: ItemDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/items/:id/edit',
+    element: EditItemPage,
     isProtected: true,
   },
   {
@@ -167,37 +289,12 @@ export const routeConfig = [
   },
   {
     path: '/sales-purchase/vendors/:id',
-    element: ViewVendorPage,
+    element: VendorDetailsPage,
     isProtected: true,
   },
   {
     path: '/sales-purchase/vendors/:id/edit',
     element: EditVendorPage,
-    isProtected: true,
-  },
-  {
-    path: '/sales-purchase/purchase-orders',
-    element: PurchaseOrdersPage,
-    isProtected: true,
-  },
-  {
-    path: '/sales-purchase/purchase-orders/new',
-    element: CreatePurchaseOrderPage,
-    isProtected: true,
-  },
-  {
-    path: '/sales-purchase/purchase-orders/:id',
-    element: ViewPurchaseOrderPage,
-    isProtected: true,
-  },
-  {
-    path: '/sales-purchase/purchase-orders/:id/edit',
-    element: EditPurchaseOrderPage,
-    isProtected: true,
-  },
-  {
-    path: '/sales-purchase/purchase-register',
-    element: PurchaseRegisterPage,
     isProtected: true,
   },
   {
@@ -212,7 +309,7 @@ export const routeConfig = [
   },
   {
     path: '/sales-purchase/customers/:id',
-    element: ViewCustomerPage,
+    element: CustomerDetailsPage,
     isProtected: true,
   },
   {
@@ -220,31 +317,7 @@ export const routeConfig = [
     element: EditCustomerPage,
     isProtected: true,
   },
-  {
-    path: '/sales-purchase/sales-orders',
-    element: SalesOrdersPage,
-    isProtected: true,
-  },
-  {
-    path: '/sales-purchase/sales-orders/new',
-    element: CreateSalesOrderPage,
-    isProtected: true,
-  },
-  {
-    path: '/sales-purchase/sales-orders/:id',
-    element: ViewSalesOrderPage,
-    isProtected: true,
-  },
-  {
-    path: '/sales-purchase/sales-orders/:id/edit',
-    element: EditSalesOrderPage,
-    isProtected: true,
-  },
-  {
-    path: '/sales-purchase/sales-register',
-    element: SalesRegisterPage,
-    isProtected: true,
-  },
+  
   // Future routes will be added here
   // {
   //   path: ROUTES.STUDENTS,

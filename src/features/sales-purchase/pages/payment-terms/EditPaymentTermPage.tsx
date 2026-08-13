@@ -3,15 +3,15 @@ import { ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import VendorForm from '../../components/vendors/VendorForm';
-import { getVendor, updateVendor } from '../../api/sales-purchase.api';
-import type { VendorFormData } from '../../types/sales-purchase.types';
+import PaymentTermForm from '../../components/payment-terms/PaymentTermForm';
+import { getPaymentTerm, updatePaymentTerm } from '../../api/sales-purchase.api';
+import type { PaymentTermFormData } from '../../types/sales-purchase.types';
 
-export default function EditVendorPage() {
+export default function EditPaymentTermPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<VendorFormData | null>(null);
+  const [defaultValues, setDefaultValues] = useState<PaymentTermFormData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,24 +20,13 @@ export default function EditVendorPage() {
     }
   }, [id]);
 
-  async function loadData(vendorId: string) {
+  async function loadData(termId: string) {
     try {
       setLoading(true);
-      const data = await getVendor(vendorId);
+      const data = await getPaymentTerm(termId);
       setDefaultValues({
-        vendorName: data.vendorName,
-        gstin: data.gstin,
-        taxId: data.taxId,
-        addressLine1: data.addressLine1,
-        addressLine2: data.addressLine2,
-        city: data.city,
-        state: data.state,
-        pincode: data.pincode,
-        paymentTermId: data.paymentTermId,
-        creditLimit: data.creditLimit,
-        status: data.status,
-        contacts: data.contacts,
-        bankDetails: data.bankDetails,
+        termName: data.termName,
+        days: data.days,
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);
@@ -49,18 +38,18 @@ export default function EditVendorPage() {
     }
   }
 
-  const handleSubmit = async (data: VendorFormData) => {
+  const handleSubmit = async (data: PaymentTermFormData) => {
     if (!id) return;
     try {
       setIsSubmitting(true);
-      await updateVendor(id, data);
-      navigate('/sales-purchase/vendors');
+      await updatePaymentTerm(id, data);
+      navigate('/sales-purchase/payment-terms');
     } catch (error: any) {
-      console.error('Failed to update vendor:', error);
+      console.error('Failed to update payment term:', error);
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update vendor');
+      alert(error instanceof Error ? error.message : 'Failed to update payment term');
     } finally {
       setIsSubmitting(false);
     }
@@ -69,15 +58,15 @@ export default function EditVendorPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/vendors">
+        <Link to="/sales-purchase/payment-terms">
           <Button variant="secondary" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Vendor</h1>
-          <p className="text-slate-600 mt-1">Update vendor information</p>
+          <h1 className="text-2xl font-bold text-slate-900">Edit Payment Term</h1>
+          <p className="text-slate-600 mt-1">Update payment term information</p>
         </div>
       </div>
 
@@ -89,11 +78,11 @@ export default function EditVendorPage() {
         <Card className="border-slate-200">
           <div className="p-6">
             {defaultValues && (
-              <VendorForm
+              <PaymentTermForm
                 defaultValues={defaultValues}
                 onSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
-                submitText="Update Vendor"
+                submitText="Update Payment Term"
               />
             )}
           </div>
