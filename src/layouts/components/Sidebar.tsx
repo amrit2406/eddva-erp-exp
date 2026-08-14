@@ -32,6 +32,11 @@ const navItems: NavItem[] = [
       { path: '/sales-purchase/grn', label: 'Goods Received Notes', icon: Database },
       { path: '/sales-purchase/invoices', label: 'Purchase-Invoices', icon: Database },
       { path: '/sales-purchase/payments', label: 'Purchase-Payments', icon: Database },
+      { path: '/sales-purchase/sales-orders', label: 'Sales Orders', icon: Database },
+      { path: '/sales-purchase/sales-invoices', label: 'Sales Invoices', icon: Database },
+      { path: '/sales-purchase/sales-receipts', label: 'Sales Receipts', icon: Database },
+      { path: '/sales-purchase/purchase-register', label: 'Purchase Register', icon: Database },
+      { path: '/sales-purchase/sales-register', label: 'Sales Register', icon: Database },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },

@@ -326,3 +326,172 @@ export interface PaymentFormData {
   mode: string;
   referenceNo?: string;
 }
+
+// Sales Orders
+export interface SalesOrderItem {
+  id: string;
+  itemId: string;
+  quantity: number;
+  unitPrice: number;
+  taxCodeId: string;
+}
+
+export interface SalesOrder {
+  id: string;
+  customerId: string;
+  soDate: string;
+  deliveryDate: string;
+  discount: number;
+  items: SalesOrderItem[];
+  status: string;
+  customer?: Customer;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SalesOrderFormData {
+  customerId: string;
+  soDate: string;
+  deliveryDate: string;
+  discount: number;
+  items: SalesOrderItem[];
+}
+
+// Sales Invoices
+export interface SalesInvoiceItem {
+  itemId: string;
+  quantity: number;
+  unitPrice: number;
+  taxCodeId: string;
+}
+
+export interface SalesInvoice {
+  id: string;
+  customerId: string;
+  soId?: string;
+  invoiceDate: string;
+  discount: number;
+  items: SalesInvoiceItem[];
+  status: string;
+  customer?: Customer;
+  salesOrder?: SalesOrder;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SalesInvoiceFormData {
+  customerId: string;
+  soId?: string;
+  invoiceDate: string;
+  discount: number;
+  items: SalesInvoiceItem[];
+}
+
+// Sales Receipts
+export interface SalesReceipt {
+  id: string;
+  salesInvoiceId: string;
+  receiptDate: string;
+  amount: number;
+  mode: string;
+  referenceNo?: string;
+  status: string;
+  salesInvoice?: SalesInvoice;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SalesReceiptFormData {
+  salesInvoiceId: string;
+  receiptDate: string;
+  amount: number;
+  mode: string;
+  referenceNo?: string;
+}
+
+// Reports
+export interface PurchaseRegisterItem {
+  id: string;
+  invoiceNumber: string;
+  vendorInvoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string;
+  subtotal: number;
+  taxAmount: number;
+  discount: number;
+  grandTotal: number;
+  status: string;
+  paymentStatus: string;
+  vendor: {
+    id: string;
+    vendorCode: string;
+    vendorName: string;
+    gstin: string;
+  };
+  items: Array<{
+    id: string;
+    itemId: string;
+    quantity: number;
+    unitPrice: number;
+    cgstAmount: number;
+    sgstAmount: number;
+    igstAmount: number;
+    lineTotal: number;
+    item: {
+      id: string;
+      itemCode: string;
+      itemName: string;
+      hsnSacCode: string;
+    };
+    taxCode: {
+      id: string;
+      name: string;
+      cgstPct: number;
+      sgstPct: number;
+      igstPct: number;
+    };
+  }>;
+}
+
+export interface SalesRegisterItem {
+  id: string;
+  invoiceNumber: string;
+  customerInvoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string;
+  subtotal: number;
+  taxAmount: number;
+  discount: number;
+  grandTotal: number;
+  status: string;
+  paymentStatus: string;
+  customer: {
+    id: string;
+    customerCode: string;
+    customerName: string;
+    gstin: string;
+  };
+  items: Array<{
+    id: string;
+    itemId: string;
+    quantity: number;
+    unitPrice: number;
+    cgstAmount: number;
+    sgstAmount: number;
+    igstAmount: number;
+    lineTotal: number;
+    item: {
+      id: string;
+      itemCode: string;
+      itemName: string;
+      hsnSacCode: string;
+    };
+    taxCode: {
+      id: string;
+      name: string;
+      cgstPct: number;
+      sgstPct: number;
+      igstPct: number;
+    };
+  }>;
+}

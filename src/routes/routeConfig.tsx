@@ -68,6 +68,23 @@ import PaymentsPage from '../features/sales-purchase/pages/payments/PaymentsPage
 import CreatePaymentPage from '../features/sales-purchase/pages/payments/CreatePaymentPage';
 import PaymentDetailsPage from '../features/sales-purchase/pages/payments/PaymentDetailsPage';
 import EditPaymentPage from '../features/sales-purchase/pages/payments/EditPaymentPage';
+// Sales Orders & Sales Invoices
+import SalesOrdersPage from '../features/sales-purchase/pages/sales-orders/SalesOrdersPage';
+import CreateSalesOrderPage from '../features/sales-purchase/pages/sales-orders/CreateSalesOrderPage';
+import SalesOrderDetailsPage from '../features/sales-purchase/pages/sales-orders/SalesOrderDetailsPage';
+import EditSalesOrderPage from '../features/sales-purchase/pages/sales-orders/EditSalesOrderPage';
+import SalesInvoicesPage from '../features/sales-purchase/pages/sales-invoices/SalesInvoicesPage';
+import CreateSalesInvoicePage from '../features/sales-purchase/pages/sales-invoices/CreateSalesInvoicePage';
+import SalesInvoiceDetailsPage from '../features/sales-purchase/pages/sales-invoices/SalesInvoiceDetailsPage';
+import EditSalesInvoicePage from '../features/sales-purchase/pages/sales-invoices/EditSalesInvoicePage';
+// Sales Receipts
+import SalesReceiptsPage from '../features/sales-purchase/pages/sales-receipts/SalesReceiptsPage';
+import CreateSalesReceiptPage from '../features/sales-purchase/pages/sales-receipts/CreateSalesReceiptPage';
+import SalesReceiptDetailsPage from '../features/sales-purchase/pages/sales-receipts/SalesReceiptDetailsPage';
+import EditSalesReceiptPage from '../features/sales-purchase/pages/sales-receipts/EditSalesReceiptPage';
+// Reports
+import PurchaseRegisterPage from '../features/sales-purchase/pages/reports/PurchaseRegisterPage';
+import SalesRegisterPage from '../features/sales-purchase/pages/reports/SalesRegisterPage';
 
 export const routeConfig = [
   {
@@ -411,6 +428,80 @@ export const routeConfig = [
   {
     path: '/sales-purchase/payments/:id/edit',
     element: EditPaymentPage,
+    isProtected: true,
+  },
+  // Sales Orders
+  {
+    path: '/sales-purchase/sales-orders',
+    element: SalesOrdersPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-orders/new',
+    element: CreateSalesOrderPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-orders/:id',
+    element: SalesOrderDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-orders/:id/edit',
+    element: EditSalesOrderPage,
+    isProtected: true,
+  },
+  // Sales Invoices
+  {
+    path: '/sales-purchase/sales-invoices',
+    element: SalesInvoicesPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-invoices/new',
+    element: CreateSalesInvoicePage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-invoices/:id',
+    element: SalesInvoiceDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-invoices/:id/edit',
+    element: EditSalesInvoicePage,
+    isProtected: true,
+  },
+  // Sales Receipts
+  {
+    path: '/sales-purchase/sales-receipts',
+    element: SalesReceiptsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-receipts/new',
+    element: CreateSalesReceiptPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-receipts/:id',
+    element: SalesReceiptDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-receipts/:id/edit',
+    element: EditSalesReceiptPage,
+    isProtected: true,
+  },
+  // Reports
+  {
+    path: '/sales-purchase/purchase-register',
+    element: PurchaseRegisterPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/sales-register',
+    element: SalesRegisterPage,
     isProtected: true,
   },
   

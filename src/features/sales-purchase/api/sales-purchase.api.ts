@@ -27,6 +27,15 @@ import type {
   InvoiceFormData,
   Payment,
   PaymentFormData,
+  SalesOrder,
+  SalesOrderFormData,
+  SalesInvoice,
+  SalesInvoiceFormData,
+  SalesInvoiceItem,
+  SalesReceipt,
+  SalesReceiptFormData,
+  PurchaseRegisterItem,
+  SalesRegisterItem
 } from '../types/sales-purchase.types';
 
 // Item Categories
@@ -372,5 +381,123 @@ export async function getPayment(id: string): Promise<Payment> {
 
 export async function updatePayment(id: string, data: Partial<PaymentFormData>): Promise<Payment> {
   const response = await axiosInstance.patch(`/purchase-payments/${id}`, data);
+  return response.data?.data || response.data;
+}
+
+// Sales Orders
+export async function getSalesOrders(): Promise<SalesOrder[]> {
+  const response = await axiosInstance.get('/sales-orders');
+  return response.data?.data || response.data;
+}
+
+export async function getSalesOrder(id: string): Promise<SalesOrder> {
+  const response = await axiosInstance.get(`/sales-orders/${id}`);
+  return response.data?.data || response.data;
+}
+
+export async function createSalesOrder(data: SalesOrderFormData): Promise<SalesOrder> {
+  const response = await axiosInstance.post('/sales-orders', data);
+  return response.data?.data || response.data;
+}
+
+export async function updateSalesOrder(id: string, data: Partial<SalesOrderFormData>): Promise<SalesOrder> {
+  const response = await axiosInstance.patch(`/sales-orders/${id}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deleteSalesOrder(id: string): Promise<void> {
+  await axiosInstance.delete(`/sales-orders/${id}`);
+}
+
+export async function confirmSalesOrder(id: string): Promise<void> {
+  await axiosInstance.post(`/sales-orders/${id}/confirm`);
+}
+
+export async function cancelSalesOrder(id: string): Promise<void> {
+  await axiosInstance.post(`/sales-orders/${id}/cancel`);
+}
+
+// Sales Invoices
+export async function getSalesInvoices(): Promise<SalesInvoice[]> {
+  const response = await axiosInstance.get('/sales-invoices');
+  return response.data?.data || response.data;
+}
+
+export async function getSalesInvoice(id: string): Promise<SalesInvoice> {
+  const response = await axiosInstance.get(`/sales-invoices/${id}`);
+  return response.data?.data || response.data;
+}
+
+export async function createSalesInvoice(data: SalesInvoiceFormData): Promise<SalesInvoice> {
+  const response = await axiosInstance.post('/sales-invoices', data);
+  return response.data?.data || response.data;
+}
+
+export async function updateSalesInvoice(id: string, data: Partial<SalesInvoiceFormData>): Promise<SalesInvoice> {
+  const response = await axiosInstance.patch(`/sales-invoices/${id}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deleteSalesInvoice(id: string): Promise<void> {
+  await axiosInstance.delete(`/sales-invoices/${id}`);
+}
+
+export async function getSalesInvoicePDF(id: string): Promise<Blob> {
+  const response = await axiosInstance.get(`/sales-invoices/${id}/pdf`, {
+    responseType: 'blob',
+  });
+  return response.data;
+}
+
+export async function postSalesInvoice(id: string): Promise<void> {
+  await axiosInstance.post(`/sales-invoices/${id}/post`);
+}
+
+export async function cancelSalesInvoice(id: string): Promise<void> {
+  await axiosInstance.post(`/sales-invoices/${id}/cancel`);
+}
+
+// Sales Receipts
+export async function getSalesReceipts(): Promise<SalesReceipt[]> {
+  const response = await axiosInstance.get('/sales-receipts');
+  return response.data?.data || response.data;
+}
+
+export async function getSalesReceipt(id: string): Promise<SalesReceipt> {
+  const response = await axiosInstance.get(`/sales-receipts/${id}`);
+  return response.data?.data || response.data;
+}
+
+export async function createSalesReceipt(data: SalesReceiptFormData): Promise<SalesReceipt> {
+  const response = await axiosInstance.post('/sales-receipts', data);
+  return response.data?.data || response.data;
+}
+
+export async function updateSalesReceipt(id: string, data: Partial<SalesReceiptFormData>): Promise<SalesReceipt> {
+  const response = await axiosInstance.patch(`/sales-receipts/${id}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deleteSalesReceipt(id: string): Promise<void> {
+  await axiosInstance.delete(`/sales-receipts/${id}`);
+}
+
+export async function voidSalesReceipt(id: string): Promise<void> {
+  await axiosInstance.post(`/sales-receipts/${id}/void`);
+}
+
+export async function getSalesInvoiceReceipts(salesInvoiceId: string): Promise<SalesReceipt[]> {
+  const response = await axiosInstance.get(`/sales-invoices/${salesInvoiceId}/receipts`);
+  return response.data?.data || response.data;
+}
+
+// Reports
+export async function getPurchaseRegister(): Promise<PurchaseRegisterItem[]> {
+  const response = await axiosInstance.get('/reports/purchase-register');
+  return response.data?.data || response.data;
+}
+
+export async function getSalesRegister(): Promise<SalesRegisterItem[]> {
+  const response = await axiosInstance.get('/reports/sales-register');
   return response.data?.data || response.data;
 }
