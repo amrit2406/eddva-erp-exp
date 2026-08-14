@@ -1,14 +1,15 @@
 import { Link } from 'react-router-dom';
-import { Eye, Edit, Trash2 } from 'lucide-react';
+import { Eye, Edit, Trash2, IndianRupee } from 'lucide-react';
 import type { Item } from '../../types/sales-purchase.types';
 import { cn } from '../../../../utils/cn';
 
 interface ItemTableProps {
   items: Item[];
   className?: string;
+  onDelete?: (id: string) => void;
 }
 
-export default function ItemTable({ items, className }: ItemTableProps) {
+export default function ItemTable({ items, className, onDelete }: ItemTableProps) {
   return (
     <div className={cn('overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0', className)}>
       <table className="w-full min-w-[1000px]">
@@ -39,7 +40,9 @@ export default function ItemTable({ items, className }: ItemTableProps) {
                 </td>
                 <td className="py-3 px-4">
                   <div className="font-medium text-slate-900">{item.itemName}</div>
-                  <div className="text-xs text-slate-500">{item.hsnSacCode}</div>
+                  <div className="text-xs text-slate-500">
+                    <IndianRupee className="h-3 w-3 text-slate-400" />{item.hsnSacCode}
+                  </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">
                   {item.category?.categoryName || '-'}
@@ -58,10 +61,10 @@ export default function ItemTable({ items, className }: ItemTableProps) {
                   </span>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">
-                  ₹{Number(item.purchasePrice || 0).toFixed(2)}
+                  {Number(item.purchasePrice || 0).toFixed(2)}
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">
-                  ₹{Number(item.salesPrice || 0).toFixed(2)}
+                  {Number(item.salesPrice || 0).toFixed(2)}
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
@@ -75,7 +78,11 @@ export default function ItemTable({ items, className }: ItemTableProps) {
                         <Edit className="h-4 w-4" />
                       </button>
                     </Link>
-                    <button className="p-1.5 hover:bg-red-100 rounded-lg text-red-600" title="Delete">
+                    <button 
+                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600" 
+                      title="Delete"
+                      onClick={() => onDelete?.(item.id)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>

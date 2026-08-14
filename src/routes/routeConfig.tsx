@@ -52,6 +52,22 @@ import CustomersPage from '../features/sales-purchase/pages/customers/CustomersP
 import CreateCustomerPage from '../features/sales-purchase/pages/customers/CreateCustomerPage';
 import CustomerDetailsPage from '../features/sales-purchase/pages/customers/CustomerDetailsPage';
 import EditCustomerPage from '../features/sales-purchase/pages/customers/EditCustomerPage';
+import PurchaseOrdersPage from '../features/sales-purchase/pages/purchase-orders/PurchaseOrdersPage';
+import CreatePurchaseOrderPage from '../features/sales-purchase/pages/purchase-orders/CreatePurchaseOrderPage';
+import PurchaseOrderDetailsPage from '../features/sales-purchase/pages/purchase-orders/PurchaseOrderDetailsPage';
+import EditPurchaseOrderPage from '../features/sales-purchase/pages/purchase-orders/EditPurchaseOrderPage';
+import GRNsPage from '../features/sales-purchase/pages/grn/GRNsPage';
+import CreateGRNPage from '../features/sales-purchase/pages/grn/CreateGRNPage';
+import GRNDetailsPage from '../features/sales-purchase/pages/grn/GRNDetailsPage';
+import EditGRNPage from '../features/sales-purchase/pages/grn/EditGRNPage';
+import InvoicesPage from '../features/sales-purchase/pages/invoices/InvoicesPage';
+import CreateInvoicePage from '../features/sales-purchase/pages/invoices/CreateInvoicePage';
+import InvoiceDetailsPage from '../features/sales-purchase/pages/invoices/InvoiceDetailsPage';
+import EditInvoicePage from '../features/sales-purchase/pages/invoices/EditInvoicePage';
+import PaymentsPage from '../features/sales-purchase/pages/payments/PaymentsPage';
+import CreatePaymentPage from '../features/sales-purchase/pages/payments/CreatePaymentPage';
+import PaymentDetailsPage from '../features/sales-purchase/pages/payments/PaymentDetailsPage';
+import EditPaymentPage from '../features/sales-purchase/pages/payments/EditPaymentPage';
 
 export const routeConfig = [
   {
@@ -315,6 +331,86 @@ export const routeConfig = [
   {
     path: '/sales-purchase/customers/:id/edit',
     element: EditCustomerPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/purchase-orders',
+    element: PurchaseOrdersPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/purchase-orders/new',
+    element: CreatePurchaseOrderPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/purchase-orders/:id',
+    element: PurchaseOrderDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/purchase-orders/:id/edit',
+    element: EditPurchaseOrderPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/grn',
+    element: GRNsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/grn/new',
+    element: CreateGRNPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/grn/:id',
+    element: GRNDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/grn/:id/edit',
+    element: EditGRNPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/invoices',
+    element: InvoicesPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/invoices/new',
+    element: CreateInvoicePage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/invoices/:id',
+    element: InvoiceDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/invoices/:id/edit',
+    element: EditInvoicePage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/payments',
+    element: PaymentsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/payments/new',
+    element: CreatePaymentPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/payments/:id',
+    element: PaymentDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/payments/:id/edit',
+    element: EditPaymentPage,
     isProtected: true,
   },
   

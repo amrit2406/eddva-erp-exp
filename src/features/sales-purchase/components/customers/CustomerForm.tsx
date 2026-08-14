@@ -153,7 +153,7 @@ export default function CustomerForm({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Credit Limit (₹)</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Credit Limit</label>
             <Input
               name="creditLimit"
               type="number"

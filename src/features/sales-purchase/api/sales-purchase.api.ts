@@ -19,6 +19,14 @@ import type {
   Customer,
   CustomerFormData,
   CustomerContact,
+  PurchaseOrder,
+  PurchaseOrderFormData,
+  GRN,
+  GRNFormData,
+  Invoice,
+  InvoiceFormData,
+  Payment,
+  PaymentFormData,
 } from '../types/sales-purchase.types';
 
 // Item Categories
@@ -211,4 +219,158 @@ export async function deleteCustomer(id: string): Promise<void> {
 
 export async function addCustomerContact(id: string, data: CustomerContact): Promise<void> {
   await axiosInstance.post(`/customers/${id}/contacts`, data);
+}
+
+// Purchase Orders
+export async function getPurchaseOrders(): Promise<PurchaseOrder[]> {
+  const response = await axiosInstance.get('/purchase-orders');
+  return response.data?.data || response.data;
+}
+
+export async function getPurchaseOrder(id: string): Promise<PurchaseOrder> {
+  const response = await axiosInstance.get(`/purchase-orders/${id}`);
+  return response.data?.data || response.data;
+}
+
+export async function createPurchaseOrder(data: PurchaseOrderFormData): Promise<PurchaseOrder> {
+  const response = await axiosInstance.post('/purchase-orders', data);
+  return response.data?.data || response.data;
+}
+
+export async function updatePurchaseOrder(id: string, data: Partial<PurchaseOrderFormData>): Promise<PurchaseOrder> {
+  const response = await axiosInstance.patch(`/purchase-orders/${id}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deletePurchaseOrder(id: string): Promise<void> {
+  await axiosInstance.delete(`/purchase-orders/${id}`);
+}
+
+export async function submitPurchaseOrder(id: string): Promise<void> {
+  await axiosInstance.post(`/purchase-orders/${id}/submit`);
+}
+
+export async function approvePurchaseOrder(id: string): Promise<void> {
+  await axiosInstance.post(`/purchase-orders/${id}/approve`);
+}
+
+export async function rejectPurchaseOrder(id: string): Promise<void> {
+  await axiosInstance.post(`/purchase-orders/${id}/reject`);
+}
+
+export async function cancelPurchaseOrder(id: string): Promise<void> {
+  await axiosInstance.post(`/purchase-orders/${id}/cancel`);
+}
+
+export async function getPurchaseOrderHistory(id: string): Promise<any> {
+  const response = await axiosInstance.post(`/purchase-orders/${id}/history`);
+  return response.data?.data || response.data;
+}
+
+// GRN (Goods Received Note)
+export async function getGRNs(): Promise<GRN[]> {
+  const response = await axiosInstance.get('/grn');
+  return response.data?.data || response.data;
+}
+
+export async function getGRN(id: string): Promise<GRN> {
+  const response = await axiosInstance.get(`/grn/${id}`);
+  return response.data?.data || response.data;
+}
+
+export async function createGRN(data: GRNFormData): Promise<GRN> {
+  const response = await axiosInstance.post('/grn', data);
+  return response.data?.data || response.data;
+}
+
+export async function updateGRN(id: string, data: Partial<GRNFormData>): Promise<GRN> {
+  const response = await axiosInstance.patch(`/grn/${id}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deleteGRN(id: string): Promise<void> {
+  await axiosInstance.delete(`/grn/${id}`);
+}
+
+export async function confirmGRN(id: string): Promise<void> {
+  await axiosInstance.post(`/grn/${id}/confirm`);
+}
+
+export async function cancelGRN(id: string): Promise<void> {
+  await axiosInstance.post(`/grn/${id}/cancel`);
+}
+
+export async function getGRNByPurchaseOrder(purchaseOrderId: string): Promise<GRN[]> {
+  const response = await axiosInstance.get(`/purchase-orders/${purchaseOrderId}/grn`);
+  return response.data?.data || response.data;
+}
+
+// Invoices
+export async function getInvoices(): Promise<Invoice[]> {
+  const response = await axiosInstance.get('/purchase-invoices');
+  return response.data?.data || response.data;
+}
+
+export async function getInvoice(id: string): Promise<Invoice> {
+  const response = await axiosInstance.get(`/purchase-invoices/${id}`);
+  return response.data?.data || response.data;
+}
+
+export async function createInvoice(data: InvoiceFormData): Promise<Invoice> {
+  const response = await axiosInstance.post('/purchase-invoices', data);
+  return response.data?.data || response.data;
+}
+
+export async function updateInvoice(id: string, data: Partial<InvoiceFormData>): Promise<Invoice> {
+  const response = await axiosInstance.patch(`/purchase-invoices/${id}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deleteInvoice(id: string): Promise<void> {
+  await axiosInstance.delete(`/purchase-invoices/${id}`);
+}
+
+export async function getInvoicePDF(id: string): Promise<Blob> {
+  const response = await axiosInstance.get(`/purchase-invoices/${id}/pdf`, {
+    responseType: 'blob',
+  });
+  return response.data;
+}
+
+export async function validateInvoice(id: string): Promise<void> {
+  await axiosInstance.post(`/purchase-invoices/${id}/validate`);
+}
+
+export async function getInvoiceMatchResult(id: string): Promise<any> {
+  const response = await axiosInstance.get(`/purchase-invoices/${id}/match-result`);
+  return response.data?.data || response.data;
+}
+
+export async function postInvoice(id: string): Promise<void> {
+  await axiosInstance.post(`/purchase-invoices/${id}/post`);
+}
+
+export async function cancelInvoice(id: string): Promise<void> {
+  await axiosInstance.post(`/purchase-invoices/${id}/cancel`);
+}
+
+// Payments
+export async function createPayment(data: PaymentFormData): Promise<Payment> {
+  const response = await axiosInstance.post('/purchase-payments', data);
+  return response.data?.data || response.data;
+}
+
+export async function getPayments(): Promise<Payment[]> {
+  const response = await axiosInstance.get('/purchase-payments');
+  return response.data?.data || response.data;
+}
+
+export async function getPayment(id: string): Promise<Payment> {
+  const response = await axiosInstance.get(`/purchase-payments/${id}`);
+  return response.data?.data || response.data;
+}
+
+export async function updatePayment(id: string, data: Partial<PaymentFormData>): Promise<Payment> {
+  const response = await axiosInstance.patch(`/purchase-payments/${id}`, data);
+  return response.data?.data || response.data;
 }

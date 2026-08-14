@@ -3,46 +3,46 @@ import { Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import CustomerTable from '../../components/customers/CustomerTable';
-import { getCustomers, deleteCustomer } from '../../api/sales-purchase.api';
-import type { Customer } from '../../types/sales-purchase.types';
+import InvoiceTable from '../../components/invoices/InvoiceTable';
+import { getInvoices, deleteInvoice } from '../../api/sales-purchase.api';
+import type { Invoice } from '../../types/sales-purchase.types';
 
-export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+export default function InvoicesPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadCustomers();
+    loadInvoices();
   }, []);
 
-  async function loadCustomers() {
+  async function loadInvoices() {
     try {
       setLoading(true);
-      const data = await getCustomers();
-      setCustomers(data);
+      const data = await getInvoices();
+      setInvoices(data);
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load customers');
+      setError(err instanceof Error ? err.message : 'Failed to load invoices');
     } finally {
       setLoading(false);
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this customer?')) {
+    if (!window.confirm('Are you sure you want to delete this invoice?')) {
       return;
     }
     try {
-      await deleteCustomer(id);
-      setCustomers(customers.filter((c) => c.id !== id));
+      await deleteInvoice(id);
+      setInvoices(invoices.filter((inv) => inv.id !== id));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to delete customer');
+      alert(err instanceof Error ? err.message : 'Failed to delete invoice');
     }
   };
 
@@ -50,13 +50,13 @@ export default function CustomersPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Customers</h1>
-          <p className="text-slate-600 mt-1">Manage your customer relationships</p>
+          <h1 className="text-2xl font-bold text-slate-900">Invoices</h1>
+          <p className="text-slate-600 mt-1">Manage your invoices</p>
         </div>
-        <Link to="/sales-purchase/customers/new">
+        <Link to="/sales-purchase/invoices/new">
           <Button variant="primary">
             <Plus className="h-4 w-4 mr-2" />
-            Add Customer
+            Add Invoice
           </Button>
         </Link>
       </div>
@@ -71,7 +71,7 @@ export default function CustomersPage() {
         </Card>
       ) : (
         <Card className="border-slate-200">
-          <CustomerTable customers={customers} onDelete={handleDelete} />
+          <InvoiceTable invoices={invoices} onDelete={handleDelete} />
         </Card>
       )}
     </div>

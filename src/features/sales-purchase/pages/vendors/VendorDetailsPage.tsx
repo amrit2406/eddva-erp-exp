@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Building2, MapPin, Phone, Mail, DollarSign, Calendar } from 'lucide-react';
+import { ArrowLeft, Edit, Building2, MapPin, Phone, Mail, IndianRupee, Calendar } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
@@ -133,8 +133,8 @@ export default function VendorDetailsPage() {
                 <div>
                   <label className="text-sm font-medium text-slate-500">Credit Limit</label>
                   <div className="mt-1 flex items-center gap-2">
-                    <DollarSign className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{vendor.creditLimit ? `₹${vendor.creditLimit.toLocaleString()}` : '-'}</p>
+                    <IndianRupee className="h-4 w-4" />
+                    <p className="text-slate-900">{vendor.creditLimit ? `${vendor.creditLimit?.toFixed(2)}` : '-'}</p>
                   </div>
                 </div>
               </div>

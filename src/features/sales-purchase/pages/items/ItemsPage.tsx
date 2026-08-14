@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import ItemTable from '../../components/items/ItemTable';
-import { getItems } from '../../api/sales-purchase.api';
+import { getItems, deleteItem } from '../../api/sales-purchase.api';
 import type { Item } from '../../types/sales-purchase.types';
 
 export default function ItemsPage() {
@@ -29,6 +29,21 @@ export default function ItemsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this item?')) {
+      return;
+    }
+    try {
+      await deleteItem(id);
+      setItems(items.filter((i) => i.id !== id));
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      alert(err instanceof Error ? err.message : 'Failed to delete item');
+    }
   };
 
   return (
@@ -38,12 +53,18 @@ export default function ItemsPage() {
           <h1 className="text-2xl font-bold text-slate-900">Items</h1>
           <p className="text-slate-600 mt-1">Manage inventory items with pricing and stock</p>
         </div>
-        <Link to="/sales-purchase/items/new">
-          <Button variant="primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Item
-          </Button>
-        </Link>
+        {loading ? (
+          <div className="text-center py-8 text-slate-500">Loading...</div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-500">{error}</div>
+        ) : (
+          <Link to="/sales-purchase/items/new">
+            <Button variant="primary">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Item
+            </Button>
+          </Link>
+        )}
       </div>
 
       <Card className="border-slate-200">
@@ -53,7 +74,7 @@ export default function ItemsPage() {
           ) : error ? (
             <div className="text-center py-8 text-red-500">{error}</div>
           ) : (
-            <ItemTable items={items} />
+            <ItemTable items={items} onDelete={handleDelete} />
           )}
         </div>
       </Card>

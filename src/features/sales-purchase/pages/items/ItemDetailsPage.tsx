@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Package, DollarSign, Hash } from 'lucide-react';
+import { ArrowLeft, Edit, Package, IndianRupee, Hash } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
@@ -78,19 +78,19 @@ export default function ItemDetailsPage() {
             <Card className="border-slate-200">
               <div className="p-4">
                 <div className="flex items-center gap-2 text-slate-600 mb-2">
-                  <DollarSign className="h-4 w-4" />
+                  <IndianRupee className="h-4 w-4" />
                   <span className="text-sm font-medium">Purchase Price</span>
                 </div>
-                <div className="text-2xl font-bold text-slate-900">₹{Number(item.purchasePrice || 0).toFixed(2)}</div>
+                <div className="text-2xl font-bold text-slate-900">{Number(item.purchasePrice || 0).toFixed(2)}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
               <div className="p-4">
                 <div className="flex items-center gap-2 text-slate-600 mb-2">
-                  <DollarSign className="h-4 w-4" />
+                  <IndianRupee className="h-4 w-4" />
                   <span className="text-sm font-medium">Sales Price</span>
                 </div>
-                <div className="text-2xl font-bold text-slate-900">₹{Number(item.salesPrice || 0).toFixed(2)}</div>
+                <div className="text-2xl font-bold text-slate-900">{Number(item.salesPrice || 0).toFixed(2)}</div>
               </div>
             </Card>
             <Card className="border-slate-200">

@@ -3,60 +3,45 @@ import { Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import VendorTable from '../../components/vendors/VendorTable';
-import { getVendors, deleteVendor } from '../../api/sales-purchase.api';
-import type { Vendor } from '../../types/sales-purchase.types';
+import PaymentTable from '../../components/payments/PaymentTable';
+import { getPayments } from '../../api/sales-purchase.api';
+import type { Payment } from '../../types/sales-purchase.types';
 
-export default function VendorsPage() {
-  const [vendors, setVendors] = useState<Vendor[]>([]);
+export default function PaymentsPage() {
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadVendors();
+    loadPayments();
   }, []);
 
-  async function loadVendors() {
+  async function loadPayments() {
     try {
       setLoading(true);
-      const data = await getVendors();
-      setVendors(data);
+      const data = await getPayments();
+      setPayments(data);
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load vendors');
+      setError(err instanceof Error ? err.message : 'Failed to load payments');
     } finally {
       setLoading(false);
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this vendor?')) {
-      return;
-    }
-    try {
-      await deleteVendor(id);
-      setVendors(vendors.filter((v) => v.id !== id));
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      alert(err instanceof Error ? err.message : 'Failed to delete vendor');
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Vendors</h1>
-          <p className="text-slate-600 mt-1">Manage your vendor relationships</p>
+          <h1 className="text-2xl font-bold text-slate-900">Payments</h1>
+          <p className="text-slate-600 mt-1">Manage your payments</p>
         </div>
-        <Link to="/sales-purchase/vendors/new">
+        <Link to="/sales-purchase/payments/new">
           <Button variant="primary">
             <Plus className="h-4 w-4 mr-2" />
-            Add Vendor
+            Add Payment
           </Button>
         </Link>
       </div>
@@ -71,7 +56,7 @@ export default function VendorsPage() {
         </Card>
       ) : (
         <Card className="border-slate-200">
-          <VendorTable vendors={vendors} onDelete={handleDelete} />
+          <PaymentTable payments={payments} />
         </Card>
       )}
     </div>
