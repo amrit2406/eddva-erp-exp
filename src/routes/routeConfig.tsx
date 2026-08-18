@@ -96,6 +96,16 @@ import EditPermissionPage from '../features/sales-purchase/pages/rbac/EditPermis
 import UsersPage from '../features/sales-purchase/pages/rbac/UsersPage';
 import CreateUserPage from '../features/sales-purchase/pages/rbac/CreateUserPage';
 import EditUserPage from '../features/sales-purchase/pages/rbac/EditUserPage';
+// Canteen RBAC
+import CanteenRolesPage from '../features/canteen/pages/rbac/RolesPage';
+import CanteenCreateRolePage from '../features/canteen/pages/rbac/CreateRolePage';
+import CanteenEditRolePage from '../features/canteen/pages/rbac/EditRolePage';
+import CanteenPermissionsPage from '../features/canteen/pages/rbac/PermissionsPage';
+import CanteenCreatePermissionPage from '../features/canteen/pages/rbac/CreatePermissionPage';
+import CanteenEditPermissionPage from '../features/canteen/pages/rbac/EditPermissionPage';
+import CanteenUsersPage from '../features/canteen/pages/rbac/UsersPage';
+import CanteenCreateUserPage from '../features/canteen/pages/rbac/CreateUserPage';
+import CanteenEditUserPage from '../features/canteen/pages/rbac/EditUserPage';
 
 export const routeConfig = [
   {
@@ -560,6 +570,53 @@ export const routeConfig = [
   {
     path: '/sales-purchase/users/:id/edit',
     element: EditUserPage,
+    isProtected: true,
+  },
+  
+  // Canteen RBAC Routes
+  {
+    path: '/canteen/roles',
+    element: CanteenRolesPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/roles/new',
+    element: CanteenCreateRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/roles/:id/edit',
+    element: CanteenEditRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/permissions',
+    element: CanteenPermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/permissions/new',
+    element: CanteenCreatePermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/permissions/:id/edit',
+    element: CanteenEditPermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/users',
+    element: CanteenUsersPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/users/new',
+    element: CanteenCreateUserPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/users/:id/edit',
+    element: CanteenEditUserPage,
     isProtected: true,
   },
   
