@@ -1,6 +1,7 @@
 import { ROUTES } from '../constants/routes';
 import LoginPage from '../features/auth/pages/LoginPage';
 import DashboardPage from '../features/dashboard/pages/DashboardPage';
+
 import FrontOfficeDashboardPage from '../features/front-office/pages/FrontOfficeDashboardPage';
 import VisitorsPage from '../features/front-office/pages/visitors/VisitorsPage';
 import CreateVisitorPage from '../features/front-office/pages/visitors/CreateVisitorPage';
@@ -85,6 +86,16 @@ import EditSalesReceiptPage from '../features/sales-purchase/pages/sales-receipt
 // Reports
 import PurchaseRegisterPage from '../features/sales-purchase/pages/reports/PurchaseRegisterPage';
 import SalesRegisterPage from '../features/sales-purchase/pages/reports/SalesRegisterPage';
+// RBAC
+import RolesPage from '../features/sales-purchase/pages/rbac/RolesPage';
+import CreateRolePage from '../features/sales-purchase/pages/rbac/CreateRolePage';
+import EditRolePage from '../features/sales-purchase/pages/rbac/EditRolePage';
+import PermissionsPage from '../features/sales-purchase/pages/rbac/PermissionsPage';
+import CreatePermissionPage from '../features/sales-purchase/pages/rbac/CreatePermissionPage';
+import EditPermissionPage from '../features/sales-purchase/pages/rbac/EditPermissionPage';
+import UsersPage from '../features/sales-purchase/pages/rbac/UsersPage';
+import CreateUserPage from '../features/sales-purchase/pages/rbac/CreateUserPage';
+import EditUserPage from '../features/sales-purchase/pages/rbac/EditUserPage';
 
 export const routeConfig = [
   {
@@ -97,6 +108,7 @@ export const routeConfig = [
     element: DashboardPage,
     isProtected: true,
   },
+  
   // Front Office Routes
   {
     path: '/front-office',
@@ -502,6 +514,52 @@ export const routeConfig = [
   {
     path: '/sales-purchase/sales-register',
     element: SalesRegisterPage,
+    isProtected: true,
+  },
+  // RBAC
+  {
+    path: '/sales-purchase/roles',
+    element: RolesPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/roles/new',
+    element: CreateRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/roles/:id/edit',
+    element: EditRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/permissions',
+    element: PermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/permissions/new',
+    element: CreatePermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/permissions/:id/edit',
+    element: EditPermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/users',
+    element: UsersPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/users/new',
+    element: CreateUserPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/users/:id/edit',
+    element: EditUserPage,
     isProtected: true,
   },
   

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutDashboard, Users, GraduationCap, IndianRupee, FileText, Building, ShoppingCart, ArrowRight, ChevronDown, Database } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 
@@ -37,6 +37,9 @@ const navItems: NavItem[] = [
       { path: '/sales-purchase/sales-receipts', label: 'Sales Receipts', icon: Database },
       { path: '/sales-purchase/purchase-register', label: 'Purchase Register', icon: Database },
       { path: '/sales-purchase/sales-register', label: 'Sales Register', icon: Database },
+      { path: '/sales-purchase/roles', label: 'Roles', icon: Shield },
+      { path: '/sales-purchase/permissions', label: 'Permissions', icon: Key },
+      { path: '/sales-purchase/users', label: 'Users', icon: Users },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },

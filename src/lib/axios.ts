@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { config } from '../config/env';
-import { useAuthStore } from '../stores/auth.store';
 
 const axiosInstance = axios.create({
   baseURL: config.apiUrl,

@@ -31,11 +31,16 @@ import type {
   SalesOrderFormData,
   SalesInvoice,
   SalesInvoiceFormData,
-  SalesInvoiceItem,
   SalesReceipt,
   SalesReceiptFormData,
   PurchaseRegisterItem,
-  SalesRegisterItem
+  SalesRegisterItem,
+  Permission,
+  PermissionFormData,
+  Role,
+  RoleFormData,
+  User,
+  UserFormData
 } from '../types/sales-purchase.types';
 
 // Item Categories
@@ -500,4 +505,95 @@ export async function getPurchaseRegister(): Promise<PurchaseRegisterItem[]> {
 export async function getSalesRegister(): Promise<SalesRegisterItem[]> {
   const response = await axiosInstance.get('/reports/sales-register');
   return response.data?.data || response.data;
+}
+
+// RBAC APIs
+// Permissions
+export async function getPermissions(): Promise<Permission[]> {
+  const response = await axiosInstance.get('/sales-purchase/permissions');
+  return response.data?.data || response.data;
+}
+
+export async function getPermission(id: string): Promise<Permission> {
+  const response = await axiosInstance.get(`/sales-purchase/permissions/${id}`);
+  return response.data?.data || response.data;
+}
+
+export async function createPermission(data: PermissionFormData): Promise<Permission> {
+  const response = await axiosInstance.post('/sales-purchase/permissions', data);
+  return response.data?.data || response.data;
+}
+
+export async function updatePermission(id: string, data: Partial<PermissionFormData>): Promise<Permission> {
+  const response = await axiosInstance.patch(`/sales-purchase/permissions/${id}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deletePermission(id: string): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/permissions/${id}`);
+}
+
+// Roles
+export async function getRoles(): Promise<Role[]> {
+  const response = await axiosInstance.get('/sales-purchase/roles');
+  return response.data?.data || response.data;
+}
+
+export async function getRole(id: string): Promise<Role> {
+  const response = await axiosInstance.get(`/sales-purchase/roles/${id}`);
+  return response.data?.data || response.data;
+}
+
+export async function createRole(data: RoleFormData): Promise<Role> {
+  const response = await axiosInstance.post('/sales-purchase/roles', data);
+  return response.data?.data || response.data;
+}
+
+export async function updateRole(id: string, data: Partial<RoleFormData>): Promise<Role> {
+  const response = await axiosInstance.patch(`/sales-purchase/roles/${id}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deleteRole(id: string): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/roles/${id}`);
+}
+
+export async function assignPermissionsToRole(roleId: string, permissionIds: string[]): Promise<Role> {
+  const response = await axiosInstance.patch(`/sales-purchase/roles/${roleId}/permissions`, {
+    permissionIds
+  });
+  return response.data?.data || response.data;
+}
+
+export async function addPermissionToRole(roleId: string, permissionId: string): Promise<void> {
+  await axiosInstance.post(`/sales-purchase/roles/${roleId}/permissions/${permissionId}`);
+}
+
+export async function removePermissionFromRole(roleId: string, permissionId: string): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/roles/${roleId}/permissions/${permissionId}`);
+}
+
+// Users
+export async function getUsers(): Promise<User[]> {
+  const response = await axiosInstance.get('/sales-purchase/users');
+  return response.data?.data || response.data;
+}
+
+export async function getUser(id: string): Promise<User> {
+  const response = await axiosInstance.get(`/sales-purchase/users/${id}`);
+  return response.data?.data || response.data;
+}
+
+export async function createUser(data: UserFormData): Promise<User> {
+  const response = await axiosInstance.post('/sales-purchase/users', data);
+  return response.data?.data || response.data;
+}
+
+export async function updateUser(id: string, data: Partial<UserFormData>): Promise<User> {
+  const response = await axiosInstance.patch(`/sales-purchase/users/${id}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/users/${id}`);
 }

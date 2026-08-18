@@ -495,3 +495,60 @@ export interface SalesRegisterItem {
     };
   }>;
 }
+
+// RBAC Types
+export interface Permission {
+  id: string;
+  permissionKey: string;
+  description: string;
+  isSystem: boolean;
+  instituteId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PermissionFormData {
+  permissionKey: string;
+  description: string;
+}
+
+export interface RolePermission {
+  permission: Permission;
+}
+
+export interface Role {
+  id: string;
+  roleName: string;
+  description: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  instituteId: string;
+  createdAt: string;
+  updatedAt: string;
+  rolePermissions: RolePermission[];
+}
+
+export interface RoleFormData {
+  roleName: string;
+  description?: string;
+  permissionIds?: string[];
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  roleId: string;
+  role?: Role;
+  status: 'ACTIVE' | 'INACTIVE';
+  instituteId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserFormData {
+  name: string;
+  email: string;
+  password?: string;
+  roleId: string;
+  status?: 'ACTIVE' | 'INACTIVE';
+}
