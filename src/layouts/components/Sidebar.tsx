@@ -20,6 +20,9 @@ const navItems: NavItem[] = [
     label: 'Sales & Purchase', 
     icon: ShoppingCart,
     children: [
+      { path: '/sales-purchase/permissions', label: 'Permissions', icon: Key },
+      { path: '/sales-purchase/roles', label: 'Roles', icon: Shield },
+      { path: '/sales-purchase/users', label: 'Users', icon: Users },
       { path: '/sales-purchase/item-categories', label: 'Item Categories', icon: Database },
       { path: '/sales-purchase/uom', label: 'Units of Measure', icon: Database },
       { path: '/sales-purchase/tax-codes', label: 'Tax Codes', icon: Database },
@@ -37,9 +40,6 @@ const navItems: NavItem[] = [
       { path: '/sales-purchase/sales-receipts', label: 'Sales Receipts', icon: Database },
       { path: '/sales-purchase/purchase-register', label: 'Purchase Register', icon: Database },
       { path: '/sales-purchase/sales-register', label: 'Sales Register', icon: Database },
-      { path: '/sales-purchase/roles', label: 'Roles', icon: Shield },
-      { path: '/sales-purchase/permissions', label: 'Permissions', icon: Key },
-      { path: '/sales-purchase/users', label: 'Users', icon: Users },
     ]
   },
   { 
@@ -47,9 +47,11 @@ const navItems: NavItem[] = [
     label: 'Canteen Management', 
     icon: Utensils,
     children: [
-      { path: '/canteen/roles', label: 'Roles', icon: Shield },
       { path: '/canteen/permissions', label: 'Permissions', icon: Key },
+      { path: '/canteen/roles', label: 'Roles', icon: Shield },
       { path: '/canteen/users', label: 'Users', icon: Users },
+      { path: '/canteen/menu/categories', label: 'Menu Categories', icon: Database },
+      { path: '/canteen/menu/items', label: 'Menu Items', icon: Utensils },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },

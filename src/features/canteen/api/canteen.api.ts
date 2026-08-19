@@ -7,7 +7,14 @@ import type {
   CanteenUser,
   CanteenUserFormData,
   CreateUserFormData,
-  UsersResponse
+  UsersResponse,
+  MenuCategory,
+  MenuCategoryFormData,
+  MenuItem,
+  MenuItemFormData,
+  MenuItemAvailability,
+  MenuSchedule,
+  MenuScheduleFormData
 } from '../types/canteen.types';
 
 // Role Management Endpoints
@@ -99,4 +106,84 @@ export async function deactivateUser(id: string): Promise<void> {
 
 export async function deleteUser(id: string): Promise<void> {
   await axiosInstance.delete(`/canteen/users/${id}`);
+}
+
+// Menu Category Endpoints
+export async function getMenuCategories(params?: { page?: number; limit?: number }): Promise<MenuCategory[]> {
+  const response = await axiosInstance.get('/canteen/menu/categories', { params });
+  return response.data.data;
+}
+
+export async function getMenuCategory(id: string): Promise<MenuCategory> {
+  const response = await axiosInstance.get(`/canteen/menu/categories/${id}`);
+  return response.data.data;
+}
+
+export async function createMenuCategory(data: MenuCategoryFormData): Promise<MenuCategory> {
+  const response = await axiosInstance.post('/canteen/menu/categories', data);
+  return response.data.data;
+}
+
+export async function updateMenuCategory(id: string, data: Partial<MenuCategoryFormData>): Promise<MenuCategory> {
+  const response = await axiosInstance.patch(`/canteen/menu/categories/${id}`, data);
+  return response.data.data;
+}
+
+export async function deleteMenuCategory(id: string): Promise<void> {
+  await axiosInstance.delete(`/canteen/menu/categories/${id}`);
+}
+
+// Menu Item Endpoints
+export async function getMenuItems(params?: { page?: number; limit?: number; categoryId?: string }): Promise<MenuItem[]> {
+  const response = await axiosInstance.get('/canteen/menu/items', { params });
+  return response.data.data;
+}
+
+export async function getMenuItem(id: string): Promise<MenuItem> {
+  const response = await axiosInstance.get(`/canteen/menu/items/${id}`);
+  return response.data.data;
+}
+
+export async function createMenuItem(data: MenuItemFormData): Promise<MenuItem> {
+  const response = await axiosInstance.post('/canteen/menu/items', data);
+  return response.data.data;
+}
+
+export async function updateMenuItem(id: string, data: Partial<MenuItemFormData>): Promise<MenuItem> {
+  const response = await axiosInstance.patch(`/canteen/menu/items/${id}`, data);
+  return response.data.data;
+}
+
+export async function deleteMenuItem(id: string): Promise<void> {
+  await axiosInstance.delete(`/canteen/menu/items/${id}`);
+}
+
+export async function updateMenuItemAvailability(id: string, data: MenuItemAvailability): Promise<MenuItem> {
+  const response = await axiosInstance.patch(`/canteen/menu/items/${id}/availability`, data);
+  return response.data.data;
+}
+
+// Menu Schedule Endpoints
+export async function getItemSchedules(itemId: string, params?: { page?: number; limit?: number }): Promise<MenuSchedule[]> {
+  const response = await axiosInstance.get(`/canteen/menu/items/${itemId}/schedules`, { params });
+  return response.data.data;
+}
+
+export async function createItemSchedule(itemId: string, data: MenuScheduleFormData): Promise<MenuSchedule> {
+  const response = await axiosInstance.post(`/canteen/menu/items/${itemId}/schedules`, data);
+  return response.data.data;
+}
+
+export async function getMenuSchedule(id: string): Promise<MenuSchedule> {
+  const response = await axiosInstance.get(`/canteen/menu/schedules/${id}`);
+  return response.data.data;
+}
+
+export async function updateMenuSchedule(id: string, data: Partial<MenuScheduleFormData>): Promise<MenuSchedule> {
+  const response = await axiosInstance.patch(`/canteen/menu/schedules/${id}`, data);
+  return response.data.data;
+}
+
+export async function deleteMenuSchedule(id: string): Promise<void> {
+  await axiosInstance.delete(`/canteen/menu/schedules/${id}`);
 }

@@ -106,6 +106,13 @@ import CanteenEditPermissionPage from '../features/canteen/pages/rbac/EditPermis
 import CanteenUsersPage from '../features/canteen/pages/rbac/UsersPage';
 import CanteenCreateUserPage from '../features/canteen/pages/rbac/CreateUserPage';
 import CanteenEditUserPage from '../features/canteen/pages/rbac/EditUserPage';
+// Canteen Menu
+import MenuCategoriesPage from '../features/canteen/pages/menu/MenuCategoriesPage';
+import CreateMenuCategoryPage from '../features/canteen/pages/menu/CreateMenuCategoryPage';
+import EditMenuCategoryPage from '../features/canteen/pages/menu/EditMenuCategoryPage';
+import MenuItemsPage from '../features/canteen/pages/menu/MenuItemsPage';
+import CreateMenuItemPage from '../features/canteen/pages/menu/CreateMenuItemPage';
+import EditMenuItemPage from '../features/canteen/pages/menu/EditMenuItemPage';
 
 export const routeConfig = [
   {
@@ -617,6 +624,38 @@ export const routeConfig = [
   {
     path: '/canteen/users/:id/edit',
     element: CanteenEditUserPage,
+    isProtected: true,
+  },
+  
+  // Canteen Menu Routes
+  {
+    path: '/canteen/menu/categories',
+    element: MenuCategoriesPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/menu/categories/new',
+    element: CreateMenuCategoryPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/menu/categories/:id/edit',
+    element: EditMenuCategoryPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/menu/items',
+    element: MenuItemsPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/menu/items/new',
+    element: CreateMenuItemPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/menu/items/:id/edit',
+    element: EditMenuItemPage,
     isProtected: true,
   },
   

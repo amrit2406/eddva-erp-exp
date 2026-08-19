@@ -108,3 +108,66 @@ export interface SalesReport {
     orders: number;
   }[];
 }
+
+// Menu Types
+export type FoodType = 'VEG' | 'NON_VEG' | 'EGG';
+
+export interface MenuCategory {
+  id: string;
+  name: string;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface MenuCategoryFormData {
+  name: string;
+  displayOrder: number;
+}
+
+export interface MenuItem {
+  id: string;
+  categoryId: string;
+  name: string;
+  description: string;
+  price: number;
+  taxRate: number;
+  foodType: FoodType;
+  imageUrl: string;
+  isAvailable: boolean;
+  availableDays: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface MenuItemFormData {
+  categoryId: string;
+  name: string;
+  description: string;
+  price: number;
+  taxRate: number;
+  foodType: FoodType;
+  imageUrl: string;
+  isAvailable: boolean;
+  availableDays: string;
+}
+
+export interface MenuItemAvailability {
+  isAvailable: boolean;
+}
+
+export interface MenuSchedule {
+  id: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  itemId: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface MenuScheduleFormData {
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+}
