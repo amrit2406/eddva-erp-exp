@@ -46,13 +46,12 @@ export interface RoleFormData {
 
 export interface CanteenUser {
   id: string;
+  name: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
+  roleId: string;
   roles: string[];
   permissions: string[];
-  isActive: boolean;
+  status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
   updatedAt?: string;
 }
@@ -74,6 +73,13 @@ export interface CanteenUserFormData {
   firstName: string;
   lastName: string;
   phone?: string;
+}
+
+export interface CreateUserFormData {
+  name: string;
+  email: string;
+  password: string;
+  roleId: string;
 }
 
 export interface UsersResponse {

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Users, Edit, Trash2, Shield, Check, X } from 'lucide-react';
+import { Plus, Users, Edit, Trash2, Shield, Check, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
@@ -14,13 +14,17 @@ export default function UsersPage() {
 
   useEffect(() => {
     loadUsers();
-  }, [search]);
+  }, []);
 
   async function loadUsers() {
     try {
       setLoading(true);
       const data = await getUsers({ limit: 10, search });
-      setUsers(data.users || []);
+      // console.log('Loaded users data:', data);
+      // Handle both array and object with users property
+      const usersArray = Array.isArray(data) ? data : (data.users || []);
+      // console.log('Users array:', usersArray);
+      setUsers(usersArray);
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
@@ -71,6 +75,12 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-slate-900">Users</h1>
           <p className="text-slate-600 mt-1">Manage canteen system users</p>
         </div>
+        <Link to="/canteen/users/new">
+          <Button variant="primary">
+            <Plus className="h-4 w-4 mr-2" />
+            Add User
+          </Button>
+        </Link>
       </div>
 
       <Card className="border-slate-200">
@@ -117,18 +127,15 @@ export default function UsersPage() {
                           </div>
                           <div>
                             <div className="font-medium text-slate-900">
-                              {user.firstName} {user.lastName}
+                              {user.name}
                             </div>
-                            {user.phone && (
-                              <div className="text-sm text-slate-500">{user.phone}</div>
-                            )}
                           </div>
                         </div>
                       </td>
                       <td className="py-3 px-4 text-slate-600">{user.email}</td>
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-1">
-                          {user.roles.map((role) => (
+                          {user.roles && user.roles.length > 0 ? user.roles.map((role) => (
                             <span
                               key={role}
                               className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700"
@@ -136,12 +143,14 @@ export default function UsersPage() {
                               <Shield className="h-3 w-3" />
                               {role}
                             </span>
-                          ))}
+                          )) : (
+                            <span className="text-slate-400 text-sm">No roles</span>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                          {user.isActive ? (
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {user.status === 'ACTIVE' ? (
                             <>
                               <Check className="h-3 w-3" />
                               Active
@@ -164,9 +173,9 @@ export default function UsersPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleToggleStatus(user.id, user.isActive)}
+                            onClick={() => handleToggleStatus(user.id, user.status === 'ACTIVE')}
                           >
-                            {user.isActive ? <X className="h-4 w-4 text-orange-600" /> : <Check className="h-4 w-4 text-green-600" />}
+                            {user.status === 'ACTIVE' ? <X className="h-4 w-4 text-orange-600" /> : <Check className="h-4 w-4 text-green-600" />}
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleDelete(user.id)}>
                             <Trash2 className="h-4 w-4 text-red-600" />

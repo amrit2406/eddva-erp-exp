@@ -2,19 +2,21 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getUser, updateUser, getRoles, assignRolesToUser } from '../../api/canteen.api';
+import { getUser, updateUser, getRoles } from '../../api/canteen.api';
 import type { CanteenUserFormData } from '../../types/canteen.types';
 
 export default function EditUserPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [roles, setRoles] = useState<any[]>([]);
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [formData, setFormData] = useState<CanteenUserFormData>({
     firstName: '',
     lastName: '',
     phone: ''
   });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [roleId, setRoleId] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,11 +35,12 @@ export default function EditUserPage() {
       ]);
       setRoles(rolesData);
       setFormData({
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        phone: userData.phone || ''
+        firstName: userData.name || '',
+        lastName: '',
+        phone: ''
       });
-      setSelectedRoles(userData.roles.map((r: any) => r.id));
+      setEmail(userData.email || '');
+      setRoleId(userData.roleId || '');
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
@@ -54,8 +57,15 @@ export default function EditUserPage() {
     try {
       setSubmitting(true);
       setError(null);
-      await updateUser(id, formData);
-      await assignRolesToUser(id, selectedRoles);
+      const updateData: any = {
+        name: formData.firstName,
+        email,
+        roleId
+      };
+      if (password) {
+        updateData.password = password;
+      }
+      await updateUser(id, updateData);
       navigate('/canteen/users');
     } catch (err: any) {
       if (err.response?.status === 401) {
@@ -67,20 +77,12 @@ export default function EditUserPage() {
     }
   };
 
-  const toggleRole = (roleId: string) => {
-    setSelectedRoles(prev =>
-      prev.includes(roleId)
-        ? prev.filter(r => r !== roleId)
-        : [...prev, roleId]
-    );
-  };
-
   if (loading) {
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Edit User</h1>
-          <p className="text-slate-600 mt-1">Update user information and roles</p>
+          <p className="text-slate-600 mt-1">Update user information</p>
         </div>
         <Card className="border-slate-200">
           <div className="p-8 text-center text-slate-500">Loading...</div>
@@ -93,7 +95,7 @@ export default function EditUserPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Edit User</h1>
-        <p className="text-slate-600 mt-1">Update user information and roles</p>
+        <p className="text-slate-600 mt-1">Update user information</p>
       </div>
 
       <Card className="border-slate-200">
@@ -105,68 +107,66 @@ export default function EditUserPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 mb-1">
-                  First Name *
-                </label>
-                <input
-                  type="text"
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-slate-700 mb-1">
-                  Last Name *
-                </label>
-                <input
-                  type="text"
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
-                  required
-                />
-              </div>
-            </div>
-
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-1">
-                Phone
+              <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 mb-1">
+                Name *
               </label>
               <input
-                type="tel"
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                type="text"
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
-                placeholder="+1234567890"
+                required
               />
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Assign Roles</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
+                Email *
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+                Password (leave blank to keep current)
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                placeholder="Leave blank to keep current password"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="roleId" className="block text-sm font-medium text-slate-700 mb-1">
+                Role *
+              </label>
+              <select
+                id="roleId"
+                value={roleId}
+                onChange={(e) => setRoleId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                required
+              >
+                <option value="">Select a role</option>
                 {roles.map((role) => (
-                  <label key={role.id} className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50">
-                    <input
-                      type="checkbox"
-                      checked={selectedRoles.includes(role.id)}
-                      onChange={() => toggleRole(role.id)}
-                      className="h-4 w-4 rounded border-slate-300 text-[#008BE9] focus:ring-[#008BE9]"
-                    />
-                    <div>
-                      <div className="font-medium text-slate-900">{role.name}</div>
-                      <div className="text-sm text-slate-500">{role.description}</div>
-                    </div>
-                  </label>
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
             <div className="flex gap-3 pt-4">

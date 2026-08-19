@@ -6,6 +6,7 @@ import type {
   RoleFormData,
   CanteenUser,
   CanteenUserFormData,
+  CreateUserFormData,
   UsersResponse
 } from '../types/canteen.types';
 
@@ -67,6 +68,11 @@ export async function getUsers(params?: { page?: number; limit?: number; search?
 
 export async function getUser(id: string): Promise<CanteenUser> {
   const response = await axiosInstance.get(`/canteen/users/${id}`);
+  return response.data.data;
+}
+
+export async function createUser(data: CreateUserFormData): Promise<CanteenUser> {
+  const response = await axiosInstance.post('/canteen/users', data);
   return response.data.data;
 }
 
