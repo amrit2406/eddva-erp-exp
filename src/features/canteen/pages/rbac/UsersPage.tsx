@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Plus, Users, Edit, Trash2, Shield } from 'lucide-react';
+import { Users, Edit, Trash2, Shield, Check, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getUsers, deleteUser } from '../../api/canteen.api';
+import { getUsers, deleteUser, activateUser, deactivateUser } from '../../api/canteen.api';
 import type { CanteenUser } from '../../types/canteen.types';
 
 export default function UsersPage() {
@@ -20,7 +20,7 @@ export default function UsersPage() {
     try {
       setLoading(true);
       const data = await getUsers({ limit: 10, search });
-      setUsers(Array.isArray(data) ? data : data?.users || []);
+      setUsers(data.users || []);
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
@@ -46,6 +46,24 @@ export default function UsersPage() {
     }
   };
 
+  const handleToggleStatus = async (id: string, isActive: boolean) => {
+    try {
+      if (isActive) {
+        await deactivateUser(id);
+      } else {
+        await activateUser(id);
+      }
+      setUsers(users.map((u) => 
+        u.id === id ? { ...u, isActive: !isActive } : u
+      ));
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      alert(err instanceof Error ? err.message : 'Failed to update user status');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -53,12 +71,6 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-slate-900">Users</h1>
           <p className="text-slate-600 mt-1">Manage canteen system users</p>
         </div>
-        <Link to="/canteen/users/new">
-          <Button variant="primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Add User
-          </Button>
-        </Link>
       </div>
 
       <Card className="border-slate-200">
@@ -81,10 +93,10 @@ export default function UsersPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Name</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-700">User</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-700">Email</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Canteen Role</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">System Role</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Roles</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Status</th>
                   <th className="text-right py-3 px-4 font-semibold text-slate-700">Actions</th>
                 </tr>
               </thead>
@@ -103,17 +115,45 @@ export default function UsersPage() {
                           <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
                             <Users className="h-4 w-4 text-slate-600" />
                           </div>
-                          <span className="font-medium text-slate-900">{user.name}</span>
+                          <div>
+                            <div className="font-medium text-slate-900">
+                              {user.firstName} {user.lastName}
+                            </div>
+                            {user.phone && (
+                              <div className="text-sm text-slate-500">{user.phone}</div>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="py-3 px-4 text-slate-600">{user.email}</td>
                       <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                          <Shield className="h-3 w-3" />
-                          {user.canteenRoleId}
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles.map((role) => (
+                            <span
+                              key={role}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700"
+                            >
+                              <Shield className="h-3 w-3" />
+                              {role}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {user.isActive ? (
+                            <>
+                              <Check className="h-3 w-3" />
+                              Active
+                            </>
+                          ) : (
+                            <>
+                              <X className="h-3 w-3" />
+                              Inactive
+                            </>
+                          )}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-slate-600">{user.roleId}</td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link to={`/canteen/users/${user.id}/edit`}>
@@ -121,6 +161,13 @@ export default function UsersPage() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleStatus(user.id, user.isActive)}
+                          >
+                            {user.isActive ? <X className="h-4 w-4 text-orange-600" /> : <Check className="h-4 w-4 text-green-600" />}
+                          </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleDelete(user.id)}>
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </Button>

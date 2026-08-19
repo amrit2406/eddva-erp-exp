@@ -32,7 +32,7 @@ export default function EditRolePage() {
         name: roleData.name,
         description: roleData.description
       });
-      setSelectedPermissions(roleData.permissionIds);
+      setSelectedPermissions(roleData.rolePermissions.map(rp => rp.permissionId));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;

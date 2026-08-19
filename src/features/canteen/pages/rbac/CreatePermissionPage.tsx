@@ -10,7 +10,8 @@ export default function CreatePermissionPage() {
   const [formData, setFormData] = useState<PermissionFormData>({
     key: '',
     name: '',
-    description: ''
+    description: '',
+    module: ''
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +58,7 @@ export default function CreatePermissionPage() {
                 id="key"
                 value={formData.key}
                 onChange={(e) => setFormData({ ...formData, key: e.target.value })}
-                placeholder="e.g., canteen.order.view"
+                placeholder="e.g., canteen.category.view"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
                 required
               />
@@ -72,7 +73,22 @@ export default function CreatePermissionPage() {
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., View Orders"
+                placeholder="e.g., View Categories"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="module" className="block text-sm font-medium text-slate-700 mb-1">
+                Module *
+              </label>
+              <input
+                type="text"
+                id="module"
+                value={formData.module}
+                onChange={(e) => setFormData({ ...formData, module: e.target.value })}
+                placeholder="e.g., canteen"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
                 required
               />

@@ -19,6 +19,10 @@ export default function RolesPage() {
     try {
       setLoading(true);
       const data = await getRoles();
+      console.log('Loaded roles:', data);
+      data.forEach(role => {
+        console.log('Role details:', JSON.stringify(role, null, 2));
+      });
       setRoles(data);
     } catch (err: any) {
       if (err.response?.status === 401) {
@@ -100,7 +104,7 @@ export default function RolesPage() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1">
                           <Lock className="h-4 w-4 text-slate-400" />
-                          <span className="text-slate-600">{role.permissionIds?.length || 0} permissions</span>
+                          <span className="text-slate-600">{role.rolePermissions?.length || 0} permissions</span>
                         </div>
                       </td>
                       <td className="py-3 px-4 text-right">

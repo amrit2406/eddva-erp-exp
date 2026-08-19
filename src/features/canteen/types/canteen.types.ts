@@ -4,6 +4,10 @@ export interface Permission {
   key: string;
   name: string;
   description: string;
+  module: string;
+  resource: string | null;
+  action: string | null;
+  isSystem: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -12,15 +16,26 @@ export interface PermissionFormData {
   key: string;
   name: string;
   description: string;
+  module: string;
 }
 
 export interface Role {
   id: string;
   name: string;
   description: string;
-  permissionIds: string[];
+  isSystem: boolean;
   createdAt: string;
   updatedAt?: string;
+  rolePermissions: RolePermission[];
+  userRoles?: any[];
+}
+
+export interface RolePermission {
+  id: string;
+  roleId: string;
+  permissionId: string;
+  createdAt: string;
+  permission: Permission;
 }
 
 export interface RoleFormData {
@@ -31,20 +46,34 @@ export interface RoleFormData {
 
 export interface CanteenUser {
   id: string;
-  name: string;
   email: string;
-  canteenRoleId: string;
-  roleId: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  roles: string[];
+  permissions: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CanteenUserWithRoles {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  roles: Role[];
+  permissions: string[];
+  isActive: boolean;
   createdAt: string;
   updatedAt?: string;
 }
 
 export interface CanteenUserFormData {
-  name: string;
-  email: string;
-  password: string;
-  canteenRoleId: string;
-  roleId: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
 }
 
 export interface UsersResponse {

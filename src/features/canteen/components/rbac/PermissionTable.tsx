@@ -42,12 +42,12 @@ export default function PermissionTable({ permissions, className, onDelete }: Pe
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 max-w-xs truncate">
-                  {permission.description}
+                  {permission.name}
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">
                   <div className="flex items-center gap-1">
                     <Database className="h-3 w-3 text-slate-400" />
-                    Custom
+                    {permission.module}
                   </div>
                 </td>
                 <td className="py-3 px-4">

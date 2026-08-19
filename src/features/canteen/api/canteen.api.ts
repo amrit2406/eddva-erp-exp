@@ -10,8 +10,8 @@ import type {
 } from '../types/canteen.types';
 
 // Role Management Endpoints
-export async function getRoles(): Promise<Role[]> {
-  const response = await axiosInstance.get('/canteen/roles');
+export async function getRoles(params?: { page?: number; limit?: number }): Promise<Role[]> {
+  const response = await axiosInstance.get('/canteen/roles', { params });
   return response.data.data;
 }
 
@@ -34,23 +34,6 @@ export async function deleteRole(id: string): Promise<void> {
   await axiosInstance.delete(`/canteen/roles/${id}`);
 }
 
-export async function getRolePermissions(id: string): Promise<string[]> {
-  const response = await axiosInstance.get(`/canteen/roles/${id}/permissions`);
-  return response.data.data;
-}
-
-export async function updateRolePermissions(id: string, permissionIds: string[]): Promise<void> {
-  await axiosInstance.patch(`/canteen/roles/${id}/permissions`, { permissionIds });
-}
-
-export async function addPermissionToRole(roleId: string, permissionId: string): Promise<void> {
-  await axiosInstance.post(`/canteen/roles/${roleId}/permissions/${permissionId}`);
-}
-
-export async function removePermissionFromRole(roleId: string, permissionId: string): Promise<void> {
-  await axiosInstance.delete(`/canteen/roles/${roleId}/permissions/${permissionId}`);
-}
-
 // Permission Management Endpoints
 export async function getPermissions(): Promise<Permission[]> {
   const response = await axiosInstance.get('/canteen/permissions');
@@ -68,7 +51,7 @@ export async function getPermission(id: string): Promise<Permission> {
 }
 
 export async function updatePermission(id: string, data: Partial<PermissionFormData>): Promise<Permission> {
-  const response = await axiosInstance.patch(`/canteen/permissions/${id}`, data);
+  const response = await axiosInstance.put(`/canteen/permissions/${id}`, data);
   return response.data.data;
 }
 
@@ -87,27 +70,25 @@ export async function getUser(id: string): Promise<CanteenUser> {
   return response.data.data;
 }
 
-export async function createUser(data: CanteenUserFormData): Promise<CanteenUser> {
-  const response = await axiosInstance.post('/canteen/users', data);
-  return response.data.data;
-}
-
 export async function updateUser(id: string, data: Partial<CanteenUserFormData>): Promise<CanteenUser> {
-  const response = await axiosInstance.patch(`/canteen/users/${id}`, data);
+  const response = await axiosInstance.put(`/canteen/users/${id}`, data);
   return response.data.data;
 }
 
-export async function getUserRoles(userId: string): Promise<any[]> {
-  const response = await axiosInstance.get(`/canteen/users/${userId}/roles`);
-  return response.data.data;
-}
-
-export async function assignRoleToUser(userId: string, roleId: string): Promise<void> {
-  await axiosInstance.post(`/canteen/users/${userId}/roles`, { roleId });
+export async function assignRolesToUser(userId: string, roleIds: string[]): Promise<void> {
+  await axiosInstance.post(`/canteen/users/${userId}/roles`, { roleIds });
 }
 
 export async function removeRoleFromUser(userId: string, roleId: string): Promise<void> {
   await axiosInstance.delete(`/canteen/users/${userId}/roles/${roleId}`);
+}
+
+export async function activateUser(id: string): Promise<void> {
+  await axiosInstance.put(`/canteen/users/${id}/activate`);
+}
+
+export async function deactivateUser(id: string): Promise<void> {
+  await axiosInstance.put(`/canteen/users/${id}/deactivate`);
 }
 
 export async function deleteUser(id: string): Promise<void> {

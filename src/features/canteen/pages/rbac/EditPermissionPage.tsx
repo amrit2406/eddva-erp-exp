@@ -11,7 +11,8 @@ export default function EditPermissionPage() {
   const [formData, setFormData] = useState<PermissionFormData>({
     key: '',
     name: '',
-    description: ''
+    description: '',
+    module: ''
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -29,7 +30,8 @@ export default function EditPermissionPage() {
       setFormData({
         key: data.key,
         name: data.name,
-        description: data.description
+        description: data.description,
+        module: data.module
       });
     } catch (err: any) {
       if (err.response?.status === 401) {
@@ -98,7 +100,7 @@ export default function EditPermissionPage() {
                 id="key"
                 value={formData.key}
                 onChange={(e) => setFormData({ ...formData, key: e.target.value })}
-                placeholder="e.g., canteen.order.view"
+                placeholder="e.g., canteen.category.view"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
                 required
               />
@@ -113,7 +115,22 @@ export default function EditPermissionPage() {
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., View Orders"
+                placeholder="e.g., View Categories"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="module" className="block text-sm font-medium text-slate-700 mb-1">
+                Module *
+              </label>
+              <input
+                type="text"
+                id="module"
+                value={formData.module}
+                onChange={(e) => setFormData({ ...formData, module: e.target.value })}
+                placeholder="e.g., canteen"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
                 required
               />

@@ -38,12 +38,17 @@ export default function CreateRolePage() {
     try {
       setSubmitting(true);
       setError(null);
-      await createRole({
-        ...formData,
+      const payload = {
+        name: formData.name,
+        description: formData.description,
         permissionIds: selectedPermissions
-      });
+      };
+      console.log('Creating role with payload:', payload);
+      const result = await createRole(payload);
+      console.log('Role created successfully:', result);
       navigate('/canteen/roles');
     } catch (err: any) {
+      console.error('Failed to create role:', err);
       if (err.response?.status === 401) {
         return;
       }
@@ -54,11 +59,13 @@ export default function CreateRolePage() {
   };
 
   const togglePermission = (permissionId: string) => {
-    setSelectedPermissions(prev =>
-      prev.includes(permissionId)
+    setSelectedPermissions(prev => {
+      const newPermissions = prev.includes(permissionId)
         ? prev.filter(p => p !== permissionId)
-        : [...prev, permissionId]
-    );
+        : [...prev, permissionId];
+      console.log('Toggled permission ID:', permissionId, 'Selected:', newPermissions);
+      return newPermissions;
+    });
   };
 
   if (loading) {
