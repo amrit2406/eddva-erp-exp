@@ -121,6 +121,13 @@ import MembersPage from '../features/canteen/pages/members/MembersPage';
 import CreateMemberPage from '../features/canteen/pages/members/CreateMemberPage';
 import EditMemberPage from '../features/canteen/pages/members/EditMemberPage';
 import MemberLookupPage from '../features/canteen/pages/members/MemberLookupPage';
+// Canteen POS
+import PosTerminalsPage from '../features/canteen/pages/pos/PosTerminalsPage';
+import CreatePosTerminalPage from '../features/canteen/pages/pos/CreatePosTerminalPage';
+import EditPosTerminalPage from '../features/canteen/pages/pos/EditPosTerminalPage';
+import ShiftsPage from '../features/canteen/pages/pos/ShiftsPage';
+import OpenShiftPage from '../features/canteen/pages/pos/OpenShiftPage';
+import ViewShiftPage from '../features/canteen/pages/pos/ViewShiftPage';
 
 export const routeConfig = [
   {
@@ -654,6 +661,38 @@ export const routeConfig = [
   {
     path: '/canteen/members/lookup',
     element: MemberLookupPage,
+    isProtected: true,
+  },
+  
+  // Canteen POS Routes
+  {
+    path: '/canteen/pos/terminals',
+    element: PosTerminalsPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/pos/terminals/new',
+    element: CreatePosTerminalPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/pos/terminals/:id/edit',
+    element: EditPosTerminalPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/pos/shifts',
+    element: ShiftsPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/pos/shifts/open',
+    element: OpenShiftPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/pos/shifts/:id',
+    element: ViewShiftPage,
     isProtected: true,
   },
   

@@ -191,3 +191,39 @@ export interface CanteenMemberFormData {
   idCardBarcode: string;
   externalRefId: string;
 }
+
+// POS Types
+export interface PosTerminal {
+  id: string;
+  name: string;
+  location: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PosTerminalFormData {
+  name: string;
+  location: string;
+}
+
+export interface Shift {
+  id: string;
+  terminalId: string;
+  terminalName?: string;
+  openingCash: number;
+  closingCash?: number;
+  openedAt: string;
+  closedAt?: string;
+  status: 'OPEN' | 'CLOSED';
+  openedBy?: string;
+  closedBy?: string;
+}
+
+export interface OpenShiftFormData {
+  terminalId: string;
+  openingCash: number;
+}
+
+export interface CloseShiftFormData {
+  closingCash: number;
+}

@@ -16,7 +16,12 @@ import type {
   MenuSchedule,
   MenuScheduleFormData,
   CanteenMember,
-  CanteenMemberFormData
+  CanteenMemberFormData,
+  PosTerminal,
+  PosTerminalFormData,
+  Shift,
+  OpenShiftFormData,
+  CloseShiftFormData
 } from '../types/canteen.types';
 
 // Role Management Endpoints
@@ -218,4 +223,50 @@ export async function updateMember(id: string, data: Partial<CanteenMemberFormDa
 
 export async function deleteMember(id: string): Promise<void> {
   await axiosInstance.delete(`/canteen/members/${id}`);
+}
+
+// POS Terminal Endpoints
+export async function getPosTerminals(params?: { page?: number; limit?: number }): Promise<PosTerminal[]> {
+  const response = await axiosInstance.get('/canteen/pos-terminals', { params });
+  return response.data.data;
+}
+
+export async function getPosTerminal(id: string): Promise<PosTerminal> {
+  const response = await axiosInstance.get(`/canteen/pos-terminals/${id}`);
+  return response.data.data;
+}
+
+export async function createPosTerminal(data: PosTerminalFormData): Promise<PosTerminal> {
+  const response = await axiosInstance.post('/canteen/pos-terminals', data);
+  return response.data.data;
+}
+
+export async function updatePosTerminal(id: string, data: Partial<PosTerminalFormData>): Promise<PosTerminal> {
+  const response = await axiosInstance.patch(`/canteen/pos-terminals/${id}`, data);
+  return response.data.data;
+}
+
+export async function deletePosTerminal(id: string): Promise<void> {
+  await axiosInstance.delete(`/canteen/pos-terminals/${id}`);
+}
+
+// Shift Endpoints
+export async function getShifts(params?: { page?: number; limit?: number }): Promise<Shift[]> {
+  const response = await axiosInstance.get('/canteen/shifts', { params });
+  return response.data.data;
+}
+
+export async function getShift(id: string): Promise<Shift> {
+  const response = await axiosInstance.get(`/canteen/shifts/${id}`);
+  return response.data.data;
+}
+
+export async function openShift(data: OpenShiftFormData): Promise<Shift> {
+  const response = await axiosInstance.post('/canteen/shifts/open', data);
+  return response.data.data;
+}
+
+export async function closeShift(id: string, data: CloseShiftFormData): Promise<Shift> {
+  const response = await axiosInstance.post(`/canteen/shifts/${id}/close`, data);
+  return response.data.data;
 }
