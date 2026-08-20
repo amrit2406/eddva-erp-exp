@@ -113,6 +113,9 @@ import EditMenuCategoryPage from '../features/canteen/pages/menu/EditMenuCategor
 import MenuItemsPage from '../features/canteen/pages/menu/MenuItemsPage';
 import CreateMenuItemPage from '../features/canteen/pages/menu/CreateMenuItemPage';
 import EditMenuItemPage from '../features/canteen/pages/menu/EditMenuItemPage';
+import MenuSchedulesPage from '../features/canteen/pages/menu/MenuSchedulesPage';
+import CreateMenuSchedulePage from '../features/canteen/pages/menu/CreateMenuSchedulePage';
+import EditMenuSchedulePage from '../features/canteen/pages/menu/EditMenuSchedulePage';
 
 export const routeConfig = [
   {
@@ -656,6 +659,21 @@ export const routeConfig = [
   {
     path: '/canteen/menu/items/:id/edit',
     element: EditMenuItemPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/menu/schedules',
+    element: MenuSchedulesPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/menu/schedules/new',
+    element: CreateMenuSchedulePage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/menu/schedules/:id/edit',
+    element: EditMenuSchedulePage,
     isProtected: true,
   },
   
