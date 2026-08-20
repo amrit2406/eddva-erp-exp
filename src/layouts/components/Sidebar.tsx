@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 
@@ -57,6 +57,7 @@ const navItems: NavItem[] = [
       { path: '/canteen/menu/schedules', label: 'Menu Schedules', icon: Clock },
       { path: '/canteen/pos/terminals', label: 'POS Terminals', icon: Monitor },
       { path: '/canteen/pos/shifts', label: 'Shifts', icon: PlayCircle },
+      { path: '/canteen/orders', label: 'Orders', icon: Receipt },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },

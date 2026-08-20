@@ -227,3 +227,30 @@ export interface OpenShiftFormData {
 export interface CloseShiftFormData {
   closingCash: number;
 }
+
+// Order Types
+export interface OrderItem {
+  id?: string;
+  itemId: string;
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  memberId: string;
+  terminalId: string;
+  discountAmount: number;
+  items: OrderItem[];
+  totalAmount?: number;
+  // status?: 'PLACED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface OrderFormData {
+  memberId: string;
+  terminalId: string;
+  discountAmount: number;
+  items: OrderItem[];
+  status?: 'PLACED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
+}

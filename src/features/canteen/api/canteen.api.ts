@@ -21,7 +21,9 @@ import type {
   PosTerminalFormData,
   Shift,
   OpenShiftFormData,
-  CloseShiftFormData
+  CloseShiftFormData,
+  Order,
+  OrderFormData
 } from '../types/canteen.types';
 
 // Role Management Endpoints
@@ -269,4 +271,38 @@ export async function openShift(data: OpenShiftFormData): Promise<Shift> {
 export async function closeShift(id: string, data: CloseShiftFormData): Promise<Shift> {
   const response = await axiosInstance.post(`/canteen/shifts/${id}/close`, data);
   return response.data.data;
+}
+
+// Order Endpoints
+export async function getOrders(params?: { page?: number; limit?: number }): Promise<Order[]> {
+  const response = await axiosInstance.get('/canteen/orders', { params });
+  return response.data.data;
+}
+
+export async function getOrder(id: string): Promise<Order> {
+  const response = await axiosInstance.get(`/canteen/orders/${id}`);
+  return response.data.data;
+}
+
+export async function createOrder(data: OrderFormData): Promise<Order> {
+  const response = await axiosInstance.post('/canteen/orders', data);
+  return response.data.data;
+}
+
+export async function updateOrder(id: string, data: Partial<OrderFormData>): Promise<Order> {
+  const response = await axiosInstance.patch(`/canteen/orders/${id}`, data);
+  return response.data.data;
+}
+
+export async function deleteOrder(id: string): Promise<void> {
+  await axiosInstance.delete(`/canteen/orders/${id}`);
+}
+
+// Order Item Endpoints
+export async function updateOrderItem(orderId: string, itemId: string, data: { quantity: number }): Promise<void> {
+  await axiosInstance.patch(`/canteen/orders/${orderId}/items/${itemId}`, data);
+}
+
+export async function deleteOrderItem(orderId: string, itemId: string): Promise<void> {
+  await axiosInstance.delete(`/canteen/orders/${orderId}/items/${itemId}`);
 }
