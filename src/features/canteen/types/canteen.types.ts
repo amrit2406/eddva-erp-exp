@@ -171,3 +171,23 @@ export interface MenuScheduleFormData {
   startTime: string;
   endTime: string;
 }
+
+// Member Types
+export type MemberType = 'STUDENT' | 'TEACHER' | 'STAFF' | 'GUEST';
+
+export interface CanteenMember {
+  id: string;
+  name: string;
+  memberType: MemberType;
+  idCardBarcode: string;
+  externalRefId: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CanteenMemberFormData {
+  name: string;
+  memberType: MemberType;
+  idCardBarcode: string;
+  externalRefId: string;
+}

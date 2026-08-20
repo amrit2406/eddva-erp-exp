@@ -14,7 +14,9 @@ import type {
   MenuItemFormData,
   MenuItemAvailability,
   MenuSchedule,
-  MenuScheduleFormData
+  MenuScheduleFormData,
+  CanteenMember,
+  CanteenMemberFormData
 } from '../types/canteen.types';
 
 // Role Management Endpoints
@@ -186,4 +188,34 @@ export async function updateMenuSchedule(id: string, data: Partial<MenuScheduleF
 
 export async function deleteMenuSchedule(id: string): Promise<void> {
   await axiosInstance.delete(`/canteen/menu/schedules/${id}`);
+}
+
+// Member Management Endpoints
+export async function getMembers(params?: { page?: number; limit?: number }): Promise<CanteenMember[]> {
+  const response = await axiosInstance.get('/canteen/members', { params });
+  return response.data.data;
+}
+
+export async function getMember(id: string): Promise<CanteenMember> {
+  const response = await axiosInstance.get(`/canteen/members/${id}`);
+  return response.data.data;
+}
+
+export async function getMemberByBarcode(barcode: string): Promise<CanteenMember> {
+  const response = await axiosInstance.get(`/canteen/members/barcode/${barcode}`);
+  return response.data.data;
+}
+
+export async function createMember(data: CanteenMemberFormData): Promise<CanteenMember> {
+  const response = await axiosInstance.post('/canteen/members', data);
+  return response.data.data;
+}
+
+export async function updateMember(id: string, data: Partial<CanteenMemberFormData>): Promise<CanteenMember> {
+  const response = await axiosInstance.patch(`/canteen/members/${id}`, data);
+  return response.data.data;
+}
+
+export async function deleteMember(id: string): Promise<void> {
+  await axiosInstance.delete(`/canteen/members/${id}`);
 }

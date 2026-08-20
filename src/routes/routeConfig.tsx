@@ -116,6 +116,11 @@ import EditMenuItemPage from '../features/canteen/pages/menu/EditMenuItemPage';
 import MenuSchedulesPage from '../features/canteen/pages/menu/MenuSchedulesPage';
 import CreateMenuSchedulePage from '../features/canteen/pages/menu/CreateMenuSchedulePage';
 import EditMenuSchedulePage from '../features/canteen/pages/menu/EditMenuSchedulePage';
+// Canteen Members
+import MembersPage from '../features/canteen/pages/members/MembersPage';
+import CreateMemberPage from '../features/canteen/pages/members/CreateMemberPage';
+import EditMemberPage from '../features/canteen/pages/members/EditMemberPage';
+import MemberLookupPage from '../features/canteen/pages/members/MemberLookupPage';
 
 export const routeConfig = [
   {
@@ -627,6 +632,28 @@ export const routeConfig = [
   {
     path: '/canteen/users/:id/edit',
     element: CanteenEditUserPage,
+    isProtected: true,
+  },
+  
+  // Canteen Members Routes
+  {
+    path: '/canteen/members',
+    element: MembersPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/members/new',
+    element: CreateMemberPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/members/:id/edit',
+    element: EditMemberPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/members/lookup',
+    element: MemberLookupPage,
     isProtected: true,
   },
   
