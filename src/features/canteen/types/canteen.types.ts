@@ -229,10 +229,39 @@ export interface CloseShiftFormData {
 }
 
 // Order Types
+export type OrderStatus = 'PLACED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
+
 export interface OrderItem {
   id?: string;
   itemId: string;
   quantity: number;
+}
+
+export interface OrderItemDetail {
+  id: string;
+  orderId: string;
+  itemId: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  menuItem?: {
+    id: string;
+    name: string;
+    price: number;
+    foodType: string;
+    imageUrl?: string;
+  };
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AddOrderItemFormData {
+  itemId: string;
+  quantity: number;
+}
+
+export interface UpdateOrderStatusFormData {
+  status: OrderStatus;
 }
 
 export interface Order {
@@ -242,7 +271,7 @@ export interface Order {
   discountAmount: number;
   items: OrderItem[];
   totalAmount?: number;
-  // status?: 'PLACED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
+  status: OrderStatus;
   createdAt: string;
   updatedAt?: string;
 }
@@ -252,5 +281,5 @@ export interface OrderFormData {
   terminalId: string;
   discountAmount: number;
   items: OrderItem[];
-  status?: 'PLACED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
+  status?: OrderStatus;
 }

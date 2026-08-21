@@ -23,7 +23,10 @@ import type {
   OpenShiftFormData,
   CloseShiftFormData,
   Order,
-  OrderFormData
+  OrderFormData,
+  OrderItemDetail,
+  AddOrderItemFormData,
+  UpdateOrderStatusFormData
 } from '../types/canteen.types';
 
 // Role Management Endpoints
@@ -305,4 +308,22 @@ export async function updateOrderItem(orderId: string, itemId: string, data: { q
 
 export async function deleteOrderItem(orderId: string, itemId: string): Promise<void> {
   await axiosInstance.delete(`/canteen/orders/${orderId}/items/${itemId}`);
+}
+
+// Update Order Status
+export async function updateOrderStatus(id: string, data: UpdateOrderStatusFormData): Promise<Order> {
+  const response = await axiosInstance.patch(`/canteen/orders/${id}/status`, data);
+  return response.data.data;
+}
+
+// Get Order Items
+export async function getOrderItems(orderId: string): Promise<OrderItemDetail[]> {
+  const response = await axiosInstance.get(`/canteen/orders/${orderId}/items`);
+  return response.data.data;
+}
+
+// Add Item to Order
+export async function addOrderItem(orderId: string, data: AddOrderItemFormData): Promise<OrderItemDetail> {
+  const response = await axiosInstance.post(`/canteen/orders/${orderId}/items`, data);
+  return response.data.data;
 }

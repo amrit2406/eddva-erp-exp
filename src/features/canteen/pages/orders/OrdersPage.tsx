@@ -3,13 +3,24 @@ import { Plus, Edit, Trash2, Receipt } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getOrders, deleteOrder } from '../../api/canteen.api';
-import type { Order } from '../../types/canteen.types';
+import { getOrders, deleteOrder, updateOrderStatus } from '../../api/canteen.api';
+import type { Order, OrderStatus } from '../../types/canteen.types';
+
+const STATUS_OPTIONS: OrderStatus[] = ['PLACED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'];
+
+const statusStyles: Record<OrderStatus, string> = {
+  PLACED: 'bg-blue-100 text-blue-700',
+  PREPARING: 'bg-yellow-100 text-yellow-700',
+  READY: 'bg-purple-100 text-purple-700',
+  COMPLETED: 'bg-green-100 text-green-700',
+  CANCELLED: 'bg-red-100 text-red-700',
+};
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     loadOrders();
@@ -21,9 +32,7 @@ export default function OrdersPage() {
       const data = await getOrders();
       setOrders(data);
     } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
+      if (err.response?.status === 401) return;
       setError(err instanceof Error ? err.message : 'Failed to load orders');
     } finally {
       setLoading(false);
@@ -31,17 +40,26 @@ export default function OrdersPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this order?')) {
-      return;
-    }
+    if (!window.confirm('Are you sure you want to delete this order?')) return;
     try {
       await deleteOrder(id);
       setOrders(orders.filter((o) => o.id !== id));
     } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
+      if (err.response?.status === 401) return;
       alert(err instanceof Error ? err.message : 'Failed to delete order');
+    }
+  };
+
+  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    try {
+      setUpdatingStatus(orderId);
+      const updated = await updateOrderStatus(orderId, { status: newStatus });
+      setOrders(orders.map((o) => (o.id === orderId ? { ...o, status: updated.status } : o)));
+    } catch (err: any) {
+      if (err.response?.status === 401) return;
+      alert(err.response?.data?.error?.message || 'Failed to update status');
+    } finally {
+      setUpdatingStatus(null);
     }
   };
 
@@ -104,16 +122,16 @@ export default function OrdersPage() {
                       <td className="py-3 px-4 text-slate-600">{order.items.length} items</td>
                       <td className="py-3 px-4 text-slate-600">₹{order.totalAmount || 0}</td>
                       <td className="py-3 px-4">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                          order.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 
-                          order.status === 'PLACED' ? 'bg-blue-100 text-blue-700' :
-                          order.status === 'PREPARING' ? 'bg-yellow-100 text-yellow-700' :
-                          order.status === 'READY' ? 'bg-purple-100 text-purple-700' :
-                          order.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {order.status || 'N/A'}
-                        </span>
+                        <select
+                          value={order.status}
+                          disabled={updatingStatus === order.id}
+                          onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                          className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#008BE9] disabled:opacity-50 disabled:cursor-wait ${statusStyles[order.status] ?? 'bg-gray-100 text-gray-700'}`}
+                        >
+                          {STATUS_OPTIONS.map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
