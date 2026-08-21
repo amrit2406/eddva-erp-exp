@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Receipt } from 'lucide-react';
+import { Plus, Edit, Trash2, Receipt, Eye } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
@@ -135,6 +135,11 @@ export default function OrdersPage() {
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Link to={`/canteen/orders/${order.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Link to={`/canteen/orders/${order.id}/edit`}>
                             <Button variant="ghost" size="sm">
                               <Edit className="h-4 w-4" />

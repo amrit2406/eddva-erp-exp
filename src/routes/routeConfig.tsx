@@ -131,6 +131,7 @@ import ViewShiftPage from '../features/canteen/pages/pos/ViewShiftPage';
 // Canteen Orders
 import OrdersPage from '../features/canteen/pages/orders/OrdersPage';
 import CreateOrderPage from '../features/canteen/pages/orders/CreateOrderPage';
+import OrderDetailsPage from '../features/canteen/pages/orders/OrderDetailsPage';
 import EditOrderPage from '../features/canteen/pages/orders/EditOrderPage';
 
 export const routeConfig = [
@@ -709,6 +710,11 @@ export const routeConfig = [
   {
     path: '/canteen/orders/new',
     element: CreateOrderPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/orders/:id',
+    element: OrderDetailsPage,
     isProtected: true,
   },
   {

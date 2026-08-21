@@ -51,7 +51,7 @@ const navItems: NavItem[] = [
       { path: '/canteen/roles', label: 'Roles', icon: Shield },
       { path: '/canteen/users', label: 'Users', icon: Users },
       { path: '/canteen/members', label: 'Members', icon: UserPlus },
-      { path: '/canteen/members/lookup', label: 'Member Lookup', icon: Search },
+      // { path: '/canteen/members/lookup', label: 'Member Lookup', icon: Search },
       { path: '/canteen/menu/categories', label: 'Menu Categories', icon: Database },
       { path: '/canteen/menu/items', label: 'Menu Items', icon: Utensils },
       { path: '/canteen/menu/schedules', label: 'Menu Schedules', icon: Clock },
