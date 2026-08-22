@@ -135,6 +135,11 @@ import OrderDetailsPage from '../features/canteen/pages/orders/OrderDetailsPage'
 import EditOrderPage from '../features/canteen/pages/orders/EditOrderPage';
 // Canteen Payments
 import OrderPaymentsPage from '../features/canteen/pages/payments/OrderPaymentsPage';
+// Canteen Wallet
+import WalletPage from '../features/canteen/pages/wallet/WalletPage';
+import WalletTopupsPage from '../features/canteen/pages/wallet/WalletTopupsPage';
+import WalletTransactionsPage from '../features/canteen/pages/wallet/WalletTransactionsPage';
+import WalletsPage from '../features/canteen/pages/wallet/WalletsPage';
 
 export const routeConfig = [
   {
@@ -728,6 +733,28 @@ export const routeConfig = [
   {
     path: '/canteen/orders/:orderId/payments',
     element: OrderPaymentsPage,
+    isProtected: true,
+  },
+
+  // Canteen Wallet Routes
+  {
+    path: '/canteen/wallets',
+    element: WalletsPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/members/:memberId/wallet',
+    element: WalletPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/wallets/:walletId/topups',
+    element: WalletTopupsPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/wallets/:walletId/transactions',
+    element: WalletTransactionsPage,
     isProtected: true,
   },
   

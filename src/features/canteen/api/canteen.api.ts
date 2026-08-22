@@ -29,6 +29,13 @@ import type {
   UpdateOrderStatusFormData,
   Payment,
   PaymentFormData,
+  Wallet,
+  WalletFormData,
+  UpdateWalletFormData,
+  BlockWalletFormData,
+  WalletTopup,
+  WalletTopupFormData,
+  WalletTransaction,
 } from '../types/canteen.types';
 
 // Role Management Endpoints
@@ -348,4 +355,77 @@ export async function getPayment(id: string): Promise<Payment> {
 
 export async function deletePayment(id: string): Promise<void> {
   await axiosInstance.delete(`/canteen/payments/${id}`);
+}
+
+// Wallet Endpoints
+
+// POST /api/canteen/members/{memberId}/wallet
+export async function createMemberWallet(memberId: string, data: WalletFormData): Promise<Wallet> {
+  const response = await axiosInstance.post(`/canteen/members/${memberId}/wallet`, data);
+  return response.data.data;
+}
+
+// GET /api/canteen/members/{memberId}/wallet
+export async function getMemberWallet(memberId: string): Promise<Wallet> {
+  const response = await axiosInstance.get(`/canteen/members/${memberId}/wallet`);
+  return response.data.data;
+}
+
+// GET /api/canteen/wallets/{walletId}
+export async function getWallet(walletId: string): Promise<Wallet> {
+  const response = await axiosInstance.get(`/canteen/wallets/${walletId}`);
+  return response.data.data;
+}
+
+// PATCH /api/canteen/wallets/{walletId}
+export async function updateWallet(walletId: string, data: UpdateWalletFormData): Promise<Wallet> {
+  const response = await axiosInstance.patch(`/canteen/wallets/${walletId}`, data);
+  return response.data.data;
+}
+
+// DELETE /api/canteen/wallets/{walletId}
+export async function deleteWallet(walletId: string): Promise<void> {
+  await axiosInstance.delete(`/canteen/wallets/${walletId}`);
+}
+
+// POST /api/canteen/wallets/{walletId}/block
+export async function blockWallet(walletId: string, data: BlockWalletFormData): Promise<Wallet> {
+  const response = await axiosInstance.post(`/canteen/wallets/${walletId}/block`, data);
+  return response.data.data;
+}
+
+// POST /api/canteen/wallets/{walletId}/unblock
+export async function unblockWallet(walletId: string): Promise<Wallet> {
+  const response = await axiosInstance.post(`/canteen/wallets/${walletId}/unblock`);
+  return response.data.data;
+}
+
+// POST /api/canteen/wallets/{walletId}/topups
+export async function createWalletTopup(walletId: string, data: WalletTopupFormData): Promise<WalletTopup> {
+  const response = await axiosInstance.post(`/canteen/wallets/${walletId}/topups`, data);
+  return response.data.data;
+}
+
+// GET /api/canteen/wallets/{walletId}/topups
+export async function getWalletTopups(walletId: string): Promise<WalletTopup[]> {
+  const response = await axiosInstance.get(`/canteen/wallets/${walletId}/topups`);
+  return response.data.data;
+}
+
+// GET /api/canteen/wallet-topups/{topupId}
+export async function getWalletTopup(topupId: string): Promise<WalletTopup> {
+  const response = await axiosInstance.get(`/canteen/wallet-topups/${topupId}`);
+  return response.data.data;
+}
+
+// GET /api/canteen/wallets/{walletId}/transactions
+export async function getWalletTransactions(walletId: string): Promise<WalletTransaction[]> {
+  const response = await axiosInstance.get(`/canteen/wallets/${walletId}/transactions`);
+  return response.data.data;
+}
+
+// GET /api/canteen/wallet-transactions/{transactionId}
+export async function getWalletTransaction(transactionId: string): Promise<WalletTransaction> {
+  const response = await axiosInstance.get(`/canteen/wallet-transactions/${transactionId}`);
+  return response.data.data;
 }

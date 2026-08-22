@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, User, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, User, Search, Wallet } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
@@ -110,6 +110,11 @@ export default function MembersPage() {
                       <td className="py-3 px-4 text-slate-600">{member.externalRefId}</td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Link to={`/canteen/members/${member.id}/wallet`} title="Wallet">
+                            <Button variant="ghost" size="sm">
+                              <Wallet className="h-4 w-4 text-[#008BE9]" />
+                            </Button>
+                          </Link>
                           <Link to={`/canteen/members/${member.id}/edit`}>
                             <Button variant="ghost" size="sm">
                               <Edit className="h-4 w-4" />

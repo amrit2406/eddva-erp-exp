@@ -284,6 +284,66 @@ export interface OrderFormData {
   status?: OrderStatus;
 }
 
+// Wallet Types
+export type WalletStatus = 'ACTIVE' | 'BLOCKED';
+
+export interface Wallet {
+  id: string;
+  memberId: string;
+  balance: number;
+  dailySpendLimit: number;
+  status: WalletStatus;
+  blockedReason?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface WalletFormData {
+  initialBalance: number;
+  dailySpendLimit: number;
+}
+
+export interface UpdateWalletFormData {
+  dailySpendLimit?: number;
+}
+
+export interface BlockWalletFormData {
+  reason: string;
+}
+
+export type TopupPaymentMode = 'CASH' | 'CARD' | 'UPI' | 'BANK_TRANSFER' | 'OTHER';
+
+export interface WalletTopup {
+  id: string;
+  walletId: string;
+  amount: number;
+  paymentMode: TopupPaymentMode;
+  transactionRef?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface WalletTopupFormData {
+  amount: number;
+  paymentMode: TopupPaymentMode;
+  transactionRef?: string;
+}
+
+export type WalletTransactionType = 'CREDIT' | 'DEBIT';
+
+export interface WalletTransaction {
+  id: string;
+  walletId: string;
+  type: WalletTransactionType;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  description?: string;
+  referenceId?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 // Payment Types
 export type PaymentMode = 'CASH' | 'CARD' | 'UPI' | 'WALLET' | 'OTHER';
 
