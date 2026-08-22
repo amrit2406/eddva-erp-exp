@@ -1,5 +1,5 @@
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2, Receipt, Clock, User, Monitor, XCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Receipt, Clock, User, Monitor, XCircle, CheckCircle, CreditCard } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
@@ -168,6 +168,12 @@ export default function OrderDetailsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link to={`/canteen/orders/${order.id}/payments`}>
+            <Button variant="secondary" size="sm">
+              <CreditCard className="h-4 w-4 mr-2" />
+              Payments
+            </Button>
+          </Link>
           <Link to={`/canteen/orders/${order.id}/edit`}>
             <Button variant="ghost" size="sm">
               <Edit className="h-4 w-4 mr-2" />
@@ -289,6 +295,12 @@ export default function OrderDetailsPage() {
             <div className="p-6">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
               <div className="space-y-2">
+                <Link to={`/canteen/orders/${order.id}/payments`} className="block">
+                  <Button variant="primary" className="w-full">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Manage Payments
+                  </Button>
+                </Link>
                 <Link to={`/canteen/orders/${order.id}/edit`} className="block">
                   <Button variant="secondary" className="w-full">
                     <Edit className="h-4 w-4 mr-2" />

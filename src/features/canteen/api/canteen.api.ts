@@ -26,7 +26,9 @@ import type {
   OrderFormData,
   OrderItemDetail,
   AddOrderItemFormData,
-  UpdateOrderStatusFormData
+  UpdateOrderStatusFormData,
+  Payment,
+  PaymentFormData,
 } from '../types/canteen.types';
 
 // Role Management Endpoints
@@ -326,4 +328,24 @@ export async function getOrderItems(orderId: string): Promise<OrderItemDetail[]>
 export async function addOrderItem(orderId: string, data: AddOrderItemFormData): Promise<OrderItemDetail> {
   const response = await axiosInstance.post(`/canteen/orders/${orderId}/items`, data);
   return response.data.data;
+}
+
+// Payment Endpoints
+export async function getOrderPayments(orderId: string): Promise<Payment[]> {
+  const response = await axiosInstance.get(`/canteen/orders/${orderId}/payments`);
+  return response.data.data;
+}
+
+export async function createOrderPayment(orderId: string, data: PaymentFormData): Promise<Payment> {
+  const response = await axiosInstance.post(`/canteen/orders/${orderId}/payments`, data);
+  return response.data.data;
+}
+
+export async function getPayment(id: string): Promise<Payment> {
+  const response = await axiosInstance.get(`/canteen/payments/${id}`);
+  return response.data.data;
+}
+
+export async function deletePayment(id: string): Promise<void> {
+  await axiosInstance.delete(`/canteen/payments/${id}`);
 }

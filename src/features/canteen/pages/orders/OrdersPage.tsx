@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Receipt, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Receipt, Eye, CreditCard } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
@@ -120,7 +120,7 @@ export default function OrdersPage() {
                       <td className="py-3 px-4 text-slate-600">{order.memberId.slice(0, 8)}...</td>
                       <td className="py-3 px-4 text-slate-600">{order.terminalId.slice(0, 8)}...</td>
                       <td className="py-3 px-4 text-slate-600">{order.items.length} items</td>
-                      <td className="py-3 px-4 text-slate-600">₹{order.totalAmount || 0}</td>
+                      <td className="py-3 px-4 text-slate-600">₹{Number(order.totalAmount || 0).toFixed(2)}</td>
                       <td className="py-3 px-4">
                         <select
                           value={order.status}
@@ -138,6 +138,11 @@ export default function OrdersPage() {
                           <Link to={`/canteen/orders/${order.id}`}>
                             <Button variant="ghost" size="sm">
                               <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Link to={`/canteen/orders/${order.id}/payments`}>
+                            <Button variant="ghost" size="sm" title="Payments">
+                              <CreditCard className="h-4 w-4 text-[#008BE9]" />
                             </Button>
                           </Link>
                           <Link to={`/canteen/orders/${order.id}/edit`}>

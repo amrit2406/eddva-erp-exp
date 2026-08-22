@@ -133,6 +133,8 @@ import OrdersPage from '../features/canteen/pages/orders/OrdersPage';
 import CreateOrderPage from '../features/canteen/pages/orders/CreateOrderPage';
 import OrderDetailsPage from '../features/canteen/pages/orders/OrderDetailsPage';
 import EditOrderPage from '../features/canteen/pages/orders/EditOrderPage';
+// Canteen Payments
+import OrderPaymentsPage from '../features/canteen/pages/payments/OrderPaymentsPage';
 
 export const routeConfig = [
   {
@@ -720,6 +722,12 @@ export const routeConfig = [
   {
     path: '/canteen/orders/:id/edit',
     element: EditOrderPage,
+    isProtected: true,
+  },
+  // Canteen Payments Routes
+  {
+    path: '/canteen/orders/:orderId/payments',
+    element: OrderPaymentsPage,
     isProtected: true,
   },
   

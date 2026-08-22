@@ -283,3 +283,22 @@ export interface OrderFormData {
   items: OrderItem[];
   status?: OrderStatus;
 }
+
+// Payment Types
+export type PaymentMode = 'CASH' | 'CARD' | 'UPI' | 'WALLET' | 'OTHER';
+
+export interface Payment {
+  id: string;
+  orderId: string;
+  paymentMode: PaymentMode;
+  amount: number;
+  transactionRef?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PaymentFormData {
+  paymentMode: PaymentMode;
+  amount: number;
+  transactionRef?: string;
+}
