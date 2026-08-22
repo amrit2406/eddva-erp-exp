@@ -140,6 +140,8 @@ import WalletPage from '../features/canteen/pages/wallet/WalletPage';
 import WalletTopupsPage from '../features/canteen/pages/wallet/WalletTopupsPage';
 import WalletTransactionsPage from '../features/canteen/pages/wallet/WalletTransactionsPage';
 import WalletsPage from '../features/canteen/pages/wallet/WalletsPage';
+// Canteen Reports
+import CanteenReportsPage from '../features/canteen/pages/reports/CanteenReportsPage';
 
 export const routeConfig = [
   {
@@ -755,6 +757,13 @@ export const routeConfig = [
   {
     path: '/canteen/wallets/:walletId/transactions',
     element: WalletTransactionsPage,
+    isProtected: true,
+  },
+
+  // Canteen Reports Routes
+  {
+    path: '/canteen/reports',
+    element: CanteenReportsPage,
     isProtected: true,
   },
   

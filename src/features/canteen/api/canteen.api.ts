@@ -36,6 +36,12 @@ import type {
   WalletTopup,
   WalletTopupFormData,
   WalletTransaction,
+  ReportParams,
+  SalesReport,
+  ItemSalesReport,
+  CategorySalesReport,
+  PaymentSummaryReport,
+  ShiftsReport,
 } from '../types/canteen.types';
 
 // Role Management Endpoints
@@ -428,4 +434,36 @@ export async function getWalletTransactions(walletId: string): Promise<WalletTra
 export async function getWalletTransaction(transactionId: string): Promise<WalletTransaction> {
   const response = await axiosInstance.get(`/canteen/wallet-transactions/${transactionId}`);
   return response.data.data;
+}
+
+// Reports Endpoints
+
+// GET /api/canteen/reports/sales
+export async function getSalesReport(params?: ReportParams): Promise<SalesReport> {
+  const response = await axiosInstance.get('/canteen/reports/sales', { params });
+  return response.data.data ?? response.data;
+}
+
+// GET /api/canteen/reports/item-sales
+export async function getItemSalesReport(params?: ReportParams): Promise<ItemSalesReport> {
+  const response = await axiosInstance.get('/canteen/reports/item-sales', { params });
+  return response.data.data ?? response.data;
+}
+
+// GET /api/canteen/reports/category-sales
+export async function getCategorySalesReport(params?: ReportParams): Promise<CategorySalesReport> {
+  const response = await axiosInstance.get('/canteen/reports/category-sales', { params });
+  return response.data.data ?? response.data;
+}
+
+// GET /api/canteen/reports/payment-summary
+export async function getPaymentSummaryReport(params?: ReportParams): Promise<PaymentSummaryReport> {
+  const response = await axiosInstance.get('/canteen/reports/payment-summary', { params });
+  return response.data.data ?? response.data;
+}
+
+// GET /api/canteen/reports/shifts
+export async function getShiftsReport(params?: ReportParams): Promise<ShiftsReport> {
+  const response = await axiosInstance.get('/canteen/reports/shifts', { params });
+  return response.data.data ?? response.data;
 }

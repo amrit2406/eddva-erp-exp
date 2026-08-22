@@ -93,6 +93,12 @@ export interface UsersResponse {
 }
 
 // Reports Types
+export interface ReportParams {
+  startDate?: string;
+  endDate?: string;
+  [key: string]: string | undefined;
+}
+
 export interface SalesReport {
   totalSales: number;
   totalOrders: number;
@@ -107,6 +113,66 @@ export interface SalesReport {
     sales: number;
     orders: number;
   }[];
+}
+
+export interface ItemSalesReportRow {
+  itemId?: string;
+  itemName: string;
+  categoryName?: string;
+  quantitySold: number;
+  revenue: number;
+  orderCount?: number;
+}
+
+export interface ItemSalesReport {
+  items: ItemSalesReportRow[];
+  totalRevenue?: number;
+  totalQuantity?: number;
+}
+
+export interface CategorySalesReportRow {
+  categoryId?: string;
+  categoryName: string;
+  quantitySold: number;
+  revenue: number;
+  orderCount?: number;
+}
+
+export interface CategorySalesReport {
+  categories: CategorySalesReportRow[];
+  totalRevenue?: number;
+}
+
+export interface PaymentSummaryReportRow {
+  paymentMode: string;
+  count: number;
+  totalAmount: number;
+}
+
+export interface PaymentSummaryReport {
+  payments: PaymentSummaryReportRow[];
+  totalAmount?: number;
+  totalTransactions?: number;
+}
+
+export interface ShiftReportRow {
+  shiftId?: string;
+  terminalName?: string;
+  openedAt: string;
+  closedAt?: string;
+  openingCash: number;
+  closingCash?: number;
+  totalSales?: number;
+  totalOrders?: number;
+  status: string;
+  openedBy?: string;
+  closedBy?: string;
+}
+
+export interface ShiftsReport {
+  shifts: ShiftReportRow[];
+  totalShifts?: number;
+  totalSales?: number;
 }
 
 // Menu Types
