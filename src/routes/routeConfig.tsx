@@ -159,6 +159,11 @@ import LibraryEditCategoryPage from '../features/library/pages/categories/EditCa
 import LibraryMembershipRulesPage from '../features/library/pages/membership-rules/MembershipRulesPage';
 import LibraryCreateMembershipRulePage from '../features/library/pages/membership-rules/CreateMembershipRulePage';
 import LibraryEditMembershipRulePage from '../features/library/pages/membership-rules/EditMembershipRulePage';
+// Library Members
+import LibraryMembersPage from '../features/library/pages/members/MembersPage';
+import LibraryCreateMemberPage from '../features/library/pages/members/CreateMemberPage';
+import LibraryEditMemberPage from '../features/library/pages/members/EditMemberPage';
+import LibraryMemberDetailsPage from '../features/library/pages/members/MemberDetailsPage';
 
 export const routeConfig = [
   {
@@ -902,6 +907,27 @@ export const routeConfig = [
   {
     path: '/library/membership-rules/:id/edit',
     element: LibraryEditMembershipRulePage,
+    isProtected: true,
+  },
+  // Library Members Routes
+  {
+    path: '/library/members',
+    element: LibraryMembersPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/members/new',
+    element: LibraryCreateMemberPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/members/:id/edit',
+    element: LibraryEditMemberPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/members/:id',
+    element: LibraryMemberDetailsPage,
     isProtected: true,
   },
   

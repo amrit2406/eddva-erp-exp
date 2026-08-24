@@ -72,6 +72,7 @@ const navItems: NavItem[] = [
       { path: '/library/users', label: 'Users', icon: Users },
       { path: '/library/categories', label: 'Categories', icon: Folder },
       { path: '/library/membership-rules', label: 'Membership Rules', icon: Settings },
+      { path: '/library/members', label: 'Members', icon: UserPlus },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },

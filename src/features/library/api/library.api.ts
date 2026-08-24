@@ -1,7 +1,11 @@
 import axiosInstance from '../../../lib/axios';
 import type {
+  BookIssue,
   Category,
   CategoryFormData,
+  Fine,
+  Member,
+  MemberFormData,
   MembershipRule,
   MembershipRuleFormData,
   Permission,
@@ -173,4 +177,42 @@ export async function updateMembershipRule(id: string | number, data: Partial<Me
 
 export async function deleteMembershipRule(id: string | number): Promise<void> {
   await axiosInstance.delete(`/library/membership-rules/${id}`);
+}
+
+// Member Management Endpoints
+export async function getMembers(): Promise<Member[]> {
+  const response = await axiosInstance.get('/library/members');
+  // Handle nested response structure: response.data.data.data
+  const members = response.data.data?.data || [];
+  return members;
+}
+
+export async function createMember(data: MemberFormData): Promise<Member> {
+  const response = await axiosInstance.post('/library/members', data);
+  return response.data.data || response.data;
+}
+
+export async function getMember(id: string | number): Promise<Member> {
+  // Get all members and find the specific one by ID
+  const members = await getMembers();
+  const member = members.find(m => m.member_id === Number(id));
+  if (!member) {
+    throw new Error('Member not found');
+  }
+  return member;
+}
+
+export async function updateMember(id: string | number, data: Partial<MemberFormData>): Promise<Member> {
+  const response = await axiosInstance.patch(`/library/members/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function getMemberCurrentIssues(id: string | number): Promise<BookIssue[]> {
+  const response = await axiosInstance.get(`/library/members/${id}/current-issues`);
+  return response.data.data || response.data || [];
+}
+
+export async function getMemberFines(id: string | number): Promise<Fine[]> {
+  const response = await axiosInstance.get(`/library/members/${id}/fines`);
+  return response.data.data || response.data || [];
 }

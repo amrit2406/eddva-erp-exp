@@ -121,3 +121,37 @@ export interface MembershipRuleFormData {
   grace_period_days: number;
   max_fine_cap: number;
 }
+
+// Member Types
+export interface Member {
+  member_id: number;
+  external_ref_id: string;
+  name: string;
+  member_type: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MemberFormData {
+  external_ref_id: string;
+  name: string;
+  member_type: string;
+}
+
+export interface BookIssue {
+  issue_id: number;
+  book_id: number;
+  book_title: string;
+  issue_date: string;
+  due_date: string;
+  return_date?: string;
+  status: string;
+}
+
+export interface Fine {
+  fine_id: number;
+  amount: number;
+  reason: string;
+  created_at: string;
+  paid: boolean;
+}
