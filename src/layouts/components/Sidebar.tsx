@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2 } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 
@@ -62,12 +62,21 @@ const navItems: NavItem[] = [
       { path: '/canteen/reports', label: 'Reports & Analytics', icon: BarChart2 },
     ]
   },
+  {
+    path: '/library',
+    label: 'Library',
+    icon: BookOpen,
+    children: [
+      { path: '/library/permissions', label: 'Permissions', icon: Key },
+      { path: '/library/roles', label: 'Roles', icon: Shield },
+      { path: '/library/users', label: 'Users', icon: Users },
+    ]
+  },
   // { path: '/students', label: 'Students', icon: Users },
   // { path: '/teachers', label: 'Teachers', icon: GraduationCap },
   // { path: '/attendance', label: 'Attendance', icon: Calendar },
   // { path: '/fees', label: 'Fees', icon: IndianRupee },
   // { path: '/examinations', label: 'Examinations', icon: FileText },
-  // { path: '/library', label: 'Library', icon: BookOpen },
   // { path: '/transport', label: 'Transport', icon: Bus },
   // { path: '/reports', label: 'Reports', icon: FileText },
   // { path: '/settings', label: 'Settings', icon: Settings },

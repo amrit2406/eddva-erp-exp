@@ -142,6 +142,13 @@ import WalletTransactionsPage from '../features/canteen/pages/wallet/WalletTrans
 import WalletsPage from '../features/canteen/pages/wallet/WalletsPage';
 // Canteen Reports
 import CanteenReportsPage from '../features/canteen/pages/reports/CanteenReportsPage';
+// Library RBAC
+import LibraryRolesPage from '../features/library/pages/rbac/RolesPage';
+import LibraryCreateRolePage from '../features/library/pages/rbac/CreateRolePage';
+import LibraryEditRolePage from '../features/library/pages/rbac/EditRolePage';
+import LibraryPermissionsPage from '../features/library/pages/rbac/PermissionsPage';
+import LibraryUsersPage from '../features/library/pages/rbac/UsersPage';
+import LibraryCreateUserPage from '../features/library/pages/rbac/CreateUserPage';
 
 export const routeConfig = [
   {
@@ -811,6 +818,38 @@ export const routeConfig = [
   {
     path: '/canteen/menu/schedules/:id/edit',
     element: EditMenuSchedulePage,
+    isProtected: true,
+  },
+
+  // Library RBAC Routes
+  {
+    path: '/library/roles',
+    element: LibraryRolesPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/roles/new',
+    element: LibraryCreateRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/library/roles/:id/edit',
+    element: LibraryEditRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/library/permissions',
+    element: LibraryPermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/users',
+    element: LibraryUsersPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/users/new',
+    element: LibraryCreateUserPage,
     isProtected: true,
   },
   
