@@ -1,5 +1,7 @@
 import axiosInstance from '../../../lib/axios';
 import type {
+  Book,
+  BookFormData,
   BookIssue,
   Category,
   CategoryFormData,
@@ -215,4 +217,46 @@ export async function getMemberCurrentIssues(id: string | number): Promise<BookI
 export async function getMemberFines(id: string | number): Promise<Fine[]> {
   const response = await axiosInstance.get(`/library/members/${id}/fines`);
   return response.data.data || response.data || [];
+}
+
+// Book Management Endpoints
+export async function getBooks(): Promise<Book[]> {
+  const response = await axiosInstance.get('/library/books');
+  return response.data.data?.data || [];
+}
+
+export async function createBook(data: BookFormData): Promise<Book> {
+  const response = await axiosInstance.post('/library/books', data);
+  return response.data.data || response.data;
+}
+
+export async function getBook(id: string | number): Promise<Book> {
+  // Get all books and find the specific one by ID
+  const books = await getBooks();
+  const book = books.find(b => b.book_id === Number(id));
+  if (!book) {
+    throw new Error('Book not found');
+  }
+  return book;
+}
+
+export async function updateBook(id: string | number, data: Partial<BookFormData>): Promise<Book> {
+  const response = await axiosInstance.patch(`/library/books/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deleteBook(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/library/books/${id}`);
+}
+
+export async function searchBooks(query: string): Promise<Book[]> {
+  const response = await axiosInstance.get('/library/books/search', { params: { q: query } });
+  return response.data.data?.data || response.data.data || [];
+}
+
+export async function uploadBookCover(id: string | number, file: File): Promise<Book> {
+  const formData = new FormData();
+  formData.append('cover', file);
+  const response = await axiosInstance.post(`/library/books/${id}/cover`, formData);
+  return response.data.data || response.data;
 }

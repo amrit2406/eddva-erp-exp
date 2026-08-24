@@ -164,6 +164,11 @@ import LibraryMembersPage from '../features/library/pages/members/MembersPage';
 import LibraryCreateMemberPage from '../features/library/pages/members/CreateMemberPage';
 import LibraryEditMemberPage from '../features/library/pages/members/EditMemberPage';
 import LibraryMemberDetailsPage from '../features/library/pages/members/MemberDetailsPage';
+// Library Books
+import LibraryBooksPage from '../features/library/pages/books/BooksPage';
+import LibraryCreateBookPage from '../features/library/pages/books/CreateBookPage';
+import LibraryEditBookPage from '../features/library/pages/books/EditBookPage';
+import LibraryBookDetailsPage from '../features/library/pages/books/BookDetailsPage';
 
 export const routeConfig = [
   {
@@ -928,6 +933,27 @@ export const routeConfig = [
   {
     path: '/library/members/:id',
     element: LibraryMemberDetailsPage,
+    isProtected: true,
+  },
+  // Library Books Routes
+  {
+    path: '/library/books',
+    element: LibraryBooksPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/books/new',
+    element: LibraryCreateBookPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/books/:id/edit',
+    element: LibraryEditBookPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/books/:id',
+    element: LibraryBookDetailsPage,
     isProtected: true,
   },
   

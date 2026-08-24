@@ -155,3 +155,39 @@ export interface Fine {
   created_at: string;
   paid: boolean;
 }
+
+// Book Types
+export interface Book {
+  book_id: number;
+  isbn: string;
+  title: string;
+  author: string;
+  publisher: string;
+  edition: string;
+  category_id: number;
+  language: string;
+  publish_year: number;
+  description: string;
+  cover_image_url?: string | null;
+  created_at: string;
+  updated_at: string;
+  category?: {
+    category_id: number;
+    name: string;
+  };
+  _count?: {
+    copies: number;
+  };
+}
+
+export interface BookFormData {
+  isbn: string;
+  title: string;
+  author: string;
+  publisher: string;
+  edition: string;
+  category_id: number;
+  language: string;
+  publish_year: number;
+  description: string;
+}
