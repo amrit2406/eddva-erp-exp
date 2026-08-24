@@ -99,3 +99,25 @@ export interface Category {
 export interface CategoryFormData {
   name: string;
 }
+
+// Membership Rule Types
+export interface MembershipRule {
+  rule_id: number;
+  member_type: string;
+  max_books_allowed: number;
+  loan_period_days: number;
+  fine_per_day: number;
+  grace_period_days: number;
+  max_fine_cap: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MembershipRuleFormData {
+  member_type: string;
+  max_books_allowed: number;
+  loan_period_days: number;
+  fine_per_day: number;
+  grace_period_days: number;
+  max_fine_cap: number;
+}

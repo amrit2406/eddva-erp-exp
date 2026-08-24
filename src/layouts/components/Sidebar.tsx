@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 
@@ -71,6 +71,7 @@ const navItems: NavItem[] = [
       { path: '/library/roles', label: 'Roles', icon: Shield },
       { path: '/library/users', label: 'Users', icon: Users },
       { path: '/library/categories', label: 'Categories', icon: Folder },
+      { path: '/library/membership-rules', label: 'Membership Rules', icon: Settings },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },

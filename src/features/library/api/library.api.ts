@@ -2,6 +2,8 @@ import axiosInstance from '../../../lib/axios';
 import type {
   Category,
   CategoryFormData,
+  MembershipRule,
+  MembershipRuleFormData,
   Permission,
   PermissionFormData,
   PermissionsCatalog,
@@ -141,4 +143,34 @@ export async function updateCategory(id: string | number, data: Partial<Category
 
 export async function deleteCategory(id: string | number): Promise<void> {
   await axiosInstance.delete(`/library/categories/${id}`);
+}
+
+// Membership Rule Management Endpoints
+export async function getMembershipRules(): Promise<MembershipRule[]> {
+  const response = await axiosInstance.get('/library/membership-rules');
+  return response.data.data || response.data || [];
+}
+
+export async function createMembershipRule(data: MembershipRuleFormData): Promise<MembershipRule> {
+  const response = await axiosInstance.post('/library/membership-rules', data);
+  return response.data.data || response.data;
+}
+
+export async function getMembershipRule(id: string | number): Promise<MembershipRule> {
+  // Get all rules and find the specific one by ID
+  const rules = await getMembershipRules();
+  const rule = rules.find(r => r.rule_id === Number(id));
+  if (!rule) {
+    throw new Error('Membership rule not found');
+  }
+  return rule;
+}
+
+export async function updateMembershipRule(id: string | number, data: Partial<MembershipRuleFormData>): Promise<MembershipRule> {
+  const response = await axiosInstance.patch(`/library/membership-rules/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deleteMembershipRule(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/library/membership-rules/${id}`);
 }
