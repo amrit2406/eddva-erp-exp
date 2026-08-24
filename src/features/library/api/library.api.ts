@@ -1,5 +1,7 @@
 import axiosInstance from '../../../lib/axios';
 import type {
+  Category,
+  CategoryFormData,
   Permission,
   PermissionFormData,
   PermissionsCatalog,
@@ -109,4 +111,34 @@ export async function resetUserAssignmentPassword(
 ): Promise<ResetPasswordResponse> {
   const response = await axiosInstance.patch(`/library/roles/user-assignments/${id}/password`, data);
   return response.data.data;
+}
+
+// Category Management Endpoints
+export async function getCategories(): Promise<Category[]> {
+  const response = await axiosInstance.get('/library/categories');
+  return response.data.data || response.data || [];
+}
+
+export async function createCategory(data: CategoryFormData): Promise<Category> {
+  const response = await axiosInstance.post('/library/categories', data);
+  return response.data.data || response.data;
+}
+
+export async function getCategory(id: string | number): Promise<Category> {
+  // Get all categories and find the specific one by ID
+  const categories = await getCategories();
+  const category = categories.find(c => c.category_id === Number(id));
+  if (!category) {
+    throw new Error('Category not found');
+  }
+  return category;
+}
+
+export async function updateCategory(id: string | number, data: Partial<CategoryFormData>): Promise<Category> {
+  const response = await axiosInstance.patch(`/library/categories/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deleteCategory(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/library/categories/${id}`);
 }

@@ -151,6 +151,10 @@ import LibraryCreatePermissionPage from '../features/library/pages/rbac/CreatePe
 import LibraryEditPermissionPage from '../features/library/pages/rbac/EditPermissionPage';
 import LibraryUsersPage from '../features/library/pages/rbac/UsersPage';
 import LibraryCreateUserPage from '../features/library/pages/rbac/CreateUserPage';
+// Library Categories
+import LibraryCategoriesPage from '../features/library/pages/categories/CategoriesPage';
+import LibraryCreateCategoryPage from '../features/library/pages/categories/CreateCategoryPage';
+import LibraryEditCategoryPage from '../features/library/pages/categories/EditCategoryPage';
 
 export const routeConfig = [
   {
@@ -862,6 +866,22 @@ export const routeConfig = [
   {
     path: '/library/users/new',
     element: LibraryCreateUserPage,
+    isProtected: true,
+  },
+  // Library Categories Routes
+  {
+    path: '/library/categories',
+    element: LibraryCategoriesPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/categories/new',
+    element: LibraryCreateCategoryPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/categories/:id/edit',
+    element: LibraryEditCategoryPage,
     isProtected: true,
   },
   
