@@ -19,6 +19,8 @@ export const ROUTES = {
   // EXAMINATIONS: '/examinations',
   LIBRARY: '/library',
   LIBRARY_PERMISSIONS: '/library/permissions',
+  LIBRARY_PERMISSIONS_NEW: '/library/permissions/new',
+  LIBRARY_PERMISSIONS_EDIT: '/library/permissions/:id/edit',
   LIBRARY_ROLES: '/library/roles',
   LIBRARY_USERS: '/library/users',
   // TRANSPORT: '/transport',

@@ -1,5 +1,7 @@
 import axiosInstance from '../../../lib/axios';
 import type {
+  Permission,
+  PermissionFormData,
   PermissionsCatalog,
   ResetPasswordFormData,
   ResetPasswordResponse,
@@ -20,6 +22,38 @@ export async function getPermissionsCatalog(): Promise<PermissionsCatalog> {
 export async function getMyPermissions(): Promise<RolePermission[]> {
   const response = await axiosInstance.get('/library/roles/permissions/me');
   return response.data.data;
+}
+
+export async function getPermissions(): Promise<Permission[]> {
+  const response = await axiosInstance.get('/library/permissions');
+  // Handle catalog structure response
+  if (response.data.data?.all_permissions) {
+    return response.data.data.all_permissions;
+  }
+  if (response.data.all_permissions) {
+    return response.data.all_permissions;
+  }
+  // Fallback for simple array response
+  return response.data.data || response.data || [];
+}
+
+export async function createPermission(data: PermissionFormData): Promise<Permission> {
+  const response = await axiosInstance.post('/library/permissions', data);
+  return response.data.data || response.data;
+}
+
+export async function getPermission(id: string | number): Promise<Permission> {
+  const response = await axiosInstance.get(`/library/permissions/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function updatePermission(id: string | number, data: Partial<PermissionFormData>): Promise<Permission> {
+  const response = await axiosInstance.patch(`/library/permissions/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deletePermission(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/library/permissions/${id}`);
 }
 
 // Role Management Endpoints

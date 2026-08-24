@@ -147,6 +147,8 @@ import LibraryRolesPage from '../features/library/pages/rbac/RolesPage';
 import LibraryCreateRolePage from '../features/library/pages/rbac/CreateRolePage';
 import LibraryEditRolePage from '../features/library/pages/rbac/EditRolePage';
 import LibraryPermissionsPage from '../features/library/pages/rbac/PermissionsPage';
+import LibraryCreatePermissionPage from '../features/library/pages/rbac/CreatePermissionPage';
+import LibraryEditPermissionPage from '../features/library/pages/rbac/EditPermissionPage';
 import LibraryUsersPage from '../features/library/pages/rbac/UsersPage';
 import LibraryCreateUserPage from '../features/library/pages/rbac/CreateUserPage';
 
@@ -840,6 +842,16 @@ export const routeConfig = [
   {
     path: '/library/permissions',
     element: LibraryPermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/permissions/new',
+    element: LibraryCreatePermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/permissions/:id/edit',
+    element: LibraryEditPermissionPage,
     isProtected: true,
   },
   {

@@ -13,6 +13,14 @@ export interface Permission {
   updated_at: string;
 }
 
+export interface PermissionFormData {
+  resource: string;
+  action: string;
+  name: string;
+  category: string;
+  description: string;
+}
+
 export interface PermissionResource {
   resource: string;
   name: string;

@@ -1,42 +1,65 @@
+import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import PermissionsCatalogTable from '../../components/rbac/PermissionsCatalogTable';
-import { getPermissionsCatalog } from '../../api/library.api';
-import type { PermissionResource } from '../../types/library.types';
+import PermissionTable from '../../components/rbac/LibraryPermissionTable';
+import { getPermissions, deletePermission } from '../../api/library.api';
+import type { Permission } from '../../types/library.types';
+import { ROUTES } from '../../../../constants/routes';
 
 export default function PermissionsPage() {
-  const [resources, setResources] = useState<PermissionResource[]>([]);
-  const [total, setTotal] = useState(0);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadCatalog();
+    loadPermissions();
   }, []);
 
-  async function loadCatalog() {
+  async function loadPermissions() {
     try {
       setLoading(true);
-      const catalog = await getPermissionsCatalog();
-      setResources(catalog.resources);
-      setTotal(catalog.total);
+      const data = await getPermissions();
+      setPermissions(data);
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load permissions catalog');
+      setError(err instanceof Error ? err.message : 'Failed to load permissions');
     } finally {
       setLoading(false);
     }
   }
 
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this permission?')) {
+      return;
+    }
+    try {
+      await deletePermission(id);
+      setPermissions(permissions.filter((p) => p.permission_id !== id));
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      alert(err.response?.data?.message || (err instanceof Error ? err.message : 'Failed to delete permission'));
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Permissions</h1>
-        <p className="text-slate-600 mt-1">
-          Library permission catalog — {total} permission{total !== 1 ? 's' : ''} across {resources.length} resource{resources.length !== 1 ? 's' : ''}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Permissions</h1>
+          <p className="text-slate-600 mt-1">Manage library permissions</p>
+        </div>
+        <Link to={ROUTES.LIBRARY_PERMISSIONS_NEW}>
+          <Button variant="primary">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Permission
+          </Button>
+        </Link>
       </div>
 
       {loading ? (
@@ -49,7 +72,7 @@ export default function PermissionsPage() {
         </Card>
       ) : (
         <Card className="border-slate-200">
-          <PermissionsCatalogTable resources={resources} />
+          <PermissionTable permissions={permissions} onDelete={handleDelete} />
         </Card>
       )}
     </div>
