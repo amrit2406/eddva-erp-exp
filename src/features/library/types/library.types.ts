@@ -191,3 +191,36 @@ export interface BookFormData {
   publish_year: number;
   description: string;
 }
+
+// Book Copy Types
+export interface BookCopy {
+  copy_id: number;
+  book_id: number;
+  barcode: string;
+  rack_location: string;
+  condition: 'new' | 'good' | 'fair' | 'poor' | 'damaged';
+  acquired_date: string;
+  price: number;
+  status: 'available' | 'issued' | 'reserved' | 'lost' | 'under_repair' | 'withdrawn';
+  created_at: string;
+  updated_at: string;
+  accession_number?: string;
+  current_issue_id?: number | null;
+}
+
+export interface BookCopyFormData {
+  barcode: string;
+  rack_location: string;
+  condition: 'new' | 'good' | 'fair' | 'poor' | 'damaged';
+  acquired_date: string;
+  price: number;
+}
+
+export interface BookCopyUpdateData {
+  barcode?: string;
+  rack_location?: string;
+  condition?: 'new' | 'good' | 'fair' | 'poor' | 'damaged';
+  acquired_date?: string;
+  price?: number;
+  status?: 'available' | 'issued' | 'reserved' | 'lost' | 'under_repair' | 'withdrawn';
+}

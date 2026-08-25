@@ -1,6 +1,9 @@
 import axiosInstance from '../../../lib/axios';
 import type {
   Book,
+  BookCopy,
+  BookCopyFormData,
+  BookCopyUpdateData,
   BookFormData,
   BookIssue,
   Category,
@@ -259,4 +262,32 @@ export async function uploadBookCover(id: string | number, file: File): Promise<
   formData.append('cover', file);
   const response = await axiosInstance.post(`/library/books/${id}/cover`, formData);
   return response.data.data || response.data;
+}
+
+// Book Copy Management Endpoints
+export async function getBookCopies(bookId: string | number): Promise<BookCopy[]> {
+  const response = await axiosInstance.get(`/library/books/${bookId}/copies`);
+  return response.data.data || response.data || [];
+}
+
+export async function createBookCopy(bookId: string | number, data: BookCopyFormData): Promise<BookCopy> {
+  const response = await axiosInstance.post(`/library/books/${bookId}/copies`, data);
+  return response.data.data || response.data;
+}
+
+export async function scanCopyByBarcode(barcode: string): Promise<BookCopy> {
+  const response = await axiosInstance.get(`/library/copies/scan/${barcode}`);
+  return response.data.data || response.data;
+}
+
+export async function updateBookCopy(id: string | number, data: BookCopyUpdateData): Promise<BookCopy> {
+  console.log('Updating copy:', id, 'with data:', data);
+  try {
+    const response = await axiosInstance.patch(`/library/copies/${id}`, data);
+    console.log('Update response:', response.data);
+    return response.data.data || response.data;
+  } catch (error: any) {
+    console.error('Update error details:', error.response?.data);
+    throw error;
+  }
 }

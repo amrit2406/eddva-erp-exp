@@ -1,20 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Calendar, Edit, CheckCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, Edit, CheckCircle, Plus, Barcode } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getBook } from '../../api/library.api';
-import type { Book } from '../../types/library.types';
+import { getBook, getBookCopies, createBookCopy, updateBookCopy } from '../../api/library.api';
+import type { Book, BookCopy, BookCopyFormData, BookCopyUpdateData } from '../../types/library.types';
 import { ROUTES } from '../../../../constants/routes';
+import CopyTable from '../../components/copies/CopyTable';
+import CreateCopyModal from '../../components/copies/CreateCopyModal';
+import EditCopyModal from '../../components/copies/EditCopyModal';
 
 export default function BookDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const [book, setBook] = useState<Book | null>(null);
+  const [copies, setCopies] = useState<BookCopy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedCopy, setSelectedCopy] = useState<BookCopy | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     loadBook();
+    loadCopies();
   }, [id]);
 
   async function loadBook() {
@@ -31,6 +40,78 @@ export default function BookDetailsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadCopies() {
+    if (!id) return;
+    try {
+      const data = await getBookCopies(id);
+      setCopies(data);
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      console.error('Failed to load copies:', err);
+    }
+  }
+
+  async function handleCreateCopy(data: BookCopyFormData) {
+    if (!id) return;
+    try {
+      setIsSubmitting(true);
+      await createBookCopy(id, data);
+      await loadCopies();
+      setIsCreateModalOpen(false);
+    } catch (err: any) {
+      if (err.response?.status === 409) {
+        throw new Error('A copy with this barcode already exists');
+      }
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleUpdateCopy(copyId: number, data: BookCopyUpdateData) {
+    try {
+      setIsSubmitting(true);
+      console.log('Raw data from form:', data);
+      
+      // Only send fields that have values
+      const updateData: BookCopyUpdateData = {};
+      if (data.barcode) updateData.barcode = data.barcode;
+      if (data.rack_location) updateData.rack_location = data.rack_location;
+      if (data.condition) updateData.condition = data.condition;
+      if (data.acquired_date) {
+        // Convert date string to ISO-8601 format
+        const isoDate = new Date(data.acquired_date).toISOString();
+        console.log('Converting date:', data.acquired_date, 'to ISO:', isoDate);
+        updateData.acquired_date = isoDate;
+      }
+      if (data.price !== undefined) updateData.price = data.price;
+      if (data.status) updateData.status = data.status;
+      
+      console.log('Final updateData:', updateData);
+      await updateBookCopy(copyId, updateData);
+      await loadCopies();
+      setIsEditModalOpen(false);
+      setSelectedCopy(null);
+    } catch (err: any) {
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function handleEditCopy(copy: BookCopy) {
+    setSelectedCopy(copy);
+    setIsEditModalOpen(true);
+  }
+
+  function handleDeleteCopy(_copyId: number) {
+    // Note: Delete API not provided in requirements
+    // When API is available, implement: await deleteBookCopy(copyId);
+    alert('Delete functionality not yet implemented - API endpoint not provided');
   }
 
   if (loading) {
@@ -161,6 +242,43 @@ export default function BookDetailsPage() {
           </div>
         </div>
       </Card>
+
+      {/* Copies Section */}
+      <Card className="border-slate-200">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Barcode className="h-5 w-5 text-blue-600" />
+              <h3 className="text-lg font-semibold text-slate-900">Book Copies</h3>
+              <span className="text-sm text-slate-500">({copies.length} copies)</span>
+            </div>
+            <Button variant="primary" size="sm" onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Copy
+            </Button>
+          </div>
+          <CopyTable
+            copies={copies}
+            onEdit={handleEditCopy}
+            onDelete={handleDeleteCopy}
+          />
+        </div>
+      </Card>
+
+      {/* Modals */}
+      <CreateCopyModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateCopy}
+        isLoading={isSubmitting}
+      />
+      <EditCopyModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        copy={selectedCopy}
+        onSubmit={handleUpdateCopy}
+        isLoading={isSubmitting}
+      />
     </div>
   );
 }
