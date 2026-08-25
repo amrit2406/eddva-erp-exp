@@ -8,10 +8,11 @@ import type {
   BookVendor,
   BookVendorFormData,
   BookVendorUpdateData,
-  BookIssue,
+  Fine,
+  FineWaiveFormData,
+  FinePayFormData,
   Category,
   CategoryFormData,
-  Fine,
   Member,
   MemberFormData,
   MembershipRule,
@@ -314,3 +315,24 @@ export async function updateBookVendor(id: string | number, data: BookVendorUpda
 export async function deleteBookVendor(id: string | number): Promise<void> {
   await axiosInstance.delete(`/library/book-vendors/${id}`);
 }
+
+// Fine Management Endpoints
+export async function getFine(id: string | number): Promise<Fine> {
+  const response = await axiosInstance.get(`/library/fines/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function waiveFine(id: string | number, data: FineWaiveFormData): Promise<Fine> {
+  const response = await axiosInstance.post(`/library/fines/${id}/waive`, data);
+  return response.data.data || response.data;
+}
+
+export async function payFine(id: string | number, data: FinePayFormData): Promise<Fine> {
+  const response = await axiosInstance.post(`/library/fines/${id}/pay`, data);
+  return response.data.data || response.data;
+}
+
+// export async function getMemberFines(memberId: string | number): Promise<Fine[]> {
+//   const response = await axiosInstance.get(`/library/members/${memberId}/fines`);
+//   return response.data.data || response.data || [];
+// }

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen, AlertTriangle, CheckCircle, Clock, Calendar } from 'lucide-react';
+import { ArrowLeft, BookOpen, AlertTriangle, Clock, Calendar } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getMember, getMemberCurrentIssues, getMemberFines } from '../../api/library.api';
-import type { Member, BookIssue, Fine } from '../../types/library.types';
+import { getMember, getMemberCurrentIssues, getMemberFines, waiveFine, payFine, getFine } from '../../api/library.api';
+import type { Member, BookIssue, Fine, FineWaiveFormData, FinePayFormData } from '../../types/library.types';
 import { ROUTES } from '../../../../constants/routes';
+import FineTable from '../../components/fines/FineTable';
+import WaiveFineModal from '../../components/fines/WaiveFineModal';
+import PayFineModal from '../../components/fines/PayFineModal';
 
 export default function MemberDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +17,10 @@ export default function MemberDetailsPage() {
   const [fines, setFines] = useState<Fine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFine, setSelectedFine] = useState<Fine | null>(null);
+  const [isWaiveModalOpen, setIsWaiveModalOpen] = useState(false);
+  const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -31,6 +38,10 @@ export default function MemberDetailsPage() {
       setMember(memberData);
       setCurrentIssues(issuesData);
       setFines(finesData);
+      console.log('Fines data:', finesData);
+      if (finesData.length > 0) {
+        console.log('First fine:', finesData[0]);
+      }
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
@@ -39,6 +50,56 @@ export default function MemberDetailsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleWaiveFine(fineId: number, data: FineWaiveFormData) {
+    try {
+      setIsSubmitting(true);
+      await waiveFine(fineId, data);
+      // Refresh the specific fine
+      const updatedFine = await getFine(fineId);
+      setFines(fines.map(f => f.fine_id === fineId ? updatedFine : f));
+      setIsWaiveModalOpen(false);
+      setSelectedFine(null);
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      console.error('Failed to waive fine:', err);
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handlePayFine(fineId: number, data: FinePayFormData) {
+    try {
+      setIsSubmitting(true);
+      await payFine(fineId, data);
+      // Refresh the specific fine
+      const updatedFine = await getFine(fineId);
+      setFines(fines.map(f => f.fine_id === fineId ? updatedFine : f));
+      setIsPayModalOpen(false);
+      setSelectedFine(null);
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      console.error('Failed to pay fine:', err);
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function handleWaiveClick(fine: Fine) {
+    setSelectedFine(fine);
+    setIsWaiveModalOpen(true);
+  }
+
+  function handlePayClick(fine: Fine) {
+    setSelectedFine(fine);
+    setIsPayModalOpen(true);
   }
 
   if (loading) {
@@ -172,43 +233,29 @@ export default function MemberDetailsPage() {
               <span className="text-lg font-bold text-red-600">₹{totalFines.toFixed(2)}</span>
             </div>
           </div>
-          {fines.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
-              No fines
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {fines.map((fine) => (
-                <div key={fine.fine_id} className="border border-slate-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-medium text-slate-900">{fine.reason}</h3>
-                      <div className="flex items-center gap-2 mt-2 text-sm text-slate-600">
-                        <Calendar className="h-3 w-3" />
-                        <span>{new Date(fine.created_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-semibold text-slate-900">₹{fine.amount.toFixed(2)}</span>
-                      {fine.paid ? (
-                        <div className="flex items-center gap-1 text-green-600 text-sm">
-                          <CheckCircle className="h-4 w-4" />
-                          <span>Paid</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-red-600 text-sm">
-                          <AlertTriangle className="h-4 w-4" />
-                          <span>Unpaid</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <FineTable
+            fines={fines}
+            onWaive={handleWaiveClick}
+            onPay={handlePayClick}
+          />
         </div>
       </Card>
+
+      {/* Modals */}
+      <WaiveFineModal
+        isOpen={isWaiveModalOpen}
+        onClose={() => setIsWaiveModalOpen(false)}
+        fine={selectedFine}
+        onSubmit={handleWaiveFine}
+        isLoading={isSubmitting}
+      />
+      <PayFineModal
+        isOpen={isPayModalOpen}
+        onClose={() => setIsPayModalOpen(false)}
+        fine={selectedFine}
+        onSubmit={handlePayFine}
+        isLoading={isSubmitting}
+      />
     </div>
   );
 }

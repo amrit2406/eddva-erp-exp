@@ -151,9 +151,28 @@ export interface BookIssue {
 export interface Fine {
   fine_id: number;
   amount: number;
+  amount_paid: number;
   reason: string;
   created_at: string;
   paid: boolean;
+  waived: boolean;
+  waive_reason?: string;
+  payment_mode?: string;
+  transaction_ref?: string;
+  received_by?: number;
+  paid_at?: string;
+  waived_at?: string;
+}
+
+export interface FineWaiveFormData {
+  reason: string;
+}
+
+export interface FinePayFormData {
+  amount_paid: number;
+  payment_mode: string;
+  transaction_ref: string;
+  received_by: number;
 }
 
 // Book Types
