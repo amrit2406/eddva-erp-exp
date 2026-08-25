@@ -1,29 +1,37 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Calendar, Edit, CheckCircle, Plus, Barcode } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, Edit, CheckCircle, Plus, Barcode, Building2 } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getBook, getBookCopies, createBookCopy, updateBookCopy } from '../../api/library.api';
-import type { Book, BookCopy, BookCopyFormData, BookCopyUpdateData } from '../../types/library.types';
+import { getBook, getBookCopies, createBookCopy, updateBookCopy, getBookVendors, createBookVendor, updateBookVendor, deleteBookVendor } from '../../api/library.api';
+import type { Book, BookCopy, BookCopyFormData, BookCopyUpdateData, BookVendor, BookVendorFormData, BookVendorUpdateData } from '../../types/library.types';
 import { ROUTES } from '../../../../constants/routes';
 import CopyTable from '../../components/copies/CopyTable';
 import CreateCopyModal from '../../components/copies/CreateCopyModal';
 import EditCopyModal from '../../components/copies/EditCopyModal';
+import VendorTable from '../../components/vendors/VendorTable';
+import CreateVendorModal from '../../components/vendors/CreateVendorModal';
+import EditVendorModal from '../../components/vendors/EditVendorModal';
 
 export default function BookDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const [book, setBook] = useState<Book | null>(null);
   const [copies, setCopies] = useState<BookCopy[]>([]);
+  const [vendors, setVendors] = useState<BookVendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCopy, setSelectedCopy] = useState<BookCopy | null>(null);
+  const [isVendorCreateModalOpen, setIsVendorCreateModalOpen] = useState(false);
+  const [isVendorEditModalOpen, setIsVendorEditModalOpen] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState<BookVendor | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     loadBook();
     loadCopies();
+    loadVendors();
   }, [id]);
 
   async function loadBook() {
@@ -52,6 +60,19 @@ export default function BookDetailsPage() {
         return;
       }
       console.error('Failed to load copies:', err);
+    }
+  }
+
+  async function loadVendors() {
+    if (!id) return;
+    try {
+      const data = await getBookVendors(id);
+      setVendors(data);
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      console.error('Failed to load vendors:', err);
     }
   }
 
@@ -112,6 +133,53 @@ export default function BookDetailsPage() {
     // Note: Delete API not provided in requirements
     // When API is available, implement: await deleteBookCopy(copyId);
     alert('Delete functionality not yet implemented - API endpoint not provided');
+  }
+
+  async function handleCreateVendor(data: BookVendorFormData) {
+    if (!id) return;
+    try {
+      setIsSubmitting(true);
+      await createBookVendor(id, data);
+      await loadVendors();
+      setIsVendorCreateModalOpen(false);
+    } catch (err: any) {
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleUpdateVendor(vendorId: number, data: BookVendorUpdateData) {
+    try {
+      setIsSubmitting(true);
+      await updateBookVendor(vendorId, data);
+      await loadVendors();
+      setIsVendorEditModalOpen(false);
+      setSelectedVendor(null);
+    } catch (err: any) {
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function handleEditVendor(vendor: BookVendor) {
+    setSelectedVendor(vendor);
+    setIsVendorEditModalOpen(true);
+  }
+
+  async function handleDeleteVendor(vendorId: number) {
+    if (!confirm('Are you sure you want to delete this vendor?')) return;
+    try {
+      await deleteBookVendor(vendorId);
+      await loadVendors();
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      console.error('Failed to delete vendor:', err);
+      alert('Failed to delete vendor');
+    }
   }
 
   if (loading) {
@@ -265,6 +333,28 @@ export default function BookDetailsPage() {
         </div>
       </Card>
 
+      {/* Vendors Section */}
+      <Card className="border-slate-200">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Building2 className="h-5 w-5 text-blue-600" />
+              <h3 className="text-lg font-semibold text-slate-900">Book Vendors</h3>
+              <span className="text-sm text-slate-500">({vendors.length} vendors)</span>
+            </div>
+            <Button variant="primary" size="sm" onClick={() => setIsVendorCreateModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Vendor
+            </Button>
+          </div>
+          <VendorTable
+            vendors={vendors}
+            onEdit={handleEditVendor}
+            onDelete={handleDeleteVendor}
+          />
+        </div>
+      </Card>
+
       {/* Modals */}
       <CreateCopyModal
         isOpen={isCreateModalOpen}
@@ -277,6 +367,19 @@ export default function BookDetailsPage() {
         onClose={() => setIsEditModalOpen(false)}
         copy={selectedCopy}
         onSubmit={handleUpdateCopy}
+        isLoading={isSubmitting}
+      />
+      <CreateVendorModal
+        isOpen={isVendorCreateModalOpen}
+        onClose={() => setIsVendorCreateModalOpen(false)}
+        onSubmit={handleCreateVendor}
+        isLoading={isSubmitting}
+      />
+      <EditVendorModal
+        isOpen={isVendorEditModalOpen}
+        onClose={() => setIsVendorEditModalOpen(false)}
+        vendor={selectedVendor}
+        onSubmit={handleUpdateVendor}
         isLoading={isSubmitting}
       />
     </div>

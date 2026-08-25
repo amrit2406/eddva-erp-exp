@@ -1,10 +1,13 @@
 import axiosInstance from '../../../lib/axios';
 import type {
   Book,
+  BookFormData,
   BookCopy,
   BookCopyFormData,
   BookCopyUpdateData,
-  BookFormData,
+  BookVendor,
+  BookVendorFormData,
+  BookVendorUpdateData,
   BookIssue,
   Category,
   CategoryFormData,
@@ -290,4 +293,24 @@ export async function updateBookCopy(id: string | number, data: BookCopyUpdateDa
     console.error('Update error details:', error.response?.data);
     throw error;
   }
+}
+
+// Book Vendor Management Endpoints
+export async function getBookVendors(bookId: string | number): Promise<BookVendor[]> {
+  const response = await axiosInstance.get(`/library/books/${bookId}/vendors`);
+  return response.data.data || response.data || [];
+}
+
+export async function createBookVendor(bookId: string | number, data: BookVendorFormData): Promise<BookVendor> {
+  const response = await axiosInstance.post(`/library/books/${bookId}/vendors`, data);
+  return response.data.data || response.data;
+}
+
+export async function updateBookVendor(id: string | number, data: BookVendorUpdateData): Promise<BookVendor> {
+  const response = await axiosInstance.patch(`/library/book-vendors/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deleteBookVendor(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/library/book-vendors/${id}`);
 }

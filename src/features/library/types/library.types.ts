@@ -224,3 +224,38 @@ export interface BookCopyUpdateData {
   price?: number;
   status?: 'available' | 'issued' | 'reserved' | 'lost' | 'under_repair' | 'withdrawn';
 }
+
+// Book Vendor Types
+export interface BookVendor {
+  book_vendor_id: number;
+  book_id: number;
+  vendor_name: string;
+  name: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+  address: string;
+  last_purchase_price: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookVendorFormData {
+  vendor_name: string;
+  name: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+  address: string;
+  last_purchase_price: number;
+}
+
+export interface BookVendorUpdateData {
+  vendor_name?: string;
+  name?: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  last_purchase_price?: number;
+}
