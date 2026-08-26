@@ -1,7 +1,8 @@
-import { Menu, Bell, Search } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { useUIStore } from '../../stores/ui.store';
 import UserMenu from './UserMenu';
+import NotificationDropdown from './NotificationDropdown';
 
 export default function Header() {
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
@@ -23,9 +24,7 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        <Button variant="ghost" size="sm">
-          <Bell className="h-5 w-5 text-slate-600" />
-        </Button>
+        <NotificationDropdown />
         <UserMenu />
       </div>
     </header>

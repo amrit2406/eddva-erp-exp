@@ -189,6 +189,16 @@ export interface BookIssueRenewData {
   renewed_by: number;
 }
 
+export interface LibraryNotification {
+  id: number;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  created_at: string;
+  read: boolean;
+  link?: string;
+}
+
 export interface ReturnIssueResult {
   issue_id: number;
   returned: boolean;

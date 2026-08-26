@@ -28,6 +28,10 @@ import type {
   UserAssignment,
   UserAssignmentFormData,
   BookIssue,
+  BookIssueFormData,
+  BookIssueReturnData,
+  BookIssueRenewData,
+  LibraryNotification,
   MemberSearchParams,
 } from '../types/library.types';
 import { sanitizeRolePermissions } from '../utils/rbac.utils';
@@ -324,6 +328,11 @@ export async function getFine(id: string | number): Promise<Fine> {
   return response.data.data || response.data;
 }
 
+export async function renewIssue(id: string | number, data: BookIssueRenewData): Promise<BookIssue> {
+  const response = await axiosInstance.post(`/library/issues/${id}/renew`, data);
+  return response.data.data || response.data;
+}
+
 export async function waiveFine(id: string | number, data: FineWaiveFormData): Promise<Fine> {
   const response = await axiosInstance.post(`/library/fines/${id}/waive`, data);
   return response.data.data || response.data;
@@ -338,5 +347,11 @@ export async function payFine(id: string | number, data: FinePayFormData): Promi
 //   const response = await axiosInstance.get(`/library/members/${memberId}/fines`);
 //   return response.data.data || response.data || [];
 // }
+
+// Library Notifications Endpoints
+export async function getNotifications(): Promise<LibraryNotification[]> {
+  const response = await axiosInstance.get('/library/notifications');
+  return response.data.data || response.data || [];
+}
 
 // Book Issue Management Endpoints have moved to ./issues.api.ts
