@@ -174,6 +174,12 @@ import LibraryIssuesDeskPage from '../features/library/pages/issues/IssuesDeskPa
 import LibraryOverdueDashboardPage from '../features/library/pages/issues/OverdueDashboardPage';
 import LibraryIssueDetailPage from '../features/library/pages/issues/IssueDetailPage';
 import LibraryReservationsPage from '../features/library/pages/reservations/ReservationsPage';
+// Sports RBAC
+import SportsRolesPage from '../features/sports/pages/rbac/RolesPage';
+import SportsCreateRolePage from '../features/sports/pages/rbac/CreateRolePage';
+import SportsEditRolePage from '../features/sports/pages/rbac/EditRolePage';
+import SportsUsersPage from '../features/sports/pages/rbac/UsersPage';
+import SportsCreateUserPage from '../features/sports/pages/rbac/CreateUserPage';
 
 export const routeConfig = [
   {
@@ -985,6 +991,33 @@ export const routeConfig = [
   {
     path: '/library/reservations',
     element: LibraryReservationsPage,
+    isProtected: true,
+  },
+
+  // Sports RBAC Routes
+  {
+    path: '/sports/roles',
+    element: SportsRolesPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/roles/new',
+    element: SportsCreateRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/roles/:id/edit',
+    element: SportsEditRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/users',
+    element: SportsUsersPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/users/new',
+    element: SportsCreateUserPage,
     isProtected: true,
   },
 
