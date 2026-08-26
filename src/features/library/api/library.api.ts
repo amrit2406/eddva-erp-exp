@@ -1,32 +1,34 @@
 import axiosInstance from '../../../lib/axios';
-import type {
-  Book,
-  BookFormData,
-  BookCopy,
-  BookCopyFormData,
-  BookCopyUpdateData,
-  BookVendor,
-  BookVendorFormData,
-  BookVendorUpdateData,
-  Fine,
-  FineWaiveFormData,
-  FinePayFormData,
-  Category,
-  CategoryFormData,
-  Member,
-  MemberFormData,
-  MembershipRule,
-  MembershipRuleFormData,
-  Permission,
-  PermissionFormData,
-  PermissionsCatalog,
-  ResetPasswordFormData,
-  ResetPasswordResponse,
+import type { 
+  Book, 
+  BookFormData, 
+  BookCopy, 
+  BookCopyFormData, 
+  BookCopyUpdateData, 
+  BookVendor, 
+  BookVendorFormData, 
+  BookVendorUpdateData, 
+  Fine, 
+  FineWaiveFormData, 
+  FinePayFormData, 
+  Category, 
+  CategoryFormData, 
+  Member, 
+  MemberFormData, 
+  MembershipRule, 
+  MembershipRuleFormData, 
+  Permission, 
+  PermissionFormData, 
+  PermissionsCatalog, 
+  ResetPasswordFormData, 
+  ResetPasswordResponse, 
   Role,
   RoleFormData,
   RolePermission,
   UserAssignment,
   UserAssignmentFormData,
+  BookIssue,
+  MemberSearchParams,
 } from '../types/library.types';
 import { sanitizeRolePermissions } from '../utils/rbac.utils';
 
@@ -189,8 +191,8 @@ export async function deleteMembershipRule(id: string | number): Promise<void> {
 }
 
 // Member Management Endpoints
-export async function getMembers(): Promise<Member[]> {
-  const response = await axiosInstance.get('/library/members');
+export async function getMembers(params?: MemberSearchParams): Promise<Member[]> {
+  const response = await axiosInstance.get('/library/members', { params });
   // Handle nested response structure: response.data.data.data
   const members = response.data.data?.data || [];
   return members;
@@ -336,3 +338,5 @@ export async function payFine(id: string | number, data: FinePayFormData): Promi
 //   const response = await axiosInstance.get(`/library/members/${memberId}/fines`);
 //   return response.data.data || response.data || [];
 // }
+
+// Book Issue Management Endpoints have moved to ./issues.api.ts

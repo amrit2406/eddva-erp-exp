@@ -128,8 +128,16 @@ export interface Member {
   external_ref_id: string;
   name: string;
   member_type: string;
+  library_card_number: string;
+  status: 'active' | 'suspended' | 'expired';
   created_at: string;
   updated_at: string;
+}
+
+export interface MemberSearchParams {
+  search?: string;
+  status?: 'active' | 'suspended' | 'expired';
+  type?: 'student' | 'staff' | 'faculty';
 }
 
 export interface MemberFormData {
@@ -138,14 +146,53 @@ export interface MemberFormData {
   member_type: string;
 }
 
+export type IssueStatus = 'issued' | 'overdue' | 'returned';
+export type ReturnedCondition = 'new' | 'good' | 'worn' | 'damaged';
+
 export interface BookIssue {
   issue_id: number;
   book_id: number;
   book_title: string;
+  copy_id: number;
+  member_id: number;
   issue_date: string;
   due_date: string;
   return_date?: string;
-  status: string;
+  status: IssueStatus;
+  issued_by?: number;
+  received_by?: number;
+  returned_to?: number;
+  returned_condition?: ReturnedCondition;
+  renewed_by?: number;
+  renewal_count?: number;
+}
+
+export interface IssueDetail extends BookIssue {
+  copy?: BookCopy & { book?: Book };
+  member?: Member;
+  fines?: Fine[];
+}
+
+export interface BookIssueFormData {
+  copy_id: number;
+  member_id: number;
+  issued_by: number;
+}
+
+export interface BookIssueReturnData {
+  received_by: number;
+  returned_to: number;
+  returned_condition: ReturnedCondition;
+}
+
+export interface BookIssueRenewData {
+  renewed_by: number;
+}
+
+export interface ReturnIssueResult {
+  issue_id: number;
+  returned: boolean;
+  fine: Fine | null;
 }
 
 export interface Fine {

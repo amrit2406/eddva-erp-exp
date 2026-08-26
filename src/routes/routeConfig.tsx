@@ -169,6 +169,10 @@ import LibraryBooksPage from '../features/library/pages/books/BooksPage';
 import LibraryCreateBookPage from '../features/library/pages/books/CreateBookPage';
 import LibraryEditBookPage from '../features/library/pages/books/EditBookPage';
 import LibraryBookDetailsPage from '../features/library/pages/books/BookDetailsPage';
+import LibraryActiveIssuesListPage from '../features/library/pages/issues/ActiveIssuesListPage';
+import LibraryIssuesDeskPage from '../features/library/pages/issues/IssuesDeskPage';
+import LibraryOverdueDashboardPage from '../features/library/pages/issues/OverdueDashboardPage';
+import LibraryIssueDetailPage from '../features/library/pages/issues/IssueDetailPage';
 
 export const routeConfig = [
   {
@@ -956,7 +960,28 @@ export const routeConfig = [
     element: LibraryBookDetailsPage,
     isProtected: true,
   },
-  
+  // Library Issues Routes
+  {
+    path: '/library/issues',
+    element: LibraryActiveIssuesListPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/issues/desk',
+    element: LibraryIssuesDeskPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/issues/overdue',
+    element: LibraryOverdueDashboardPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/issues/:id',
+    element: LibraryIssueDetailPage,
+    isProtected: true,
+  },
+
   // Future routes will be added here
   // {
   //   path: ROUTES.STUDENTS,
