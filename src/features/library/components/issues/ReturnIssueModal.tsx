@@ -3,7 +3,7 @@ import Modal from '../../../../components/ui/Modal';
 import Button from '../../../../components/ui/Button';
 import Select from '../../../../components/ui/Select';
 import { useLibrarianStore } from '../../stores/librarian.store';
-import { getIssueErrorMessage } from '../../utils/issueErrors';
+import { getApiErrorMessage } from '../../utils/apiError';
 import type { BookIssue, BookIssueReturnData, ReturnIssueResult, ReturnedCondition } from '../../types/library.types';
 
 interface ReturnIssueModalProps {
@@ -39,7 +39,7 @@ export default function ReturnIssueModal({ isOpen, onClose, issue, onSubmit, isL
       setCondition('good');
       onClose();
     } catch (err) {
-      setError(getIssueErrorMessage(err, 'Failed to return book'));
+      setError(getApiErrorMessage(err, 'Failed to return book'));
     }
   };
 

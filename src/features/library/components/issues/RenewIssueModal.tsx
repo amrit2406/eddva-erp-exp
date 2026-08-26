@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Modal from '../../../../components/ui/Modal';
 import Button from '../../../../components/ui/Button';
 import { useLibrarianStore } from '../../stores/librarian.store';
-import { getIssueErrorMessage } from '../../utils/issueErrors';
+import { getApiErrorMessage } from '../../utils/apiError';
 import type { BookIssue, BookIssueRenewData } from '../../types/library.types';
 
 interface RenewIssueModalProps {
@@ -24,7 +24,7 @@ export default function RenewIssueModal({ isOpen, onClose, issue, onSubmit, isLo
       await onSubmit(issue.issue_id, { renewed_by: librarianId });
       onClose();
     } catch (err) {
-      setError(getIssueErrorMessage(err, 'Failed to renew issue'));
+      setError(getApiErrorMessage(err, 'Failed to renew issue'));
     }
   };
 

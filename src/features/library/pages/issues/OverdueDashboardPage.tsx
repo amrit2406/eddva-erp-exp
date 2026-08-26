@@ -5,7 +5,7 @@ import Card from '../../../../components/ui/Card';
 import EmptyState from '../../../../components/ui/EmptyState';
 import { useToast } from '../../../../hooks/useToast';
 import { getOverdueIssues } from '../../api/issues.api';
-import { getIssueErrorMessage } from '../../utils/issueErrors';
+import { getApiErrorMessage } from '../../utils/apiError';
 import IssuesTabs from '../../components/issues/IssuesTabs';
 import type { IssueDetail } from '../../types/library.types';
 
@@ -34,7 +34,7 @@ export default function OverdueDashboardPage() {
       setIssues(data);
     } catch (err: any) {
       if (err.response?.status === 401) return;
-      toast.error(getIssueErrorMessage(err, 'Failed to load overdue issues'));
+      toast.error(getApiErrorMessage(err, 'Failed to load overdue issues'));
     } finally {
       setLoading(false);
     }

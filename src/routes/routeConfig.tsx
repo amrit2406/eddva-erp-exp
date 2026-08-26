@@ -173,6 +173,7 @@ import LibraryActiveIssuesListPage from '../features/library/pages/issues/Active
 import LibraryIssuesDeskPage from '../features/library/pages/issues/IssuesDeskPage';
 import LibraryOverdueDashboardPage from '../features/library/pages/issues/OverdueDashboardPage';
 import LibraryIssueDetailPage from '../features/library/pages/issues/IssueDetailPage';
+import LibraryReservationsPage from '../features/library/pages/reservations/ReservationsPage';
 
 export const routeConfig = [
   {
@@ -979,6 +980,11 @@ export const routeConfig = [
   {
     path: '/library/issues/:id',
     element: LibraryIssueDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/reservations',
+    element: LibraryReservationsPage,
     isProtected: true,
   },
 

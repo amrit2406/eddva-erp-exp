@@ -325,3 +325,21 @@ export interface BookVendorUpdateData {
   address?: string;
   last_purchase_price?: number;
 }
+
+// Reservation Types
+export type ReservationStatus = 'pending' | 'ready_for_pickup' | 'fulfilled' | 'cancelled' | 'expired';
+
+export interface Reservation {
+  reservation_id: number;
+  book_id: number;
+  member_id: number;
+  status: ReservationStatus;
+  reserved_date: string;
+  expiry_date?: string | null;
+  book?: Pick<Book, 'book_id' | 'title' | 'author'>;
+  member?: Pick<Member, 'member_id' | 'name' | 'library_card_number'>;
+}
+
+export interface ReservationFormData {
+  member_id: number;
+}

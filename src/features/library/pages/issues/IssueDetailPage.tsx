@@ -5,7 +5,7 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import { useToast } from '../../../../hooks/useToast';
 import { getIssue, returnIssue, renewIssue } from '../../api/issues.api';
-import { getIssueErrorMessage } from '../../utils/issueErrors';
+import { getApiErrorMessage } from '../../utils/apiError';
 import IssueStatusBadge from '../../components/issues/IssueStatusBadge';
 import ReturnIssueModal from '../../components/issues/ReturnIssueModal';
 import RenewIssueModal from '../../components/issues/RenewIssueModal';
@@ -33,7 +33,7 @@ export default function IssueDetailPage() {
       setIssue(data);
     } catch (err: any) {
       if (err.response?.status === 401) return;
-      toast.error(getIssueErrorMessage(err, 'Failed to load issue'));
+      toast.error(getApiErrorMessage(err, 'Failed to load issue'));
     } finally {
       setLoading(false);
     }

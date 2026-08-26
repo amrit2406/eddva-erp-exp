@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Barcode, Search, BookOpen, User, X } from 'lucide-react';
+import { Barcode, Search, BookOpen, User, X, BookmarkPlus } from 'lucide-react';
 import Card from '../../../../components/ui/Card';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
@@ -7,10 +7,11 @@ import { useToast } from '../../../../hooks/useToast';
 import { cn } from '../../../../utils/cn';
 import IssuesTabs from '../../components/issues/IssuesTabs';
 import BarcodeScanner from '../../components/copies/BarcodeScanner';
+import ReserveBookModal from '../../components/reservations/ReserveBookModal';
 import { searchBooks, getBookCopies, getMembers, scanCopyByBarcode } from '../../api/library.api';
 import { createIssue } from '../../api/issues.api';
 import { useLibrarianStore } from '../../stores/librarian.store';
-import { getIssueErrorMessage } from '../../utils/issueErrors';
+import { getApiErrorMessage } from '../../utils/apiError';
 import type { Book, BookCopy, Member } from '../../types/library.types';
 
 export default function IssuesDeskPage() {
@@ -31,6 +32,7 @@ export default function IssuesDeskPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
 
   useEffect(() => {
     if (!memberQuery.trim()) {
@@ -108,7 +110,7 @@ export default function IssuesDeskPage() {
       resetMemberSelection();
     } catch (err: any) {
       if (err.response?.status === 401) return;
-      setError(getIssueErrorMessage(err, 'Failed to issue book'));
+      setError(getApiErrorMessage(err, 'Failed to issue book'));
     } finally {
       setIsSubmitting(false);
     }
@@ -205,7 +207,13 @@ export default function IssuesDeskPage() {
                       </button>
                     </div>
                     {availableCopies.length === 0 ? (
-                      <p className="text-sm text-slate-500 py-2">No available copies for this book.</p>
+                      <div className="py-2 space-y-2">
+                        <p className="text-sm text-slate-500">No available copies for this book.</p>
+                        <Button variant="secondary" size="sm" onClick={() => setIsReserveModalOpen(true)}>
+                          <BookmarkPlus className="h-4 w-4 mr-2" />
+                          Reserve Instead
+                        </Button>
+                      </div>
                     ) : (
                       <div className="border border-slate-200 rounded-lg divide-y divide-slate-100">
                         {availableCopies.map((copy) => (
@@ -285,6 +293,16 @@ export default function IssuesDeskPage() {
           {isSubmitting ? 'Issuing...' : 'Issue Book'}
         </Button>
       </div>
+
+      {activeBook && (
+        <ReserveBookModal
+          isOpen={isReserveModalOpen}
+          onClose={() => setIsReserveModalOpen(false)}
+          bookId={activeBook.book_id}
+          bookTitle={activeBook.title}
+          onReserved={resetCopySelection}
+        />
+      )}
     </div>
   );
 }

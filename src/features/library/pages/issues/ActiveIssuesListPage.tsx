@@ -7,7 +7,7 @@ import Select from '../../../../components/ui/Select';
 import { useToast } from '../../../../hooks/useToast';
 import { getIssues, returnIssue, renewIssue } from '../../api/issues.api';
 import type { BookIssue, BookIssueReturnData, BookIssueRenewData, IssueStatus } from '../../types/library.types';
-import { getIssueErrorMessage } from '../../utils/issueErrors';
+import { getApiErrorMessage } from '../../utils/apiError';
 import IssueTable from '../../components/issues/IssueTable';
 import ReturnIssueModal from '../../components/issues/ReturnIssueModal';
 import RenewIssueModal from '../../components/issues/RenewIssueModal';
@@ -41,7 +41,7 @@ export default function ActiveIssuesListPage() {
       setIssues(data);
     } catch (err: any) {
       if (err.response?.status === 401) return;
-      toast.error(getIssueErrorMessage(err, 'Failed to load issues'));
+      toast.error(getApiErrorMessage(err, 'Failed to load issues'));
     } finally {
       setLoading(false);
     }

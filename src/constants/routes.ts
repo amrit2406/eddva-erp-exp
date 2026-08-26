@@ -41,6 +41,7 @@ export const ROUTES = {
   LIBRARY_ISSUES_DESK: '/library/issues/desk',
   LIBRARY_ISSUES_OVERDUE: '/library/issues/overdue',
   LIBRARY_ISSUES_DETAILS: '/library/issues/:id',
+  LIBRARY_RESERVATIONS: '/library/reservations',
   // TRANSPORT: '/transport',
   // REPORTS: '/reports',
   // SETTINGS: '/settings',

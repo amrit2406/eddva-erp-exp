@@ -75,6 +75,7 @@ const navItems: NavItem[] = [
       { path: '/library/members', label: 'Members', icon: UserPlus },
       { path: '/library/books', label: 'Books', icon: BookOpen },
       { path: '/library/issues', label: 'Issues', icon: AlertTriangle },
+      { path: '/library/reservations', label: 'Reservations', icon: Clock },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },

@@ -1,4 +1,4 @@
-export function getIssueErrorMessage(err: unknown, fallback = 'Something went wrong'): string {
+export function getApiErrorMessage(err: unknown, fallback = 'Something went wrong'): string {
   const response = (err as { response?: { data?: { error?: { message?: string } } } })?.response;
   const backendMessage = response?.data?.error?.message;
   if (backendMessage) return backendMessage;

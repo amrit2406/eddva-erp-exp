@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Calendar, Edit, CheckCircle, Plus, Barcode, Building2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, Edit, CheckCircle, Plus, Barcode, Building2, BookmarkPlus } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import { getBook, getBookCopies, createBookCopy, updateBookCopy, getBookVendors, createBookVendor, updateBookVendor, deleteBookVendor } from '../../api/library.api';
@@ -12,6 +12,7 @@ import EditCopyModal from '../../components/copies/EditCopyModal';
 import VendorTable from '../../components/vendors/VendorTable';
 import CreateVendorModal from '../../components/vendors/CreateVendorModal';
 import EditVendorModal from '../../components/vendors/EditVendorModal';
+import ReserveBookModal from '../../components/reservations/ReserveBookModal';
 
 export default function BookDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +28,7 @@ export default function BookDetailsPage() {
   const [isVendorEditModalOpen, setIsVendorEditModalOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<BookVendor | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
 
   useEffect(() => {
     loadBook();
@@ -251,7 +253,7 @@ export default function BookDetailsPage() {
                 <p className="text-slate-600 text-lg">{book.author}</p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 {book._count?.copies && book._count.copies > 0 ? (
                   <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
                     <CheckCircle className="h-4 w-4" />
@@ -261,6 +263,12 @@ export default function BookDetailsPage() {
                   <div className="flex items-center gap-2 text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full">
                     <span className="font-medium">No copies</span>
                   </div>
+                )}
+                {copies.filter((c) => c.status === 'available').length === 0 && (
+                  <Button variant="secondary" size="sm" onClick={() => setIsReserveModalOpen(true)}>
+                    <BookmarkPlus className="h-4 w-4 mr-2" />
+                    Reserve
+                  </Button>
                 )}
               </div>
 
@@ -381,6 +389,12 @@ export default function BookDetailsPage() {
         vendor={selectedVendor}
         onSubmit={handleUpdateVendor}
         isLoading={isSubmitting}
+      />
+      <ReserveBookModal
+        isOpen={isReserveModalOpen}
+        onClose={() => setIsReserveModalOpen(false)}
+        bookId={book.book_id}
+        bookTitle={book.title}
       />
     </div>
   );
