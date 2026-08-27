@@ -83,6 +83,7 @@ const navItems: NavItem[] = [
     label: 'Sports',
     icon: Trophy,
     children: [
+      { path: '/sports/permissions', label: 'Permissions', icon: Key },
       { path: '/sports/roles', label: 'Roles', icon: Shield },
       { path: '/sports/users', label: 'Users', icon: Users },
     ]

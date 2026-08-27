@@ -175,6 +175,9 @@ import LibraryOverdueDashboardPage from '../features/library/pages/issues/Overdu
 import LibraryIssueDetailPage from '../features/library/pages/issues/IssueDetailPage';
 import LibraryReservationsPage from '../features/library/pages/reservations/ReservationsPage';
 // Sports RBAC
+import SportsPermissionsPage from '../features/sports/pages/rbac/PermissionsPage';
+import SportsCreatePermissionPage from '../features/sports/pages/rbac/CreatePermissionPage';
+import SportsEditPermissionPage from '../features/sports/pages/rbac/EditPermissionPage';
 import SportsRolesPage from '../features/sports/pages/rbac/RolesPage';
 import SportsCreateRolePage from '../features/sports/pages/rbac/CreateRolePage';
 import SportsEditRolePage from '../features/sports/pages/rbac/EditRolePage';
@@ -995,6 +998,21 @@ export const routeConfig = [
   },
 
   // Sports RBAC Routes
+  {
+    path: '/sports/permissions',
+    element: SportsPermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/permissions/new',
+    element: SportsCreatePermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/permissions/:id/edit',
+    element: SportsEditPermissionPage,
+    isProtected: true,
+  },
   {
     path: '/sports/roles',
     element: SportsRolesPage,

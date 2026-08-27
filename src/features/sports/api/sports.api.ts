@@ -1,5 +1,7 @@
 import axiosInstance from '../../../lib/axios';
 import type {
+  Permission,
+  PermissionFormData,
   PermissionsCatalog,
   Role,
   RoleFormData,
@@ -11,7 +13,7 @@ import type {
 } from '../types/sports.types';
 import { sanitizeRolePermissions } from '../utils/rbac.utils';
 
-// Permissions Endpoints
+// Permissions Catalog Endpoints (used by the role permission picker)
 export async function getPermissionsCatalog(): Promise<PermissionsCatalog> {
   const response = await axiosInstance.get('/sports/roles/permissions/catalog');
   return response.data.data;
@@ -20,6 +22,39 @@ export async function getPermissionsCatalog(): Promise<PermissionsCatalog> {
 export async function getMyPermissions(): Promise<RolePermission[]> {
   const response = await axiosInstance.get('/sports/roles/permissions/me');
   return response.data.data;
+}
+
+// Dynamic Permissions Registry Endpoints
+export async function getPermissions(): Promise<Permission[]> {
+  const response = await axiosInstance.get('/sports/permissions');
+  // This endpoint returns the same catalog shape as the roles/permissions/catalog endpoint
+  if (response.data.data?.all_permissions) {
+    return response.data.data.all_permissions;
+  }
+  if (response.data.all_permissions) {
+    return response.data.all_permissions;
+  }
+  // Fallback for a plain array response
+  return response.data.data || response.data || [];
+}
+
+export async function createPermission(data: PermissionFormData): Promise<Permission> {
+  const response = await axiosInstance.post('/sports/permissions', data);
+  return response.data.data || response.data;
+}
+
+export async function getPermission(id: string | number): Promise<Permission> {
+  const response = await axiosInstance.get(`/sports/permissions/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function updatePermission(id: string | number, data: Partial<PermissionFormData>): Promise<Permission> {
+  const response = await axiosInstance.patch(`/sports/permissions/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deletePermission(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sports/permissions/${id}`);
 }
 
 // Role Management Endpoints
