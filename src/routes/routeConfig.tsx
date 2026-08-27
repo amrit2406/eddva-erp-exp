@@ -183,6 +183,19 @@ import SportsCreateRolePage from '../features/sports/pages/rbac/CreateRolePage';
 import SportsEditRolePage from '../features/sports/pages/rbac/EditRolePage';
 import SportsUsersPage from '../features/sports/pages/rbac/UsersPage';
 import SportsCreateUserPage from '../features/sports/pages/rbac/CreateUserPage';
+// Sports Core Catalog
+import SportsSportsPage from '../features/sports/pages/catalog/SportsPage';
+import SportsCreateSportPage from '../features/sports/pages/catalog/CreateSportPage';
+import SportsEditSportPage from '../features/sports/pages/catalog/EditSportPage';
+import SportsVenuesPage from '../features/sports/pages/venues/VenuesPage';
+import SportsCreateVenuePage from '../features/sports/pages/venues/CreateVenuePage';
+import SportsEditVenuePage from '../features/sports/pages/venues/EditVenuePage';
+import SportsStaffPage from '../features/sports/pages/staff/StaffPage';
+import SportsCreateStaffPage from '../features/sports/pages/staff/CreateStaffPage';
+import SportsEditStaffPage from '../features/sports/pages/staff/EditStaffPage';
+import SportsParticipantsPage from '../features/sports/pages/participants/ParticipantsPage';
+import SportsCreateParticipantPage from '../features/sports/pages/participants/CreateParticipantPage';
+import SportsEditParticipantPage from '../features/sports/pages/participants/EditParticipantPage';
 
 export const routeConfig = [
   {
@@ -1036,6 +1049,68 @@ export const routeConfig = [
   {
     path: '/sports/users/new',
     element: SportsCreateUserPage,
+    isProtected: true,
+  },
+
+  // Sports Shared Core Catalog Routes
+  {
+    path: '/sports/catalog',
+    element: SportsSportsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/catalog/new',
+    element: SportsCreateSportPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/catalog/:id/edit',
+    element: SportsEditSportPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/venues',
+    element: SportsVenuesPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/venues/new',
+    element: SportsCreateVenuePage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/venues/:id/edit',
+    element: SportsEditVenuePage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/staff',
+    element: SportsStaffPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/staff/new',
+    element: SportsCreateStaffPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/staff/:id/edit',
+    element: SportsEditStaffPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/participants',
+    element: SportsParticipantsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/participants/new',
+    element: SportsCreateParticipantPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/participants/:id/edit',
+    element: SportsEditParticipantPage,
     isProtected: true,
   },
 

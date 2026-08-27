@@ -86,6 +86,10 @@ const navItems: NavItem[] = [
       { path: '/sports/permissions', label: 'Permissions', icon: Key },
       { path: '/sports/roles', label: 'Roles', icon: Shield },
       { path: '/sports/users', label: 'Users', icon: Users },
+      { path: '/sports/catalog', label: 'Sports Catalog', icon: Trophy },
+      { path: '/sports/venues', label: 'Venues', icon: Building },
+      { path: '/sports/staff', label: 'Staff', icon: UserPlus },
+      { path: '/sports/participants', label: 'Participants', icon: Users },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },

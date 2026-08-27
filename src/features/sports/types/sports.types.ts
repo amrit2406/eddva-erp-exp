@@ -88,3 +88,80 @@ export interface ResetPasswordResponse {
   success: boolean;
   message: string;
 }
+
+// Shared Core Catalog Types
+export type SportCategory = 'team' | 'individual';
+
+export interface Sport {
+  sport_id: number;
+  name: string;
+  category: SportCategory;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SportFormData {
+  name: string;
+  category: SportCategory;
+  description?: string;
+}
+
+export type VenueType = 'ground' | 'court' | 'pool' | 'hall';
+
+export interface Venue {
+  venue_id: number;
+  name: string;
+  type: VenueType;
+  capacity?: number;
+  location?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface VenueFormData {
+  name: string;
+  type: VenueType;
+  capacity?: number;
+  location?: string;
+}
+
+export interface SportsStaff {
+  staff_id: number;
+  external_ref_id?: string;
+  name: string;
+  role: string;
+  email?: string;
+  phone?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SportsStaffFormData {
+  external_ref_id?: string;
+  name: string;
+  role: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface SportsParticipant {
+  participant_id: number;
+  external_ref_id?: string;
+  name: string;
+  class_section?: string;
+  photo_url?: string;
+  roll_number?: string;
+  gender?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SportsParticipantFormData {
+  external_ref_id?: string;
+  name: string;
+  class_section?: string;
+  photo_url?: string;
+  roll_number?: string;
+  gender?: string;
+}

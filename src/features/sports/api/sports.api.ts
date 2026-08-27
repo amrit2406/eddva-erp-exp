@@ -10,6 +10,14 @@ import type {
   UserAssignmentFormData,
   ResetPasswordFormData,
   ResetPasswordResponse,
+  Sport,
+  SportFormData,
+  Venue,
+  VenueFormData,
+  SportsStaff,
+  SportsStaffFormData,
+  SportsParticipant,
+  SportsParticipantFormData,
 } from '../types/sports.types';
 import { sanitizeRolePermissions } from '../utils/rbac.utils';
 
@@ -87,6 +95,106 @@ export async function updateRole(id: string | number, data: Partial<RoleFormData
 
 export async function deleteRole(id: string | number): Promise<void> {
   await axiosInstance.delete(`/sports/roles/${id}`);
+}
+
+// Sports Catalog Endpoints
+export async function getSports(): Promise<Sport[]> {
+  const response = await axiosInstance.get('/sports/catalog');
+  return response.data.data || response.data || [];
+}
+
+export async function getSport(id: string | number): Promise<Sport> {
+  const response = await axiosInstance.get(`/sports/catalog/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function createSport(data: SportFormData): Promise<Sport> {
+  const response = await axiosInstance.post('/sports/catalog', data);
+  return response.data.data || response.data;
+}
+
+export async function updateSport(id: string | number, data: Partial<SportFormData>): Promise<Sport> {
+  const response = await axiosInstance.patch(`/sports/catalog/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deleteSport(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sports/catalog/${id}`);
+}
+
+// Venue Endpoints
+export async function getVenues(): Promise<Venue[]> {
+  const response = await axiosInstance.get('/sports/venues');
+  return response.data.data || response.data || [];
+}
+
+export async function getVenue(id: string | number): Promise<Venue> {
+  const response = await axiosInstance.get(`/sports/venues/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function createVenue(data: VenueFormData): Promise<Venue> {
+  const response = await axiosInstance.post('/sports/venues', data);
+  return response.data.data || response.data;
+}
+
+export async function updateVenue(id: string | number, data: Partial<VenueFormData>): Promise<Venue> {
+  const response = await axiosInstance.patch(`/sports/venues/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deleteVenue(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sports/venues/${id}`);
+}
+
+// Staff Endpoints
+export async function getStaffList(): Promise<SportsStaff[]> {
+  const response = await axiosInstance.get('/sports/staff');
+  return response.data.data || response.data || [];
+}
+
+export async function getStaffMember(id: string | number): Promise<SportsStaff> {
+  const response = await axiosInstance.get(`/sports/staff/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function createStaffMember(data: SportsStaffFormData): Promise<SportsStaff> {
+  const response = await axiosInstance.post('/sports/staff', data);
+  return response.data.data || response.data;
+}
+
+export async function updateStaffMember(id: string | number, data: Partial<SportsStaffFormData>): Promise<SportsStaff> {
+  const response = await axiosInstance.patch(`/sports/staff/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deleteStaffMember(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sports/staff/${id}`);
+}
+
+// Participant Endpoints
+export async function getParticipants(): Promise<SportsParticipant[]> {
+  const response = await axiosInstance.get('/sports/participants');
+  return response.data.data || response.data || [];
+}
+
+export async function getParticipant(id: string | number): Promise<SportsParticipant> {
+  const response = await axiosInstance.get(`/sports/participants/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function createParticipant(data: SportsParticipantFormData): Promise<SportsParticipant> {
+  const response = await axiosInstance.post('/sports/participants', data);
+  return response.data.data || response.data;
+}
+
+export async function updateParticipant(id: string | number, data: Partial<SportsParticipantFormData>): Promise<SportsParticipant> {
+  const response = await axiosInstance.patch(`/sports/participants/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deleteParticipant(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sports/participants/${id}`);
 }
 
 // User Assignment Endpoints
