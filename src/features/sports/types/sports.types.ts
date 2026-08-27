@@ -370,3 +370,55 @@ export interface RecordPlayerStatFormData {
   stat_type: string;
   stat_value: number;
 }
+
+// Records & Awards Types
+export type SportsRecordType = 'personal_best' | 'tournament_win' | 'milestone' | 'school_record';
+
+export interface SportsRecord {
+  record_id: number;
+  participant_id?: number | null;
+  tournament_team_id?: number | null;
+  sport_id: number;
+  record_type: SportsRecordType;
+  description: string;
+  value: string;
+  achieved_date: string;
+  source_fixture_id?: number | null;
+  verified_by?: number | null;
+  created_at: string;
+  participant?: SportsParticipant;
+  sport?: Sport;
+  tournament_team?: TournamentTeam;
+  source_fixture?: Fixture;
+}
+
+export interface SportsRecordFormData {
+  participant_id?: number;
+  tournament_team_id?: number;
+  sport_id: number;
+  record_type: SportsRecordType;
+  description: string;
+  value: string;
+  achieved_date: string;
+  source_fixture_id?: number;
+}
+
+export interface SportsAward {
+  award_id: number;
+  participant_id?: number | null;
+  tournament_team_id?: number | null;
+  tournament_id: number;
+  award_type: string;
+  issued_date: string;
+  created_at: string;
+  participant?: SportsParticipant;
+  tournament_team?: TournamentTeam;
+  tournament?: Tournament;
+}
+
+export interface IssueAwardFormData {
+  participant_id?: number;
+  tournament_team_id?: number;
+  award_type: string;
+  issued_date: string;
+}

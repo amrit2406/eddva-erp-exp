@@ -207,6 +207,9 @@ import SportsTournamentsPage from '../features/sports/pages/tournaments/Tourname
 import SportsCreateTournamentPage from '../features/sports/pages/tournaments/CreateTournamentPage';
 import SportsEditTournamentPage from '../features/sports/pages/tournaments/EditTournamentPage';
 import SportsTournamentDetailPage from '../features/sports/pages/tournaments/TournamentDetailPage';
+// Sports Records & Awards
+import SportsRecordsPage from '../features/sports/pages/records/RecordsPage';
+import SportsAwardsPage from '../features/sports/pages/records/AwardsPage';
 
 export const routeConfig = [
   {
@@ -1171,6 +1174,18 @@ export const routeConfig = [
   {
     path: '/sports/tournaments/:id',
     element: SportsTournamentDetailPage,
+    isProtected: true,
+  },
+
+  // Sports Records & Awards Routes
+  {
+    path: '/sports/records',
+    element: SportsRecordsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/awards',
+    element: SportsAwardsPage,
     isProtected: true,
   },
 

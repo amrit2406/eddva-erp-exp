@@ -35,6 +35,10 @@ import type {
   RecordResultFormData,
   PlayerMatchStat,
   RecordPlayerStatFormData,
+  SportsRecord,
+  SportsRecordFormData,
+  SportsAward,
+  IssueAwardFormData,
 } from '../types/sports.types';
 import { sanitizeRolePermissions } from '../utils/rbac.utils';
 
@@ -319,6 +323,32 @@ export async function recordFixtureResult(fixtureId: string | number, data: Reco
 export async function recordPlayerStat(fixtureId: string | number, data: RecordPlayerStatFormData): Promise<PlayerMatchStat> {
   const response = await axiosInstance.post(`/sports/fixtures/${fixtureId}/stats`, data);
   return response.data.data || response.data;
+}
+
+// Records & Awards Endpoints
+export async function createRecord(data: SportsRecordFormData): Promise<SportsRecord> {
+  const response = await axiosInstance.post('/sports/records', data);
+  return response.data.data || response.data;
+}
+
+export async function getParticipantRecords(participantId: string | number): Promise<SportsRecord[]> {
+  const response = await axiosInstance.get(`/sports/participants/${participantId}/records`);
+  return response.data.data || response.data || [];
+}
+
+export async function getSportRecords(sportId: string | number): Promise<SportsRecord[]> {
+  const response = await axiosInstance.get(`/sports/sports/${sportId}/records`);
+  return response.data.data || response.data || [];
+}
+
+export async function issueAward(tournamentId: string | number, data: IssueAwardFormData): Promise<SportsAward> {
+  const response = await axiosInstance.post(`/sports/tournaments/${tournamentId}/awards`, data);
+  return response.data.data || response.data;
+}
+
+export async function getTournamentAwards(tournamentId: string | number): Promise<SportsAward[]> {
+  const response = await axiosInstance.get(`/sports/tournaments/${tournamentId}/awards`);
+  return response.data.data || response.data || [];
 }
 
 // User Assignment Endpoints

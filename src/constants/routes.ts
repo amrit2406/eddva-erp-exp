@@ -72,6 +72,8 @@ export const ROUTES = {
   SPORTS_TOURNAMENTS_NEW: '/sports/tournaments/new',
   SPORTS_TOURNAMENTS_DETAILS: '/sports/tournaments/:id',
   SPORTS_TOURNAMENTS_EDIT: '/sports/tournaments/:id/edit',
+  SPORTS_RECORDS: '/sports/records',
+  SPORTS_AWARDS: '/sports/awards',
   // TRANSPORT: '/transport',
   // REPORTS: '/reports',
   // SETTINGS: '/settings',
