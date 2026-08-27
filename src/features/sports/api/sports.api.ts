@@ -25,6 +25,16 @@ import type {
   HousePoint,
   AwardHousePointsFormData,
   HouseStanding,
+  Tournament,
+  TournamentFormData,
+  TournamentTeam,
+  TeamFormData,
+  Fixture,
+  FixtureFormData,
+  FixtureResult,
+  RecordResultFormData,
+  PlayerMatchStat,
+  RecordPlayerStatFormData,
 } from '../types/sports.types';
 import { sanitizeRolePermissions } from '../utils/rbac.utils';
 
@@ -255,6 +265,59 @@ export async function getHousePointsHistory(houseId: string | number): Promise<H
 
 export async function awardHousePoints(houseId: string | number, data: AwardHousePointsFormData): Promise<HousePoint> {
   const response = await axiosInstance.post(`/sports/houses/${houseId}/points`, data);
+  return response.data.data || response.data;
+}
+
+// Tournament Management Endpoints
+export async function getTournaments(): Promise<Tournament[]> {
+  const response = await axiosInstance.get('/sports/tournaments');
+  return response.data.data || response.data || [];
+}
+
+export async function getTournament(id: string | number): Promise<Tournament> {
+  const response = await axiosInstance.get(`/sports/tournaments/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function createTournament(data: TournamentFormData): Promise<Tournament> {
+  const response = await axiosInstance.post('/sports/tournaments', data);
+  return response.data.data || response.data;
+}
+
+export async function updateTournament(id: string | number, data: Partial<TournamentFormData>): Promise<Tournament> {
+  const response = await axiosInstance.patch(`/sports/tournaments/${id}`, data);
+  return response.data.data || response.data;
+}
+
+// Teams Endpoints
+export async function getTeams(tournamentId: string | number): Promise<TournamentTeam[]> {
+  const response = await axiosInstance.get(`/sports/tournaments/${tournamentId}/teams`);
+  return response.data.data || response.data || [];
+}
+
+export async function createTeam(tournamentId: string | number, data: TeamFormData): Promise<TournamentTeam> {
+  const response = await axiosInstance.post(`/sports/tournaments/${tournamentId}/teams`, data);
+  return response.data.data || response.data;
+}
+
+// Fixtures & Results Endpoints
+export async function getFixtures(tournamentId: string | number): Promise<Fixture[]> {
+  const response = await axiosInstance.get(`/sports/tournaments/${tournamentId}/fixtures`);
+  return response.data.data || response.data || [];
+}
+
+export async function createFixture(tournamentId: string | number, data: FixtureFormData): Promise<Fixture> {
+  const response = await axiosInstance.post(`/sports/tournaments/${tournamentId}/fixtures`, data);
+  return response.data.data || response.data;
+}
+
+export async function recordFixtureResult(fixtureId: string | number, data: RecordResultFormData): Promise<FixtureResult> {
+  const response = await axiosInstance.post(`/sports/fixtures/${fixtureId}/result`, data);
+  return response.data.data || response.data;
+}
+
+export async function recordPlayerStat(fixtureId: string | number, data: RecordPlayerStatFormData): Promise<PlayerMatchStat> {
+  const response = await axiosInstance.post(`/sports/fixtures/${fixtureId}/stats`, data);
   return response.data.data || response.data;
 }
 

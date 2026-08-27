@@ -238,3 +238,135 @@ export interface HouseStanding {
   last_updated_at: string;
   house?: House;
 }
+
+// Tournament Management Types
+export type TournamentLevel = 'inter_house' | 'inter_school' | 'inter_district';
+export type TournamentFormat = 'knockout' | 'league' | 'round_robin';
+export type TournamentStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+export type FixtureStatus = 'scheduled' | 'in_progress' | 'completed' | 'postponed' | 'walkover';
+
+export interface Tournament {
+  tournament_id: number;
+  name: string;
+  sport_id: number;
+  level: TournamentLevel;
+  format: TournamentFormat;
+  start_date: string;
+  end_date: string;
+  venue_id?: number;
+  status: TournamentStatus;
+  created_by?: number;
+  created_at?: string;
+  updated_at?: string;
+  sport?: Sport;
+  venue?: Venue;
+  _count?: { teams: number; fixtures: number };
+  teams?: TournamentTeam[];
+  fixtures?: Fixture[];
+}
+
+export interface TournamentFormData {
+  name: string;
+  sport_id: number;
+  level?: TournamentLevel;
+  format?: TournamentFormat;
+  start_date: string;
+  end_date: string;
+  venue_id?: number;
+  status?: TournamentStatus;
+}
+
+export interface TeamMemberInput {
+  participant_id: number;
+  role?: string;
+}
+
+export interface TournamentTeamMember {
+  member_id: number;
+  tournament_team_id: number;
+  participant_id: number;
+  role: string;
+  created_at: string;
+  participant?: SportsParticipant;
+}
+
+export interface TournamentTeam {
+  tournament_team_id: number;
+  tournament_id: number;
+  house_id?: number;
+  team_name: string;
+  coach_id?: number;
+  created_at: string;
+  house?: House;
+  coach?: SportsStaff;
+  members?: TournamentTeamMember[];
+}
+
+export interface TeamFormData {
+  team_name: string;
+  house_id?: number;
+  coach_id?: number;
+  members?: TeamMemberInput[];
+}
+
+export interface Fixture {
+  fixture_id: number;
+  tournament_id: number;
+  round: string;
+  team_a_id: number;
+  team_b_id: number;
+  venue_id?: number;
+  scheduled_date: string;
+  status: FixtureStatus;
+  created_at?: string;
+  updated_at?: string;
+  team_a?: TournamentTeam;
+  team_b?: TournamentTeam;
+  venue?: Venue;
+  result?: FixtureResult | null;
+}
+
+export interface FixtureFormData {
+  round: string;
+  team_a_id: number;
+  team_b_id: number;
+  venue_id?: number;
+  scheduled_date: string;
+  status?: FixtureStatus;
+}
+
+export interface FixtureResult {
+  result_id: number;
+  fixture_id: number;
+  team_a_score: string;
+  team_b_score: string;
+  winner_team_id?: number | null;
+  result_notes?: string;
+  recorded_by?: number;
+  recorded_at: string;
+  winner_team?: TournamentTeam;
+}
+
+export interface RecordResultFormData {
+  team_a_score: string;
+  team_b_score: string;
+  winner_team_id?: number;
+  result_notes?: string;
+  house_points_award?: number;
+  academic_year?: string;
+}
+
+export interface PlayerMatchStat {
+  stat_id: number;
+  fixture_id: number;
+  participant_id: number;
+  stat_type: string;
+  stat_value: number;
+  participant?: SportsParticipant;
+}
+
+export interface RecordPlayerStatFormData {
+  participant_id: number;
+  stat_type: string;
+  stat_value: number;
+}

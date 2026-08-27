@@ -202,6 +202,11 @@ import SportsCreateHousePage from '../features/sports/pages/houses/CreateHousePa
 import SportsEditHousePage from '../features/sports/pages/houses/EditHousePage';
 import SportsHouseDetailPage from '../features/sports/pages/houses/HouseDetailPage';
 import SportsHouseStandingsPage from '../features/sports/pages/houses/HouseStandingsPage';
+// Sports Tournament Management
+import SportsTournamentsPage from '../features/sports/pages/tournaments/TournamentsPage';
+import SportsCreateTournamentPage from '../features/sports/pages/tournaments/CreateTournamentPage';
+import SportsEditTournamentPage from '../features/sports/pages/tournaments/EditTournamentPage';
+import SportsTournamentDetailPage from '../features/sports/pages/tournaments/TournamentDetailPage';
 
 export const routeConfig = [
   {
@@ -1144,6 +1149,28 @@ export const routeConfig = [
   {
     path: '/sports/houses/:id',
     element: SportsHouseDetailPage,
+    isProtected: true,
+  },
+
+  // Sports Tournament Management Routes
+  {
+    path: '/sports/tournaments',
+    element: SportsTournamentsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/tournaments/new',
+    element: SportsCreateTournamentPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/tournaments/:id/edit',
+    element: SportsEditTournamentPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/tournaments/:id',
+    element: SportsTournamentDetailPage,
     isProtected: true,
   },
 
