@@ -18,6 +18,13 @@ import type {
   SportsStaffFormData,
   SportsParticipant,
   SportsParticipantFormData,
+  House,
+  HouseFormData,
+  HouseMembership,
+  AddHouseMemberFormData,
+  HousePoint,
+  AwardHousePointsFormData,
+  HouseStanding,
 } from '../types/sports.types';
 import { sanitizeRolePermissions } from '../utils/rbac.utils';
 
@@ -195,6 +202,60 @@ export async function updateParticipant(id: string | number, data: Partial<Sport
 
 export async function deleteParticipant(id: string | number): Promise<void> {
   await axiosInstance.delete(`/sports/participants/${id}`);
+}
+
+// House Management Endpoints
+export async function getHouses(): Promise<House[]> {
+  const response = await axiosInstance.get('/sports/houses');
+  return response.data.data || response.data || [];
+}
+
+export async function getHouseStandings(academicYear?: string): Promise<HouseStanding[]> {
+  const response = await axiosInstance.get('/sports/houses/standings', {
+    params: academicYear ? { academic_year: academicYear } : undefined,
+  });
+  return response.data.data || response.data || [];
+}
+
+export async function getHouse(id: string | number): Promise<House> {
+  const response = await axiosInstance.get(`/sports/houses/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function createHouse(data: HouseFormData): Promise<House> {
+  const response = await axiosInstance.post('/sports/houses', data);
+  return response.data.data || response.data;
+}
+
+export async function updateHouse(id: string | number, data: Partial<HouseFormData>): Promise<House> {
+  const response = await axiosInstance.patch(`/sports/houses/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deleteHouse(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sports/houses/${id}`);
+}
+
+export async function getHouseMembers(houseId: string | number, academicYear?: string): Promise<HouseMembership[]> {
+  const response = await axiosInstance.get(`/sports/houses/${houseId}/members`, {
+    params: academicYear ? { academic_year: academicYear } : undefined,
+  });
+  return response.data.data || response.data || [];
+}
+
+export async function addHouseMember(houseId: string | number, data: AddHouseMemberFormData): Promise<HouseMembership> {
+  const response = await axiosInstance.post(`/sports/houses/${houseId}/members`, data);
+  return response.data.data || response.data;
+}
+
+export async function getHousePointsHistory(houseId: string | number): Promise<HousePoint[]> {
+  const response = await axiosInstance.get(`/sports/houses/${houseId}/points`);
+  return response.data.data || response.data || [];
+}
+
+export async function awardHousePoints(houseId: string | number, data: AwardHousePointsFormData): Promise<HousePoint> {
+  const response = await axiosInstance.post(`/sports/houses/${houseId}/points`, data);
+  return response.data.data || response.data;
 }
 
 // User Assignment Endpoints

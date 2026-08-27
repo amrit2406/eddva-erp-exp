@@ -196,6 +196,12 @@ import SportsEditStaffPage from '../features/sports/pages/staff/EditStaffPage';
 import SportsParticipantsPage from '../features/sports/pages/participants/ParticipantsPage';
 import SportsCreateParticipantPage from '../features/sports/pages/participants/CreateParticipantPage';
 import SportsEditParticipantPage from '../features/sports/pages/participants/EditParticipantPage';
+// Sports House Management
+import SportsHousesPage from '../features/sports/pages/houses/HousesPage';
+import SportsCreateHousePage from '../features/sports/pages/houses/CreateHousePage';
+import SportsEditHousePage from '../features/sports/pages/houses/EditHousePage';
+import SportsHouseDetailPage from '../features/sports/pages/houses/HouseDetailPage';
+import SportsHouseStandingsPage from '../features/sports/pages/houses/HouseStandingsPage';
 
 export const routeConfig = [
   {
@@ -1111,6 +1117,33 @@ export const routeConfig = [
   {
     path: '/sports/participants/:id/edit',
     element: SportsEditParticipantPage,
+    isProtected: true,
+  },
+
+  // Sports House Management Routes
+  {
+    path: '/sports/houses',
+    element: SportsHousesPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/houses/new',
+    element: SportsCreateHousePage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/houses/standings',
+    element: SportsHouseStandingsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/houses/:id/edit',
+    element: SportsEditHousePage,
+    isProtected: true,
+  },
+  {
+    path: '/sports/houses/:id',
+    element: SportsHouseDetailPage,
     isProtected: true,
   },
 
