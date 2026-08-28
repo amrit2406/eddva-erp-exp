@@ -1,5 +1,7 @@
 import axiosInstance from '../../../lib/axios';
 import type {
+  Permission,
+  PermissionFormData,
   PermissionsCatalog,
   Role,
   RoleFormData,
@@ -75,4 +77,37 @@ export async function resetUserAssignmentPassword(
 ): Promise<ResetPasswordResponse> {
   const response = await axiosInstance.patch(`/front-office/roles/user-assignments/${id}/password`, data);
   return response.data.data;
+}
+
+// Dynamic Permissions Registry Endpoints
+export async function getPermissions(): Promise<Permission[]> {
+  const response = await axiosInstance.get('/front-office/permissions');
+  // This endpoint returns the same catalog shape as the roles/permissions/catalog endpoint
+  if (response.data.data?.all_permissions) {
+    return response.data.data.all_permissions;
+  }
+  if (response.data.all_permissions) {
+    return response.data.all_permissions;
+  }
+  // Fallback for a plain array response
+  return response.data.data || response.data || [];
+}
+
+export async function createPermission(data: PermissionFormData): Promise<Permission> {
+  const response = await axiosInstance.post('/front-office/permissions', data);
+  return response.data.data || response.data;
+}
+
+export async function getPermission(id: string | number): Promise<Permission> {
+  const response = await axiosInstance.get(`/front-office/permissions/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function updatePermission(id: string | number, data: Partial<PermissionFormData>): Promise<Permission> {
+  const response = await axiosInstance.patch(`/front-office/permissions/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deletePermission(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/front-office/permissions/${id}`);
 }

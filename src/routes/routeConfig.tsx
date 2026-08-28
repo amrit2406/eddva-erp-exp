@@ -21,11 +21,15 @@ import CreateComplaintPage from '../features/front-office/pages/complaints/Creat
 import ComplaintDetailsPage from '../features/front-office/pages/complaints/ComplaintDetailsPage';
 import EditComplaintPage from '../features/front-office/pages/complaints/EditComplaintPage';
 // Front Office RBAC
+import FrontOfficePermissionsPage from '../features/front-office/pages/rbac/PermissionsPage';
+import FrontOfficeCreatePermissionPage from '../features/front-office/pages/rbac/CreatePermissionPage';
+import FrontOfficeEditPermissionPage from '../features/front-office/pages/rbac/EditPermissionPage';
 import FrontOfficeRolesPage from '../features/front-office/pages/rbac/RolesPage';
 import FrontOfficeCreateRolePage from '../features/front-office/pages/rbac/CreateRolePage';
 import FrontOfficeEditRolePage from '../features/front-office/pages/rbac/EditRolePage';
 import FrontOfficeUsersPage from '../features/front-office/pages/rbac/UsersPage';
 import FrontOfficeCreateUserPage from '../features/front-office/pages/rbac/CreateUserPage';
+import FrontOfficeNotificationsPage from '../features/front-office/pages/notifications/NotificationsPage';
 // Sales & Purchase Routes
 import ItemCategoriesPage from '../features/sales-purchase/pages/item-categories/ItemCategoriesPage';
 import CreateItemCategoryPage from '../features/sales-purchase/pages/item-categories/CreateItemCategoryPage';
@@ -323,6 +327,21 @@ export const routeConfig = [
 
   // Front Office RBAC Routes
   {
+    path: '/front-office/permissions',
+    element: FrontOfficePermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/permissions/new',
+    element: FrontOfficeCreatePermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/permissions/:id/edit',
+    element: FrontOfficeEditPermissionPage,
+    isProtected: true,
+  },
+  {
     path: '/front-office/roles',
     element: FrontOfficeRolesPage,
     isProtected: true,
@@ -345,6 +364,11 @@ export const routeConfig = [
   {
     path: '/front-office/users/new',
     element: FrontOfficeCreateUserPage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/notifications',
+    element: FrontOfficeNotificationsPage,
     isProtected: true,
   },
 
