@@ -14,7 +14,16 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/front-office', label: 'Front Office', icon: Building },
+  {
+    path: '/front-office',
+    label: 'Front Office',
+    icon: Building,
+    children: [
+      { path: '/front-office', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/front-office/roles', label: 'Roles', icon: Shield },
+      { path: '/front-office/users', label: 'Users', icon: Users },
+    ]
+  },
   { 
     path: '/sales-purchase', 
     label: 'Sales & Purchase', 

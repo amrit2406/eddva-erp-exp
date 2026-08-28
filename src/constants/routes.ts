@@ -11,6 +11,11 @@ export const ROUTES = {
   FRONT_OFFICE_APPOINTMENTS_CALENDAR: '/front-office/appointments/calendar',
   FRONT_OFFICE_COMPLAINTS: '/front-office/complaints',
   FRONT_OFFICE_COMPLAINTS_NEW: '/front-office/complaints/new',
+  FRONT_OFFICE_ROLES: '/front-office/roles',
+  FRONT_OFFICE_ROLES_NEW: '/front-office/roles/new',
+  FRONT_OFFICE_ROLES_EDIT: '/front-office/roles/:id/edit',
+  FRONT_OFFICE_USERS: '/front-office/users',
+  FRONT_OFFICE_USERS_NEW: '/front-office/users/new',
   // Future routes will be added here
   // STUDENTS: '/students',
   // TEACHERS: '/teachers',

@@ -20,6 +20,12 @@ import ComplaintsPage from '../features/front-office/pages/complaints/Complaints
 import CreateComplaintPage from '../features/front-office/pages/complaints/CreateComplaintPage';
 import ComplaintDetailsPage from '../features/front-office/pages/complaints/ComplaintDetailsPage';
 import EditComplaintPage from '../features/front-office/pages/complaints/EditComplaintPage';
+// Front Office RBAC
+import FrontOfficeRolesPage from '../features/front-office/pages/rbac/RolesPage';
+import FrontOfficeCreateRolePage from '../features/front-office/pages/rbac/CreateRolePage';
+import FrontOfficeEditRolePage from '../features/front-office/pages/rbac/EditRolePage';
+import FrontOfficeUsersPage from '../features/front-office/pages/rbac/UsersPage';
+import FrontOfficeCreateUserPage from '../features/front-office/pages/rbac/CreateUserPage';
 // Sales & Purchase Routes
 import ItemCategoriesPage from '../features/sales-purchase/pages/item-categories/ItemCategoriesPage';
 import CreateItemCategoryPage from '../features/sales-purchase/pages/item-categories/CreateItemCategoryPage';
@@ -314,7 +320,34 @@ export const routeConfig = [
     element: EditComplaintPage,
     isProtected: true,
   },
-  
+
+  // Front Office RBAC Routes
+  {
+    path: '/front-office/roles',
+    element: FrontOfficeRolesPage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/roles/new',
+    element: FrontOfficeCreateRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/roles/:id/edit',
+    element: FrontOfficeEditRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/users',
+    element: FrontOfficeUsersPage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/users/new',
+    element: FrontOfficeCreateUserPage,
+    isProtected: true,
+  },
+
   // Sales & Purchase Routes
   {
     path: '/sales-purchase/item-categories',

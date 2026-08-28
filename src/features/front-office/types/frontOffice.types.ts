@@ -7,6 +7,7 @@ export * from './complaint.types';
 export * from './employee.types';
 export * from './department.types';
 export * from './attachment.types';
+export * from './rbac.types';
 
 // Common pagination params
 export interface PaginationParams {
