@@ -23,6 +23,11 @@ export const ROUTES = {
   FRONT_OFFICE_DEPARTMENTS: '/front-office/departments',
   FRONT_OFFICE_DEPARTMENTS_NEW: '/front-office/departments/new',
   FRONT_OFFICE_DEPARTMENTS_EDIT: '/front-office/departments/:id/edit',
+  FRONT_OFFICE_EMPLOYEES: '/front-office/employees',
+  FRONT_OFFICE_EMPLOYEES_NEW: '/front-office/employees/new',
+  FRONT_OFFICE_EMPLOYEES_AVAILABLE: '/front-office/employees/available',
+  FRONT_OFFICE_EMPLOYEES_DETAILS: '/front-office/employees/:id',
+  FRONT_OFFICE_EMPLOYEES_EDIT: '/front-office/employees/:id/edit',
   // Future routes will be added here
   // STUDENTS: '/students',
   // TEACHERS: '/teachers',

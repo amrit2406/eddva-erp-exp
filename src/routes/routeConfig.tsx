@@ -33,6 +33,11 @@ import FrontOfficeNotificationsPage from '../features/front-office/pages/notific
 import FrontOfficeDepartmentsPage from '../features/front-office/pages/departments/DepartmentsPage';
 import FrontOfficeCreateDepartmentPage from '../features/front-office/pages/departments/CreateDepartmentPage';
 import FrontOfficeEditDepartmentPage from '../features/front-office/pages/departments/EditDepartmentPage';
+import FrontOfficeEmployeesPage from '../features/front-office/pages/employees/EmployeesPage';
+import FrontOfficeCreateEmployeePage from '../features/front-office/pages/employees/CreateEmployeePage';
+import FrontOfficeEditEmployeePage from '../features/front-office/pages/employees/EditEmployeePage';
+import FrontOfficeEmployeeDetailPage from '../features/front-office/pages/employees/EmployeeDetailPage';
+import FrontOfficeAvailableEmployeesPage from '../features/front-office/pages/employees/AvailableEmployeesPage';
 // Sales & Purchase Routes
 import ItemCategoriesPage from '../features/sales-purchase/pages/item-categories/ItemCategoriesPage';
 import CreateItemCategoryPage from '../features/sales-purchase/pages/item-categories/CreateItemCategoryPage';
@@ -387,6 +392,31 @@ export const routeConfig = [
   {
     path: '/front-office/departments/:id/edit',
     element: FrontOfficeEditDepartmentPage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/employees',
+    element: FrontOfficeEmployeesPage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/employees/new',
+    element: FrontOfficeCreateEmployeePage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/employees/available',
+    element: FrontOfficeAvailableEmployeesPage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/employees/:id/edit',
+    element: FrontOfficeEditEmployeePage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/employees/:id',
+    element: FrontOfficeEmployeeDetailPage,
     isProtected: true,
   },
 

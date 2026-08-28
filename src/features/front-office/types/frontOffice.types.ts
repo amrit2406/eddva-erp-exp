@@ -10,6 +10,7 @@ export * from './attachment.types';
 export * from './rbac.types';
 export * from './notification.types';
 export * from './departmentRecord.types';
+export * from './employeeRecord.types';
 
 // Common pagination params
 export interface PaginationParams {

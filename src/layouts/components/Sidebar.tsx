@@ -25,6 +25,8 @@ const navItems: NavItem[] = [
       { path: '/front-office/users', label: 'Users', icon: Users },
       { path: '/front-office/notifications', label: 'Notifications', icon: Bell },
       { path: '/front-office/departments', label: 'Departments', icon: Building2 },
+      { path: '/front-office/employees', label: 'Employees', icon: UserPlus },
+      { path: '/front-office/employees/available', label: 'Available Employees', icon: Search },
     ]
   },
   { 
