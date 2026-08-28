@@ -20,6 +20,9 @@ export const ROUTES = {
   FRONT_OFFICE_USERS: '/front-office/users',
   FRONT_OFFICE_USERS_NEW: '/front-office/users/new',
   FRONT_OFFICE_NOTIFICATIONS: '/front-office/notifications',
+  FRONT_OFFICE_DEPARTMENTS: '/front-office/departments',
+  FRONT_OFFICE_DEPARTMENTS_NEW: '/front-office/departments/new',
+  FRONT_OFFICE_DEPARTMENTS_EDIT: '/front-office/departments/:id/edit',
   // Future routes will be added here
   // STUDENTS: '/students',
   // TEACHERS: '/teachers',
