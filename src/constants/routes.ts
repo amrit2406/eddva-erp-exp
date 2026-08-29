@@ -6,6 +6,7 @@ export const ROUTES = {
   FRONT_OFFICE_VISITORS_NEW: '/front-office/visitors/new',
   FRONT_OFFICE_ENQUIRIES: '/front-office/enquiries',
   FRONT_OFFICE_ENQUIRIES_NEW: '/front-office/enquiries/new',
+  FRONT_OFFICE_ENQUIRIES_FOLLOWUPS: '/front-office/enquiries/followups',
   FRONT_OFFICE_APPOINTMENTS: '/front-office/appointments',
   FRONT_OFFICE_APPOINTMENTS_NEW: '/front-office/appointments/new',
   FRONT_OFFICE_APPOINTMENTS_CALENDAR: '/front-office/appointments/calendar',

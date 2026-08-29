@@ -10,6 +10,7 @@ import EditVisitorPage from '../features/front-office/pages/visitors/EditVisitor
 import EnquiriesPage from '../features/front-office/pages/enquiries/EnquiriesPage';
 import CreateEnquiryPage from '../features/front-office/pages/enquiries/CreateEnquiryPage';
 import EnquiryDetailsPage from '../features/front-office/pages/enquiries/EnquiryDetailsPage';
+import FollowupsDashboardPage from '../features/front-office/pages/enquiries/FollowupsDashboardPage';
 import EditEnquiryPage from '../features/front-office/pages/enquiries/EditEnquiryPage';
 import AppointmentsPage from '../features/front-office/pages/appointments/AppointmentsPage';
 import CreateAppointmentPage from '../features/front-office/pages/appointments/CreateAppointmentPage';
@@ -279,6 +280,11 @@ export const routeConfig = [
   {
     path: '/front-office/enquiries/new',
     element: CreateEnquiryPage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/enquiries/followups',
+    element: FollowupsDashboardPage,
     isProtected: true,
   },
   {

@@ -1,82 +1,73 @@
+import { useState } from 'react';
 import Input from '../../../../components/ui/Input';
-import Select from '../../../../components/ui/Select';
 import Button from '../../../../components/ui/Button';
-import { ENQUIRY_FOLLOWUP_RESULT_OPTIONS } from '../../constants/enquiry.constants';
+import { getApiErrorMessage } from '../../utils/rbac.utils';
 import { cn } from '../../../../utils/cn';
+import type { CreateFollowupFormData } from '../../types/enquiryRecord.types';
 
 interface EnquiryFollowupFormProps {
-  onSubmit?: (data: any) => void;
+  onSubmit: (data: CreateFollowupFormData) => Promise<void>;
+  onCancel?: () => void;
   isSubmitting?: boolean;
   className?: string;
 }
 
-export default function EnquiryFollowupForm({ onSubmit, isSubmitting = false, className }: EnquiryFollowupFormProps) {
-  const handleSubmit = (e: React.FormEvent) => {
+export default function EnquiryFollowupForm({ onSubmit, onCancel, isSubmitting = false, className }: EnquiryFollowupFormProps) {
+  const [notes, setNotes] = useState('');
+  const [followupDate, setFollowupDate] = useState(new Date().toISOString().slice(0, 10));
+  const [nextFollowupDate, setNextFollowupDate] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const data = Object.fromEntries(formData);
-    onSubmit?.(data);
+    if (nextFollowupDate && followupDate && nextFollowupDate < followupDate) {
+      setError('Next follow-up date cannot be before the follow-up date.');
+      return;
+    }
+    setError(null);
+    try {
+      await onSubmit({
+        notes,
+        followup_date: followupDate || undefined,
+        next_followup_date: nextFollowupDate || undefined,
+      });
+      setNotes('');
+      setNextFollowupDate('');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to add follow-up'));
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Follow-up Date</label>
+          <Input type="date" value={followupDate} onChange={(e) => setFollowupDate(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Next Follow-up Date</label>
+          <Input type="date" value={nextFollowupDate} onChange={(e) => setNextFollowupDate(e.target.value)} />
+        </div>
+      </div>
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">
-          Follow-up Date <span className="text-red-500">*</span>
+          Notes <span className="text-red-500">*</span>
         </label>
-        <Input
-          name="followUpDate"
-          type="date"
-          defaultValue={new Date().toISOString().slice(0, 10)}
-          required
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Follow-up Time</label>
-        <Input
-          name="followUpTime"
-          type="time"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Method</label>
-        <Select
-          name="method"
-          placeholder="Select method"
-          options={[
-            { value: 'phone', label: 'Phone' },
-            { value: 'email', label: 'Email' },
-            { value: 'in_person', label: 'In Person' },
-            { value: 'video_call', label: 'Video Call' },
-          ]}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Result</label>
-        <Select
-          name="result"
-          placeholder="Select result"
-          options={ENQUIRY_FOLLOWUP_RESULT_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Next Follow-up Date</label>
-        <Input
-          name="nextFollowUpDate"
-          type="date"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
         <textarea
-          name="notes"
-          placeholder="Enter follow-up notes"
-          rows={4}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="e.g., Called the enquirer, awaiting document submission"
+          rows={3}
+          required
           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
-      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-        <Button variant="secondary" type="button">
+      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+        <Button variant="secondary" type="button" onClick={onCancel} disabled={isSubmitting}>
           Cancel
         </Button>
         <Button variant="primary" type="submit" disabled={isSubmitting}>

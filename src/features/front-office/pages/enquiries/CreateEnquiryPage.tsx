@@ -1,13 +1,49 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import EnquiryForm from '../../components/enquiries/EnquiryForm';
+import { createEnquiry } from '../../api/enquiries.api';
+import { getEmployees } from '../../api/employees.api';
+import { getApiErrorMessage } from '../../utils/rbac.utils';
+import type { FrontOfficeEnquiryFormData } from '../../types/enquiryRecord.types';
+import type { FrontOfficeEmployee } from '../../types/employeeRecord.types';
 
 export default function CreateEnquiryPage() {
-  const handleSubmit = (data: any) => {
-    console.log('Create enquiry:', data);
-    // Will be connected to API later
+  const navigate = useNavigate();
+  const [employees, setEmployees] = useState<FrontOfficeEmployee[]>([]);
+  const [formData, setFormData] = useState<FrontOfficeEnquiryFormData>({
+    enquirer_name: '',
+    phone: '',
+    email: '',
+    source: 'walk_in',
+    category: '',
+    description: '',
+    assigned_to: undefined,
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getEmployees({ limit: 100 }).then((r) => setEmployees(r.data)).catch(() => setEmployees([]));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      setError(null);
+      await createEnquiry(formData);
+      navigate('/front-office/enquiries');
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      setError(getApiErrorMessage(err, 'Failed to create enquiry'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -27,7 +63,21 @@ export default function CreateEnquiryPage() {
 
       <Card className="border-slate-200">
         <div className="p-6">
-          <EnquiryForm onSubmit={handleSubmit} submitText="Create Enquiry" />
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+          <EnquiryForm
+            formData={formData}
+            onChange={setFormData}
+            onSubmit={handleSubmit}
+            onCancel={() => navigate('/front-office/enquiries')}
+            employees={employees}
+            showAssignee
+            submitText="Create Enquiry"
+            isSubmitting={submitting}
+          />
         </div>
       </Card>
     </div>

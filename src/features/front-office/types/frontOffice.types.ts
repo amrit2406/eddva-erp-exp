@@ -14,6 +14,7 @@ export * from './employeeRecord.types';
 export * from './visitorRecord.types';
 export * from './visitorLog.types';
 export * from './kiosk.types';
+export * from './enquiryRecord.types';
 
 // Common pagination params
 export interface PaginationParams {
