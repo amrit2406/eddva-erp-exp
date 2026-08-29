@@ -13,6 +13,7 @@ export * from './departmentRecord.types';
 export * from './employeeRecord.types';
 export * from './visitorRecord.types';
 export * from './visitorLog.types';
+export * from './kiosk.types';
 
 // Common pagination params
 export interface PaginationParams {

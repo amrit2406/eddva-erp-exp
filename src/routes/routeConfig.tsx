@@ -40,6 +40,8 @@ import FrontOfficeEmployeeDetailPage from '../features/front-office/pages/employ
 import FrontOfficeAvailableEmployeesPage from '../features/front-office/pages/employees/AvailableEmployeesPage';
 import FrontOfficeVisitorLogsPage from '../features/front-office/pages/visitor-logs/VisitorLogsPage';
 import FrontOfficeVisitorLogDetailPage from '../features/front-office/pages/visitor-logs/VisitorLogDetailPage';
+import FrontOfficeKioskLandingPage from '../features/front-office/pages/kiosk/KioskLandingPage';
+import FrontOfficeKioskCheckInPage from '../features/front-office/pages/kiosk/KioskCheckInPage';
 // Sales & Purchase Routes
 import ItemCategoriesPage from '../features/sales-purchase/pages/item-categories/ItemCategoriesPage';
 import CreateItemCategoryPage from '../features/sales-purchase/pages/item-categories/CreateItemCategoryPage';
@@ -430,6 +432,16 @@ export const routeConfig = [
     path: '/front-office/visitor-logs/:id',
     element: FrontOfficeVisitorLogDetailPage,
     isProtected: true,
+  },
+
+  // Front Office Kiosk (public, unauthenticated — no isProtected/isPublic flag)
+  {
+    path: '/kiosk',
+    element: FrontOfficeKioskLandingPage,
+  },
+  {
+    path: '/kiosk/:appointmentId',
+    element: FrontOfficeKioskCheckInPage,
   },
 
   // Sales & Purchase Routes
