@@ -1,13 +1,42 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import VisitorForm from '../../components/visitors/VisitorForm';
+import { createVisitor } from '../../api/visitors.api';
+import { getApiErrorMessage } from '../../utils/rbac.utils';
+import type { FrontOfficeVisitorFormData } from '../../types/visitorRecord.types';
 
 export default function CreateVisitorPage() {
-  const handleSubmit = (data: any) => {
-    console.log('Create visitor:', data);
-    // Will be connected to API later
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState<FrontOfficeVisitorFormData>({
+    full_name: '',
+    phone: '',
+    email: '',
+    id_proof_type: '',
+    id_proof_number: '',
+    photo_url: '',
+    organization: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      setError(null);
+      await createVisitor(formData);
+      navigate('/front-office/visitors');
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      setError(getApiErrorMessage(err, 'Failed to create visitor'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -27,7 +56,19 @@ export default function CreateVisitorPage() {
 
       <Card className="border-slate-200">
         <div className="p-6">
-          <VisitorForm onSubmit={handleSubmit} submitText="Register Visitor" />
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+          <VisitorForm
+            formData={formData}
+            onChange={setFormData}
+            onSubmit={handleSubmit}
+            onCancel={() => navigate('/front-office/visitors')}
+            submitText="Register Visitor"
+            isSubmitting={submitting}
+          />
         </div>
       </Card>
     </div>
