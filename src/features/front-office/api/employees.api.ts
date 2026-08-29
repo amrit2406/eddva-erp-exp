@@ -1,4 +1,5 @@
 import axiosInstance from '../../../lib/axios';
+import { cleanPayload } from '../utils/cleanPayload';
 import type {
   FrontOfficeEmployee,
   FrontOfficeEmployeeFormData,
@@ -27,7 +28,7 @@ export async function getEmployee(id: string | number): Promise<FrontOfficeEmplo
 }
 
 export async function createEmployee(data: FrontOfficeEmployeeFormData): Promise<FrontOfficeEmployee> {
-  const response = await axiosInstance.post('/front-office/employees', data);
+  const response = await axiosInstance.post('/front-office/employees', cleanPayload(data));
   return response.data.data || response.data;
 }
 
@@ -35,7 +36,7 @@ export async function updateEmployee(
   id: string | number,
   data: FrontOfficeEmployeeUpdateData
 ): Promise<FrontOfficeEmployee> {
-  const response = await axiosInstance.patch(`/front-office/employees/${id}`, data);
+  const response = await axiosInstance.patch(`/front-office/employees/${id}`, cleanPayload(data));
   return response.data.data || response.data;
 }
 

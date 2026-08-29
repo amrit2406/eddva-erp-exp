@@ -1,4 +1,5 @@
 import axiosInstance from '../../../lib/axios';
+import { cleanPayload } from '../utils/cleanPayload';
 import type {
   FrontOfficeVisitor,
   FrontOfficeVisitorFormData,
@@ -23,7 +24,7 @@ export async function getVisitor(id: string | number): Promise<FrontOfficeVisito
 }
 
 export async function createVisitor(data: FrontOfficeVisitorFormData): Promise<FrontOfficeVisitor> {
-  const response = await axiosInstance.post('/front-office/visitors', data);
+  const response = await axiosInstance.post('/front-office/visitors', cleanPayload(data));
   return response.data.data || response.data;
 }
 
@@ -31,7 +32,7 @@ export async function updateVisitor(
   id: string | number,
   data: Partial<FrontOfficeVisitorFormData>
 ): Promise<FrontOfficeVisitor> {
-  const response = await axiosInstance.patch(`/front-office/visitors/${id}`, data);
+  const response = await axiosInstance.patch(`/front-office/visitors/${id}`, cleanPayload(data));
   return response.data.data || response.data;
 }
 

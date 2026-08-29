@@ -28,6 +28,8 @@ export const ROUTES = {
   FRONT_OFFICE_EMPLOYEES_AVAILABLE: '/front-office/employees/available',
   FRONT_OFFICE_EMPLOYEES_DETAILS: '/front-office/employees/:id',
   FRONT_OFFICE_EMPLOYEES_EDIT: '/front-office/employees/:id/edit',
+  FRONT_OFFICE_VISITOR_LOGS: '/front-office/visitor-logs',
+  FRONT_OFFICE_VISITOR_LOGS_DETAILS: '/front-office/visitor-logs/:id',
   // Future routes will be added here
   // STUDENTS: '/students',
   // TEACHERS: '/teachers',

@@ -38,6 +38,8 @@ import FrontOfficeCreateEmployeePage from '../features/front-office/pages/employ
 import FrontOfficeEditEmployeePage from '../features/front-office/pages/employees/EditEmployeePage';
 import FrontOfficeEmployeeDetailPage from '../features/front-office/pages/employees/EmployeeDetailPage';
 import FrontOfficeAvailableEmployeesPage from '../features/front-office/pages/employees/AvailableEmployeesPage';
+import FrontOfficeVisitorLogsPage from '../features/front-office/pages/visitor-logs/VisitorLogsPage';
+import FrontOfficeVisitorLogDetailPage from '../features/front-office/pages/visitor-logs/VisitorLogDetailPage';
 // Sales & Purchase Routes
 import ItemCategoriesPage from '../features/sales-purchase/pages/item-categories/ItemCategoriesPage';
 import CreateItemCategoryPage from '../features/sales-purchase/pages/item-categories/CreateItemCategoryPage';
@@ -417,6 +419,16 @@ export const routeConfig = [
   {
     path: '/front-office/employees/:id',
     element: FrontOfficeEmployeeDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/visitor-logs',
+    element: FrontOfficeVisitorLogsPage,
+    isProtected: true,
+  },
+  {
+    path: '/front-office/visitor-logs/:id',
+    element: FrontOfficeVisitorLogDetailPage,
     isProtected: true,
   },
 
