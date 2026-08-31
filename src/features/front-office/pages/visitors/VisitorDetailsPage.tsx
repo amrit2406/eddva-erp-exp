@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import { useToast } from '../../../../hooks/useToast';
 import { getVisitor, getVisitorVisits, getVisitorAppointments, getVisitorAudit } from '../../api/visitors.api';
 import { getApiErrorMessage } from '../../utils/rbac.utils';
+import EntityAttachments from '../../components/attachments/EntityAttachments';
 import type {
   FrontOfficeVisitor,
   VisitorVisit,
@@ -251,6 +252,12 @@ export default function VisitorDetailsPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      </Card>
+
+      <Card className="border-slate-200">
+        <div className="p-6">
+          <EntityAttachments entityType="visitor" entityId={visitor.visitor_id} />
         </div>
       </Card>
 

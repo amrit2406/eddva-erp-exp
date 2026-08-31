@@ -18,6 +18,7 @@ import AssignEnquiryModal from '../../components/enquiries/AssignEnquiryModal';
 import ChangeStatusModal from '../../components/enquiries/ChangeStatusModal';
 import EnquiryFollowupForm from '../../components/enquiries/EnquiryFollowupForm';
 import EnquiryFollowupTimeline from '../../components/enquiries/EnquiryFollowupTimeline';
+import EntityAttachments from '../../components/attachments/EntityAttachments';
 import type {
   FrontOfficeEnquiry,
   FrontOfficeEnquiryFollowup,
@@ -247,6 +248,12 @@ export default function EnquiryDetailsPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      </Card>
+
+      <Card className="border-slate-200">
+        <div className="p-6">
+          <EntityAttachments entityType="enquiry" entityId={enquiry.enquiry_id} />
         </div>
       </Card>
 

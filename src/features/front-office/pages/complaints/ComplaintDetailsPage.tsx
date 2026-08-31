@@ -12,6 +12,7 @@ import AssignComplaintModal from '../../components/complaints/AssignComplaintMod
 import ChangePriorityModal from '../../components/complaints/ChangePriorityModal';
 import ChangeComplaintStatusModal from '../../components/complaints/ChangeComplaintStatusModal';
 import EscalateComplaintModal from '../../components/complaints/EscalateComplaintModal';
+import EntityAttachments from '../../components/attachments/EntityAttachments';
 import { useToast } from '../../../../hooks/useToast';
 import {
   getComplaint,
@@ -311,6 +312,12 @@ export default function ComplaintDetailsPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      </Card>
+
+      <Card className="border-slate-200">
+        <div className="p-6">
+          <EntityAttachments entityType="complaint" entityId={complaint.complaint_id} />
         </div>
       </Card>
 
