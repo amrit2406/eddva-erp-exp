@@ -1,17 +1,31 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
-import { mockAppointments } from '../../mock/appointments.mock';
 import { cn } from '../../../../utils/cn';
-import { useState } from 'react';
+import { toDateInputValue, toTimeInputValue } from '../../utils/dateTime';
+import type { FrontOfficeAppointment } from '../../types/appointmentRecord.types';
 
-interface AppointmentCalendarProps {
-  className?: string;
-  onAppointmentClick?: (appointmentId: string) => void;
+function toLocalDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
-export default function AppointmentCalendar({ className, onAppointmentClick }: AppointmentCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+interface AppointmentCalendarProps {
+  appointments: FrontOfficeAppointment[];
+  currentDate: Date;
+  onMonthChange: (date: Date) => void;
+  className?: string;
+  onAppointmentClick?: (appointmentId: number) => void;
+}
 
+export default function AppointmentCalendar({
+  appointments,
+  currentDate,
+  onMonthChange,
+  className,
+  onAppointmentClick,
+}: AppointmentCalendarProps) {
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
 
@@ -21,48 +35,40 @@ export default function AppointmentCalendar({ className, onAppointmentClick }: A
   ];
 
   const getAppointmentsForDate = (date: Date) => {
-    return mockAppointments.filter((app) => {
-      const appDate = new Date(app.appointmentDate);
-      return (
-        appDate.getDate() === date.getDate() &&
-        appDate.getMonth() === date.getMonth() &&
-        appDate.getFullYear() === date.getFullYear()
-      );
-    });
+    const key = toLocalDateKey(date);
+    return appointments.filter((app) => toDateInputValue(app.appointment_date) === key);
   };
 
   const goToPreviousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    onMonthChange(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
   const goToNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    onMonthChange(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
   const goToToday = () => {
-    setCurrentDate(new Date());
+    onMonthChange(new Date());
   };
 
   const renderCalendarDays = () => {
     const days = [];
     const today = new Date();
 
-    // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(<div key={`empty-${i}`} className="p-2 min-h-[100px] bg-slate-50 border border-slate-200" />);
     }
 
-    // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-      const appointments = getAppointmentsForDate(date);
+      const dayAppointments = getAppointmentsForDate(date);
       const isToday = date.toDateString() === today.toDateString();
 
       days.push(
         <div
           key={day}
           className={cn(
-            'p-2 min-h-[100px] border border-slate-200 hover:bg-slate-50 cursor-pointer',
+            'p-2 min-h-[100px] border border-slate-200 hover:bg-slate-50',
             isToday && 'bg-blue-50'
           )}
         >
@@ -70,18 +76,18 @@ export default function AppointmentCalendar({ className, onAppointmentClick }: A
             {day}
           </div>
           <div className="space-y-1">
-            {appointments.slice(0, 2).map((app) => (
+            {dayAppointments.slice(0, 2).map((app) => (
               <div
-                key={app.id}
-                onClick={() => onAppointmentClick?.(app.id)}
-                className="text-xs p-1 bg-blue-100 text-blue-800 rounded truncate hover:bg-blue-200"
+                key={app.appointment_id}
+                onClick={() => onAppointmentClick?.(app.appointment_id)}
+                className="text-xs p-1 bg-blue-100 text-blue-800 rounded truncate hover:bg-blue-200 cursor-pointer"
               >
-                {app.startTime} {app.visitorName}
+                {toTimeInputValue(app.start_time)} {app.visitor_name}
               </div>
             ))}
-            {appointments.length > 2 && (
+            {dayAppointments.length > 2 && (
               <div className="text-xs text-slate-500">
-                +{appointments.length - 2} more
+                +{dayAppointments.length - 2} more
               </div>
             )}
           </div>

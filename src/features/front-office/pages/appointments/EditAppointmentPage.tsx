@@ -1,23 +1,80 @@
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import AppointmentForm from '../../components/appointments/AppointmentForm';
-import { mockAppointments } from '../../mock/appointments.mock';
+import AppointmentUpdateForm from '../../components/appointments/AppointmentUpdateForm';
+import { getAppointment, updateAppointment } from '../../api/appointments.api';
+import { getApiErrorMessage } from '../../utils/rbac.utils';
+import type { AppointmentUpdateFormData } from '../../types/appointmentRecord.types';
 
 export default function EditAppointmentPage() {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const appointment = mockAppointments.find((a) => a.id === id);
+  const [formData, setFormData] = useState<AppointmentUpdateFormData>({
+    visitor_id: undefined,
+    visitor_name: '',
+    phone: '',
+    purpose: '',
+  });
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (data: any) => {
-    console.log('Update appointment:', id, data);
-    // Will be connected to API later
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  async function loadData() {
+    if (!id) return;
+    try {
+      setLoading(true);
+      const data = await getAppointment(id);
+      setFormData({
+        visitor_id: data.visitor_id ?? undefined,
+        visitor_name: data.visitor_name,
+        phone: data.phone ?? '',
+        purpose: data.purpose ?? '',
+      });
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      setError(getApiErrorMessage(err, 'Failed to load appointment'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+    try {
+      setSubmitting(true);
+      setError(null);
+      await updateAppointment(id, formData);
+      navigate(`/front-office/appointments/${id}`);
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      setError(getApiErrorMessage(err, 'Failed to update appointment'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  if (!appointment) {
+  if (loading) {
     return (
-      <div className="text-center py-8 text-slate-500">
-        Appointment not found
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Edit Appointment</h1>
+          <p className="text-slate-600 mt-1">Update appointment information</p>
+        </div>
+        <Card className="border-slate-200">
+          <div className="p-8 text-center text-slate-500">Loading...</div>
+        </Card>
       </div>
     );
   }
@@ -33,16 +90,24 @@ export default function EditAppointmentPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Edit Appointment</h1>
-          <p className="text-slate-600 mt-1">Update appointment information</p>
+          <p className="text-slate-600 mt-1">Update visitor details for this appointment</p>
         </div>
       </div>
 
       <Card className="border-slate-200">
         <div className="p-6">
-          <AppointmentForm
-            defaultValues={appointment}
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+          <AppointmentUpdateForm
+            formData={formData}
+            onChange={setFormData}
             onSubmit={handleSubmit}
+            onCancel={() => navigate(`/front-office/appointments/${id}`)}
             submitText="Update Appointment"
+            isSubmitting={submitting}
           />
         </div>
       </Card>

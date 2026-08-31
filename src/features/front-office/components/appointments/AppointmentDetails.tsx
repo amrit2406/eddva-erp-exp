@@ -1,34 +1,32 @@
-import { mockAppointments } from '../../mock/appointments.mock';
 import RecordDetails from '../common/RecordDetails';
 import { cn } from '../../../../utils/cn';
+import { formatDateDisplay, toTimeInputValue } from '../../utils/dateTime';
+import type { FrontOfficeAppointment } from '../../types/appointmentRecord.types';
 
 interface AppointmentDetailsProps {
-  appointmentId: string;
+  appointment: FrontOfficeAppointment;
   className?: string;
 }
 
-export default function AppointmentDetails({ appointmentId, className }: AppointmentDetailsProps) {
-  const appointment = mockAppointments.find((a) => a.id === appointmentId);
-
-  if (!appointment) {
-    return <div className={cn('text-center py-8 text-slate-500', className)}>Appointment not found</div>;
-  }
-
+export default function AppointmentDetails({ appointment, className }: AppointmentDetailsProps) {
   return (
     <div className={cn('space-y-6', className)}>
       <RecordDetails
         title="Appointment Information"
         details={[
-          { label: 'Appointment Number', value: appointment.appointmentNumber },
-          { label: 'Visitor Name', value: appointment.visitorName },
-          { label: 'Visitor Phone', value: appointment.visitorPhone },
-          { label: 'Host Employee', value: appointment.hostEmployeeName },
-          { label: 'Appointment Date', value: new Date(appointment.appointmentDate).toLocaleDateString() },
-          { label: 'Time', value: `${appointment.startTime} - ${appointment.endTime}` },
-          { label: 'Purpose', value: appointment.purpose },
+          { label: 'Visitor Name', value: appointment.visitor_name },
+          { label: 'Phone', value: appointment.phone || '—' },
+          { label: 'Host Employee', value: appointment.host_employee?.name || '—' },
+          { label: 'Department', value: appointment.department?.name || '—' },
+          { label: 'Appointment Date', value: formatDateDisplay(appointment.appointment_date) },
+          { label: 'Time', value: `${toTimeInputValue(appointment.start_time)} - ${toTimeInputValue(appointment.end_time)}` },
+          { label: 'Purpose', value: appointment.purpose || '—' },
           { label: 'Status', value: appointment.status.replace('_', ' ') },
-          { label: 'Notes', value: appointment.notes || '-' },
-          { label: 'Created At', value: new Date(appointment.createdAt).toLocaleString() },
+          { label: 'Notes', value: appointment.notes || '—' },
+          ...(appointment.cancellation_reason
+            ? [{ label: 'Cancellation Reason', value: appointment.cancellation_reason }]
+            : []),
+          { label: 'Created At', value: appointment.created_at ? new Date(appointment.created_at).toLocaleString() : '—' },
         ]}
       />
     </div>
