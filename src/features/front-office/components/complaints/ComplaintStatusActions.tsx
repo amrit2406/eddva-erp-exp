@@ -1,43 +1,39 @@
 import Button from '../../../../components/ui/Button';
-import { Check, X, ArrowRight } from 'lucide-react';
+import { UserCog, Flag, ArrowUpCircle, Check, CheckCheck, RefreshCw } from 'lucide-react';
 import { cn } from '../../../../utils/cn';
+import type { FrontOfficeComplaintStatus } from '../../types/complaintRecord.types';
 
 interface ComplaintStatusActionsProps {
-  currentStatus: string;
-  onStatusChange: (newStatus: string) => void;
+  status: FrontOfficeComplaintStatus;
+  onAssign: () => void;
+  onChangePriority: () => void;
+  onChangeStatus: () => void;
+  onEscalate: () => void;
+  onResolve: () => void;
+  onCloseComplaint: () => void;
   className?: string;
 }
 
-export default function ComplaintStatusActions({ currentStatus, onStatusChange, className }: ComplaintStatusActionsProps) {
+export default function ComplaintStatusActions({
+  status,
+  onAssign,
+  onChangePriority,
+  onChangeStatus,
+  onEscalate,
+  onResolve,
+  onCloseComplaint,
+  className,
+}: ComplaintStatusActionsProps) {
+  const isActive = status === 'open' || status === 'in_progress';
+  const notClosed = status !== 'closed';
+
   const actions = [
-    {
-      status: 'in_progress',
-      label: 'In Progress',
-      icon: ArrowRight,
-      variant: 'primary' as const,
-      show: currentStatus === 'pending',
-    },
-    {
-      status: 'resolved',
-      label: 'Resolve',
-      icon: Check,
-      variant: 'primary' as const,
-      show: currentStatus === 'pending' || currentStatus === 'in_progress',
-    },
-    {
-      status: 'closed',
-      label: 'Close',
-      icon: Check,
-      variant: 'secondary' as const,
-      show: currentStatus === 'resolved',
-    },
-    {
-      status: 'rejected',
-      label: 'Reject',
-      icon: X,
-      variant: 'secondary' as const,
-      show: currentStatus === 'pending' || currentStatus === 'in_progress',
-    },
+    { key: 'assign', label: 'Assign', icon: UserCog, variant: 'secondary' as const, show: notClosed, onClick: onAssign },
+    { key: 'priority', label: 'Priority', icon: Flag, variant: 'secondary' as const, show: notClosed, onClick: onChangePriority },
+    { key: 'escalate', label: 'Escalate', icon: ArrowUpCircle, variant: 'secondary' as const, show: isActive, onClick: onEscalate },
+    { key: 'resolve', label: 'Resolve', icon: Check, variant: 'primary' as const, show: isActive, onClick: onResolve },
+    { key: 'close', label: 'Close', icon: CheckCheck, variant: 'primary' as const, show: status === 'resolved', onClick: onCloseComplaint },
+    { key: 'status', label: 'Change Status', icon: RefreshCw, variant: 'secondary' as const, show: true, onClick: onChangeStatus },
   ];
 
   const availableActions = actions.filter((action) => action.show);
@@ -47,12 +43,7 @@ export default function ComplaintStatusActions({ currentStatus, onStatusChange, 
       {availableActions.map((action) => {
         const Icon = action.icon;
         return (
-          <Button
-            key={action.status}
-            variant={action.variant}
-            size="sm"
-            onClick={() => onStatusChange(action.status)}
-          >
+          <Button key={action.key} variant={action.variant} size="sm" onClick={action.onClick}>
             <Icon className="h-4 w-4 mr-2" />
             {action.label}
           </Button>

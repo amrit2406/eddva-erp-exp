@@ -31,6 +31,7 @@ const navItems: NavItem[] = [
       { path: '/front-office/visitor-logs', label: 'Visitor Logs', icon: LogIn },
       { path: '/front-office/enquiries', label: 'Enquiries', icon: MessageSquare },
       { path: '/front-office/appointments', label: 'Appointments', icon: Calendar },
+      { path: '/front-office/complaints', label: 'Complaints', icon: AlertTriangle },
     ]
   },
   { 

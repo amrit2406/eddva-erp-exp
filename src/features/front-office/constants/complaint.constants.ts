@@ -15,9 +15,11 @@ export const COMPLAINT_STATUS_OPTIONS = [
 ] as const;
 
 export const COMPLAINT_CATEGORY_OPTIONS = [
-  { value: 'facility', label: 'Facility' },
+  { value: 'facilities', label: 'Facilities' },
   { value: 'staff', label: 'Staff' },
-  { value: 'service', label: 'Service' },
+  { value: 'academic', label: 'Academic' },
+  { value: 'transport', label: 'Transport' },
+  { value: 'hostel', label: 'Hostel' },
   { value: 'billing', label: 'Billing' },
   { value: 'other', label: 'Other' },
 ] as const;
