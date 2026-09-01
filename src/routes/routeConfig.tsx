@@ -266,6 +266,12 @@ import InventoryLedgerPage from '../features/inventory/pages/stock/LedgerPage';
 import InventoryAssetsPage from '../features/inventory/pages/assets/AssetsPage';
 import InventoryAssetDetailPage from '../features/inventory/pages/assets/AssetDetailPage';
 import InventoryEditAssetPage from '../features/inventory/pages/assets/EditAssetPage';
+// Inventory Issues & Returns
+import InventoryIssuesPage from '../features/inventory/pages/issues/IssuesPage';
+import InventoryCreateIssuePage from '../features/inventory/pages/issues/CreateIssuePage';
+import InventoryIssueDetailPage from '../features/inventory/pages/issues/IssueDetailPage';
+import InventoryApprovalRulesPage from '../features/inventory/pages/issues/ApprovalRulesPage';
+import InventoryCreateApprovalRulePage from '../features/inventory/pages/issues/CreateApprovalRulePage';
 // Inventory Roles & Permissions
 import InventoryRolesPage from '../features/inventory/pages/rbac/RolesPage';
 import InventoryCreateRolePage from '../features/inventory/pages/rbac/CreateRolePage';
@@ -1510,6 +1516,33 @@ export const routeConfig = [
   {
     path: '/inventory/assets/:tag/edit',
     element: InventoryEditAssetPage,
+    isProtected: true,
+  },
+
+  // Inventory Issues & Returns Routes
+  {
+    path: '/inventory/issues',
+    element: InventoryIssuesPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/issues/new',
+    element: InventoryCreateIssuePage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/issues/approval-rules',
+    element: InventoryApprovalRulesPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/issues/approval-rules/new',
+    element: InventoryCreateApprovalRulePage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/issues/:id',
+    element: InventoryIssueDetailPage,
     isProtected: true,
   },
 
