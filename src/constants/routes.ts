@@ -96,6 +96,8 @@ export const ROUTES = {
   SPORTS_AWARDS: '/sports/awards',
   INVENTORY: '/inventory',
   INVENTORY_PERMISSIONS: '/inventory/permissions',
+  INVENTORY_PERMISSIONS_NEW: '/inventory/permissions/new',
+  INVENTORY_PERMISSIONS_EDIT: '/inventory/permissions/:id/edit',
   INVENTORY_ROLES: '/inventory/roles',
   INVENTORY_ROLES_NEW: '/inventory/roles/new',
   INVENTORY_ROLES_EDIT: '/inventory/roles/:id/edit',

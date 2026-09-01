@@ -32,6 +32,15 @@ export interface InventoryRolePermissionRule {
 
 export type InventoryMyPermissions = InventoryRolePermissionRule[];
 
+export interface InventoryPermissionFormData {
+  resource: string;
+  action: string;
+  name: string;
+  category: string;
+  description?: string;
+  is_active?: boolean;
+}
+
 export interface InventoryRole {
   role_id: number;
   institute_id: string;

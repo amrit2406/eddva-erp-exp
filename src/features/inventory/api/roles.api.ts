@@ -2,6 +2,8 @@ import axiosInstance from '../../../lib/axios';
 import type {
   InventoryPermissionCatalog,
   InventoryMyPermissions,
+  InventoryPermissionEntry,
+  InventoryPermissionFormData,
   InventoryRole,
   InventoryRoleFormData,
   InventoryRoleUpdateData,
@@ -18,6 +20,41 @@ export async function getPermissionsCatalog(): Promise<InventoryPermissionCatalo
 export async function getMyPermissions(): Promise<InventoryMyPermissions> {
   const response = await axiosInstance.get('/inventory/roles/permissions/me');
   return response.data.data || response.data || [];
+}
+
+// Dynamic Permissions Registry Endpoints
+export async function getPermissions(): Promise<InventoryPermissionEntry[]> {
+  const response = await axiosInstance.get('/inventory/permissions');
+  // This endpoint returns the same catalog shape as the roles/permissions/catalog endpoint
+  if (response.data.data?.all_permissions) {
+    return response.data.data.all_permissions;
+  }
+  if (response.data.all_permissions) {
+    return response.data.all_permissions;
+  }
+  return response.data.data || response.data || [];
+}
+
+export async function createPermission(data: InventoryPermissionFormData): Promise<InventoryPermissionEntry> {
+  const response = await axiosInstance.post('/inventory/permissions', data);
+  return response.data.data || response.data;
+}
+
+export async function getPermission(id: string | number): Promise<InventoryPermissionEntry> {
+  const response = await axiosInstance.get(`/inventory/permissions/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function updatePermission(
+  id: string | number,
+  data: Partial<InventoryPermissionFormData>
+): Promise<InventoryPermissionEntry> {
+  const response = await axiosInstance.patch(`/inventory/permissions/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deletePermission(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/inventory/permissions/${id}`);
 }
 
 export async function getRoles(): Promise<InventoryRole[]> {

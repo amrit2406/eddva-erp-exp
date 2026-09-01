@@ -239,7 +239,9 @@ import InventoryCreateRolePage from '../features/inventory/pages/rbac/CreateRole
 import InventoryEditRolePage from '../features/inventory/pages/rbac/EditRolePage';
 import InventoryUsersPage from '../features/inventory/pages/rbac/UsersPage';
 import InventoryCreateUserPage from '../features/inventory/pages/rbac/CreateUserPage';
-import InventoryPermissionsCatalogPage from '../features/inventory/pages/rbac/PermissionsCatalogPage';
+import InventoryPermissionsPage from '../features/inventory/pages/rbac/PermissionsPage';
+import InventoryCreatePermissionPage from '../features/inventory/pages/rbac/CreatePermissionPage';
+import InventoryEditPermissionPage from '../features/inventory/pages/rbac/EditPermissionPage';
 
 export const routeConfig = [
   {
@@ -1334,7 +1336,17 @@ export const routeConfig = [
   // Inventory Roles & Permissions Routes
   {
     path: '/inventory/permissions',
-    element: InventoryPermissionsCatalogPage,
+    element: InventoryPermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/permissions/new',
+    element: InventoryCreatePermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/permissions/:id/edit',
+    element: InventoryEditPermissionPage,
     isProtected: true,
   },
   {
