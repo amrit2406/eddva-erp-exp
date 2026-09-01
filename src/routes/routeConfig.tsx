@@ -245,6 +245,11 @@ import InventoryEditLocationPage from '../features/inventory/pages/locations/Edi
 import InventoryVendorsPage from '../features/inventory/pages/vendors/VendorsPage';
 import InventoryCreateVendorPage from '../features/inventory/pages/vendors/CreateVendorPage';
 import InventoryEditVendorPage from '../features/inventory/pages/vendors/EditVendorPage';
+// Inventory Items
+import InventoryItemsPage from '../features/inventory/pages/items/ItemsPage';
+import InventoryCreateItemPage from '../features/inventory/pages/items/CreateItemPage';
+import InventoryEditItemPage from '../features/inventory/pages/items/EditItemPage';
+import InventoryItemDetailPage from '../features/inventory/pages/items/ItemDetailPage';
 // Inventory Roles & Permissions
 import InventoryRolesPage from '../features/inventory/pages/rbac/RolesPage';
 import InventoryCreateRolePage from '../features/inventory/pages/rbac/CreateRolePage';
@@ -1393,6 +1398,28 @@ export const routeConfig = [
   {
     path: '/inventory/vendors/:id/edit',
     element: InventoryEditVendorPage,
+    isProtected: true,
+  },
+
+  // Inventory Items Routes
+  {
+    path: '/inventory/items',
+    element: InventoryItemsPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/items/new',
+    element: InventoryCreateItemPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/items/:id',
+    element: InventoryItemDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/items/:id/edit',
+    element: InventoryEditItemPage,
     isProtected: true,
   },
 
