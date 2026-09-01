@@ -250,6 +250,18 @@ import InventoryItemsPage from '../features/inventory/pages/items/ItemsPage';
 import InventoryCreateItemPage from '../features/inventory/pages/items/CreateItemPage';
 import InventoryEditItemPage from '../features/inventory/pages/items/EditItemPage';
 import InventoryItemDetailPage from '../features/inventory/pages/items/ItemDetailPage';
+// Inventory Stock Register
+import InventoryPurchasesPage from '../features/inventory/pages/stock/PurchasesPage';
+import InventoryCreatePurchasePage from '../features/inventory/pages/stock/CreatePurchasePage';
+import InventoryPurchaseDetailPage from '../features/inventory/pages/stock/PurchaseDetailPage';
+import InventoryTransfersPage from '../features/inventory/pages/stock/TransfersPage';
+import InventoryCreateTransferPage from '../features/inventory/pages/stock/CreateTransferPage';
+import InventoryTransferDetailPage from '../features/inventory/pages/stock/TransferDetailPage';
+import InventoryAdjustmentsPage from '../features/inventory/pages/stock/AdjustmentsPage';
+import InventoryCreateAdjustmentPage from '../features/inventory/pages/stock/CreateAdjustmentPage';
+import InventoryAdjustmentDetailPage from '../features/inventory/pages/stock/AdjustmentDetailPage';
+import InventoryBalancesPage from '../features/inventory/pages/stock/BalancesPage';
+import InventoryLedgerPage from '../features/inventory/pages/stock/LedgerPage';
 // Inventory Roles & Permissions
 import InventoryRolesPage from '../features/inventory/pages/rbac/RolesPage';
 import InventoryCreateRolePage from '../features/inventory/pages/rbac/CreateRolePage';
@@ -1420,6 +1432,63 @@ export const routeConfig = [
   {
     path: '/inventory/items/:id/edit',
     element: InventoryEditItemPage,
+    isProtected: true,
+  },
+
+  // Inventory Stock Register Routes
+  {
+    path: '/inventory/stock/purchases',
+    element: InventoryPurchasesPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/stock/purchases/new',
+    element: InventoryCreatePurchasePage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/stock/purchases/:id',
+    element: InventoryPurchaseDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/stock/transfers',
+    element: InventoryTransfersPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/stock/transfers/new',
+    element: InventoryCreateTransferPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/stock/transfers/:id',
+    element: InventoryTransferDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/stock/adjustments',
+    element: InventoryAdjustmentsPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/stock/adjustments/new',
+    element: InventoryCreateAdjustmentPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/stock/adjustments/:id',
+    element: InventoryAdjustmentDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/stock/balances',
+    element: InventoryBalancesPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/stock/ledger',
+    element: InventoryLedgerPage,
     isProtected: true,
   },
 
