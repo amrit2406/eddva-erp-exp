@@ -262,6 +262,10 @@ import InventoryCreateAdjustmentPage from '../features/inventory/pages/stock/Cre
 import InventoryAdjustmentDetailPage from '../features/inventory/pages/stock/AdjustmentDetailPage';
 import InventoryBalancesPage from '../features/inventory/pages/stock/BalancesPage';
 import InventoryLedgerPage from '../features/inventory/pages/stock/LedgerPage';
+// Inventory Assets
+import InventoryAssetsPage from '../features/inventory/pages/assets/AssetsPage';
+import InventoryAssetDetailPage from '../features/inventory/pages/assets/AssetDetailPage';
+import InventoryEditAssetPage from '../features/inventory/pages/assets/EditAssetPage';
 // Inventory Roles & Permissions
 import InventoryRolesPage from '../features/inventory/pages/rbac/RolesPage';
 import InventoryCreateRolePage from '../features/inventory/pages/rbac/CreateRolePage';
@@ -1489,6 +1493,23 @@ export const routeConfig = [
   {
     path: '/inventory/stock/ledger',
     element: InventoryLedgerPage,
+    isProtected: true,
+  },
+
+  // Inventory Assets Routes
+  {
+    path: '/inventory/assets',
+    element: InventoryAssetsPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/assets/:tag',
+    element: InventoryAssetDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/assets/:tag/edit',
+    element: InventoryEditAssetPage,
     isProtected: true,
   },
 
