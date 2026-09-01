@@ -233,6 +233,13 @@ import SportsTournamentDetailPage from '../features/sports/pages/tournaments/Tou
 // Sports Records & Awards
 import SportsRecordsPage from '../features/sports/pages/records/RecordsPage';
 import SportsAwardsPage from '../features/sports/pages/records/AwardsPage';
+// Inventory Roles & Permissions
+import InventoryRolesPage from '../features/inventory/pages/rbac/RolesPage';
+import InventoryCreateRolePage from '../features/inventory/pages/rbac/CreateRolePage';
+import InventoryEditRolePage from '../features/inventory/pages/rbac/EditRolePage';
+import InventoryUsersPage from '../features/inventory/pages/rbac/UsersPage';
+import InventoryCreateUserPage from '../features/inventory/pages/rbac/CreateUserPage';
+import InventoryPermissionsCatalogPage from '../features/inventory/pages/rbac/PermissionsCatalogPage';
 
 export const routeConfig = [
   {
@@ -1321,6 +1328,38 @@ export const routeConfig = [
   {
     path: '/sports/awards',
     element: SportsAwardsPage,
+    isProtected: true,
+  },
+
+  // Inventory Roles & Permissions Routes
+  {
+    path: '/inventory/permissions',
+    element: InventoryPermissionsCatalogPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/roles',
+    element: InventoryRolesPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/roles/new',
+    element: InventoryCreateRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/roles/:id/edit',
+    element: InventoryEditRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/users',
+    element: InventoryUsersPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/users/new',
+    element: InventoryCreateUserPage,
     isProtected: true,
   },
 

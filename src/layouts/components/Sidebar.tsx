@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 
@@ -113,6 +113,16 @@ const navItems: NavItem[] = [
       { path: '/sports/tournaments', label: 'Tournaments', icon: Swords },
       { path: '/sports/records', label: 'Records', icon: Award },
       { path: '/sports/awards', label: 'Awards', icon: Medal },
+    ]
+  },
+  {
+    path: '/inventory',
+    label: 'Inventory',
+    icon: Boxes,
+    children: [
+      { path: '/inventory/permissions', label: 'Permissions', icon: Key },
+      { path: '/inventory/roles', label: 'Roles', icon: Shield },
+      { path: '/inventory/users', label: 'Users', icon: Users },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },
