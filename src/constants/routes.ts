@@ -144,7 +144,11 @@ export const ROUTES = {
   INVENTORY_ROLES_EDIT: '/inventory/roles/:id/edit',
   INVENTORY_USERS: '/inventory/users',
   INVENTORY_USERS_NEW: '/inventory/users/new',
-  // TRANSPORT: '/transport',
+  TRANSPORT_ROLES: '/transport/roles',
+  TRANSPORT_ROLES_NEW: '/transport/roles/new',
+  TRANSPORT_ROLES_EDIT: '/transport/roles/:id/edit',
+  TRANSPORT_USERS: '/transport/users',
+  TRANSPORT_USERS_NEW: '/transport/users/new',
   // REPORTS: '/reports',
   // SETTINGS: '/settings',
 } as const;

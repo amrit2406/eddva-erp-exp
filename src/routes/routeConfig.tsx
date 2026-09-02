@@ -294,6 +294,12 @@ import InventoryCreateUserPage from '../features/inventory/pages/rbac/CreateUser
 import InventoryPermissionsPage from '../features/inventory/pages/rbac/PermissionsPage';
 import InventoryCreatePermissionPage from '../features/inventory/pages/rbac/CreatePermissionPage';
 import InventoryEditPermissionPage from '../features/inventory/pages/rbac/EditPermissionPage';
+// Transport RBAC
+import TransportRolesPage from '../features/transport/pages/rbac/RolesPage';
+import TransportCreateRolePage from '../features/transport/pages/rbac/CreateRolePage';
+import TransportEditRolePage from '../features/transport/pages/rbac/EditRolePage';
+import TransportUsersPage from '../features/transport/pages/rbac/UsersPage';
+import TransportCreateUserPage from '../features/transport/pages/rbac/CreateUserPage';
 
 export const routeConfig = [
   {
@@ -1651,6 +1657,33 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Transport Roles & Permissions Routes
+  {
+    path: '/transport/roles',
+    element: TransportRolesPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/roles/new',
+    element: TransportCreateRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/roles/:id/edit',
+    element: TransportEditRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/users',
+    element: TransportUsersPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/users/new',
+    element: TransportCreateUserPage,
     isProtected: true,
   },
 

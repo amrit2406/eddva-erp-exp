@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes, Tag, MapPin, Truck, Package, ClipboardList, Tags, ClipboardCheck, Wrench, Contact, BellRing } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes, Tag, MapPin, Truck, Package, ClipboardList, Tags, ClipboardCheck, Wrench, Contact, BellRing, Bus } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 
@@ -136,12 +136,20 @@ const navItems: NavItem[] = [
       { path: '/inventory/alerts', label: 'Alerts', icon: BellRing },
     ]
   },
+  {
+    path: '/transport',
+    label: 'Transport',
+    icon: Bus,
+    children: [
+      { path: '/transport/roles', label: 'Roles', icon: Shield },
+      { path: '/transport/users', label: 'Users', icon: Users },
+    ]
+  },
   // { path: '/students', label: 'Students', icon: Users },
   // { path: '/teachers', label: 'Teachers', icon: GraduationCap },
   // { path: '/attendance', label: 'Attendance', icon: Calendar },
   // { path: '/fees', label: 'Fees', icon: IndianRupee },
   // { path: '/examinations', label: 'Examinations', icon: FileText },
-  // { path: '/transport', label: 'Transport', icon: Bus },
   // { path: '/reports', label: 'Reports', icon: FileText },
   // { path: '/settings', label: 'Settings', icon: Settings },
 ];
