@@ -281,6 +281,8 @@ import InventoryHoldersPage from '../features/inventory/pages/holders/HoldersPag
 import InventoryCreateHolderPage from '../features/inventory/pages/holders/CreateHolderPage';
 import InventoryHolderDetailPage from '../features/inventory/pages/holders/HolderDetailPage';
 import InventoryEditHolderPage from '../features/inventory/pages/holders/EditHolderPage';
+// Inventory Alerts
+import InventoryAlertsPage from '../features/inventory/pages/alerts/AlertsPage';
 // Inventory Roles & Permissions
 import InventoryRolesPage from '../features/inventory/pages/rbac/RolesPage';
 import InventoryCreateRolePage from '../features/inventory/pages/rbac/CreateRolePage';
@@ -1591,6 +1593,13 @@ export const routeConfig = [
   {
     path: '/inventory/holders/:id/edit',
     element: InventoryEditHolderPage,
+    isProtected: true,
+  },
+
+  // Inventory Alerts Routes
+  {
+    path: '/inventory/alerts',
+    element: InventoryAlertsPage,
     isProtected: true,
   },
 

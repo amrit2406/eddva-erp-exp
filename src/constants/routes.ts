@@ -134,6 +134,7 @@ export const ROUTES = {
   INVENTORY_HOLDERS_NEW: '/inventory/holders/new',
   INVENTORY_HOLDERS_DETAILS: '/inventory/holders/:id',
   INVENTORY_HOLDERS_EDIT: '/inventory/holders/:id/edit',
+  INVENTORY_ALERTS: '/inventory/alerts',
   INVENTORY_PERMISSIONS: '/inventory/permissions',
   INVENTORY_PERMISSIONS_NEW: '/inventory/permissions/new',
   INVENTORY_PERMISSIONS_EDIT: '/inventory/permissions/:id/edit',
