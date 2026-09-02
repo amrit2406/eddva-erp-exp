@@ -272,6 +272,10 @@ import InventoryCreateIssuePage from '../features/inventory/pages/issues/CreateI
 import InventoryIssueDetailPage from '../features/inventory/pages/issues/IssueDetailPage';
 import InventoryApprovalRulesPage from '../features/inventory/pages/issues/ApprovalRulesPage';
 import InventoryCreateApprovalRulePage from '../features/inventory/pages/issues/CreateApprovalRulePage';
+// Inventory Asset Maintenance
+import InventoryMaintenancePage from '../features/inventory/pages/maintenance/MaintenancePage';
+import InventoryCreateMaintenancePage from '../features/inventory/pages/maintenance/CreateMaintenancePage';
+import InventoryEditMaintenancePage from '../features/inventory/pages/maintenance/EditMaintenancePage';
 // Inventory Roles & Permissions
 import InventoryRolesPage from '../features/inventory/pages/rbac/RolesPage';
 import InventoryCreateRolePage from '../features/inventory/pages/rbac/CreateRolePage';
@@ -1543,6 +1547,23 @@ export const routeConfig = [
   {
     path: '/inventory/issues/:id',
     element: InventoryIssueDetailPage,
+    isProtected: true,
+  },
+
+  // Inventory Asset Maintenance Routes
+  {
+    path: '/inventory/maintenance',
+    element: InventoryMaintenancePage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/maintenance/new',
+    element: InventoryCreateMaintenancePage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/maintenance/:id/edit',
+    element: InventoryEditMaintenancePage,
     isProtected: true,
   },
 
