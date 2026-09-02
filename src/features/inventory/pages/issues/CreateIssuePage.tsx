@@ -36,7 +36,7 @@ export default function CreateIssuePage() {
 
   useEffect(() => {
     getItems({ limit: 100 }).then((r) => setItems(r.data)).catch(() => setItems([]));
-    getHolders().then(setHolders).catch(() => setHolders([]));
+    getHolders({ limit: 100 }).then((r) => setHolders(r.data)).catch(() => setHolders([]));
     getLocations().then(setLocations).catch(() => setLocations([]));
   }, []);
 

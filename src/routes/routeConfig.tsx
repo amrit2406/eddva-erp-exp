@@ -276,6 +276,11 @@ import InventoryCreateApprovalRulePage from '../features/inventory/pages/issues/
 import InventoryMaintenancePage from '../features/inventory/pages/maintenance/MaintenancePage';
 import InventoryCreateMaintenancePage from '../features/inventory/pages/maintenance/CreateMaintenancePage';
 import InventoryEditMaintenancePage from '../features/inventory/pages/maintenance/EditMaintenancePage';
+// Inventory Holders
+import InventoryHoldersPage from '../features/inventory/pages/holders/HoldersPage';
+import InventoryCreateHolderPage from '../features/inventory/pages/holders/CreateHolderPage';
+import InventoryHolderDetailPage from '../features/inventory/pages/holders/HolderDetailPage';
+import InventoryEditHolderPage from '../features/inventory/pages/holders/EditHolderPage';
 // Inventory Roles & Permissions
 import InventoryRolesPage from '../features/inventory/pages/rbac/RolesPage';
 import InventoryCreateRolePage from '../features/inventory/pages/rbac/CreateRolePage';
@@ -1564,6 +1569,28 @@ export const routeConfig = [
   {
     path: '/inventory/maintenance/:id/edit',
     element: InventoryEditMaintenancePage,
+    isProtected: true,
+  },
+
+  // Inventory Holders Routes
+  {
+    path: '/inventory/holders',
+    element: InventoryHoldersPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/holders/new',
+    element: InventoryCreateHolderPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/holders/:id',
+    element: InventoryHolderDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/inventory/holders/:id/edit',
+    element: InventoryEditHolderPage,
     isProtected: true,
   },
 
