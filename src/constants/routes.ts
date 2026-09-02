@@ -95,6 +95,7 @@ export const ROUTES = {
   SPORTS_RECORDS: '/sports/records',
   SPORTS_AWARDS: '/sports/awards',
   INVENTORY: '/inventory',
+  INVENTORY_DASHBOARD: '/inventory',
   INVENTORY_CATEGORIES: '/inventory/categories',
   INVENTORY_CATEGORIES_NEW: '/inventory/categories/new',
   INVENTORY_CATEGORIES_EDIT: '/inventory/categories/:id/edit',

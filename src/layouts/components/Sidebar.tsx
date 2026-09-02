@@ -120,6 +120,7 @@ const navItems: NavItem[] = [
     label: 'Inventory',
     icon: Boxes,
     children: [
+      { path: '/inventory', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/inventory/permissions', label: 'Permissions', icon: Key },
       { path: '/inventory/roles', label: 'Roles', icon: Shield },
       { path: '/inventory/users', label: 'Users', icon: Users },

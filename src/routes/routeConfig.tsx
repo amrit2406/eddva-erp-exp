@@ -233,6 +233,8 @@ import SportsTournamentDetailPage from '../features/sports/pages/tournaments/Tou
 // Sports Records & Awards
 import SportsRecordsPage from '../features/sports/pages/records/RecordsPage';
 import SportsAwardsPage from '../features/sports/pages/records/AwardsPage';
+// Inventory Dashboard
+import InventoryDashboardPage from '../features/inventory/pages/dashboard/InventoryDashboardPage';
 // Inventory Categories
 import InventoryCategoriesPage from '../features/inventory/pages/categories/CategoriesPage';
 import InventoryCreateCategoryPage from '../features/inventory/pages/categories/CreateCategoryPage';
@@ -1380,6 +1382,13 @@ export const routeConfig = [
   {
     path: '/sports/awards',
     element: SportsAwardsPage,
+    isProtected: true,
+  },
+
+  // Inventory Dashboard Routes
+  {
+    path: '/inventory',
+    element: InventoryDashboardPage,
     isProtected: true,
   },
 
