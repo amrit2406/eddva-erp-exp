@@ -312,6 +312,11 @@ import TransportRoutesPage from '../features/transport/pages/routes/RoutesPage';
 import TransportCreateRoutePage from '../features/transport/pages/routes/CreateRoutePage';
 import TransportEditRoutePage from '../features/transport/pages/routes/EditRoutePage';
 import TransportRouteDetailPage from '../features/transport/pages/routes/RouteDetailPage';
+// Transport Passengers
+import TransportPassengersPage from '../features/transport/pages/passengers/PassengersPage';
+import TransportCreatePassengerPage from '../features/transport/pages/passengers/CreatePassengerPage';
+import TransportEditPassengerPage from '../features/transport/pages/passengers/EditPassengerPage';
+import TransportPassengerDetailPage from '../features/transport/pages/passengers/PassengerDetailPage';
 
 export const routeConfig = [
   {
@@ -1669,6 +1674,28 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Transport Passengers Routes
+  {
+    path: '/transport/passengers',
+    element: TransportPassengersPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/passengers/new',
+    element: TransportCreatePassengerPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/passengers/:id',
+    element: TransportPassengerDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/passengers/:id/edit',
+    element: TransportEditPassengerPage,
     isProtected: true,
   },
 
