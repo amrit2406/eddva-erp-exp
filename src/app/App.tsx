@@ -9,8 +9,9 @@ function AppContent() {
   const location = useLocation();
   const isAuthPage = location.pathname === '/login';
   const isKioskPage = location.pathname.startsWith('/kiosk');
+  const isGpsIngestPage = location.pathname.startsWith('/gps-ingest');
 
-  if (isAuthPage || isKioskPage) {
+  if (isAuthPage || isKioskPage || isGpsIngestPage) {
     return (
       <AuthLayout>
         <AppRoutes />

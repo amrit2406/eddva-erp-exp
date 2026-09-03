@@ -325,6 +325,10 @@ import TransportDriverDetailPage from '../features/transport/pages/drivers/Drive
 // Transport Tracking
 import TransportAlertsPage from '../features/transport/pages/tracking/AlertsPage';
 import TransportVehicleTrackingPage from '../features/transport/pages/tracking/VehicleTrackingPage';
+import TransportGpsIngestPage from '../features/transport/pages/ingest/GpsIngestPage';
+// Transport Fees
+import TransportFeePlansPage from '../features/transport/pages/fees/FeePlansPage';
+import TransportCreateFeePlanPage from '../features/transport/pages/fees/CreateFeePlanPage';
 
 export const routeConfig = [
   {
@@ -540,6 +544,16 @@ export const routeConfig = [
   {
     path: '/kiosk/:appointmentId',
     element: FrontOfficeKioskCheckInPage,
+  },
+
+  // Transport GPS Ingest (public, unauthenticated — no isProtected/isPublic flag)
+  {
+    path: '/gps-ingest',
+    element: TransportGpsIngestPage,
+  },
+  {
+    path: '/gps-ingest/:vehicleId',
+    element: TransportGpsIngestPage,
   },
 
   // Sales & Purchase Routes
@@ -1682,6 +1696,18 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Transport Fees Routes
+  {
+    path: '/transport/fees/plans',
+    element: TransportFeePlansPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/fees/plans/new',
+    element: TransportCreateFeePlanPage,
     isProtected: true,
   },
 
