@@ -317,6 +317,11 @@ import TransportPassengersPage from '../features/transport/pages/passengers/Pass
 import TransportCreatePassengerPage from '../features/transport/pages/passengers/CreatePassengerPage';
 import TransportEditPassengerPage from '../features/transport/pages/passengers/EditPassengerPage';
 import TransportPassengerDetailPage from '../features/transport/pages/passengers/PassengerDetailPage';
+// Transport Drivers
+import TransportDriversPage from '../features/transport/pages/drivers/DriversPage';
+import TransportCreateDriverPage from '../features/transport/pages/drivers/CreateDriverPage';
+import TransportEditDriverPage from '../features/transport/pages/drivers/EditDriverPage';
+import TransportDriverDetailPage from '../features/transport/pages/drivers/DriverDetailPage';
 
 export const routeConfig = [
   {
@@ -1674,6 +1679,28 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Transport Drivers Routes
+  {
+    path: '/transport/drivers',
+    element: TransportDriversPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/drivers/new',
+    element: TransportCreateDriverPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/drivers/:id',
+    element: TransportDriverDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/drivers/:id/edit',
+    element: TransportEditDriverPage,
     isProtected: true,
   },
 

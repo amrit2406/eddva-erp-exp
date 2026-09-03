@@ -1,4 +1,7 @@
 import type { TransportVehicle } from './vehicle.types';
+import type { TransportDriver } from './driver.types';
+
+export type { TransportDriver } from './driver.types';
 
 export interface TransportRouteStop {
   stop_id: number;
@@ -40,21 +43,6 @@ export interface TransportRouteFormData {
 }
 
 export type TransportRouteUpdateData = Partial<TransportRouteFormData>;
-
-export interface TransportDriver {
-  driver_id: number;
-  institute_id: string;
-  name: string;
-  phone?: string | null;
-  license_number?: string | null;
-  license_expiry?: string | null;
-  address?: string | null;
-  photo_url?: string | null;
-  joining_date?: string | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export type TransportAssignmentStatus = 'active' | 'ended' | string;
 

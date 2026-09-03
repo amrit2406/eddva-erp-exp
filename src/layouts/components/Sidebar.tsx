@@ -147,6 +147,7 @@ const navItems: NavItem[] = [
       { path: '/transport/vehicles', label: 'Vehicles', icon: Bus },
       { path: '/transport/routes', label: 'Routes', icon: Route },
       { path: '/transport/passengers', label: 'Passengers', icon: UserPlus },
+      { path: '/transport/drivers', label: 'Drivers', icon: Contact },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },
