@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Edit, Trash2, Bus, Users } from 'lucide-react';
+import { Edit, Trash2, Bus, Users, Navigation } from 'lucide-react';
 import type { TransportVehicle } from '../../types/vehicle.types';
 import { cn } from '../../../../utils/cn';
 
@@ -61,6 +61,11 @@ export default function VehicleTable({ vehicles, className, onDelete }: VehicleT
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
+                    <Link to={`/transport/tracking/vehicles/${vehicle.vehicle_id}`}>
+                      <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="Track">
+                        <Navigation className="h-4 w-4" />
+                      </button>
+                    </Link>
                     <Link to={`/transport/vehicles/${vehicle.vehicle_id}/edit`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="Edit">
                         <Edit className="h-4 w-4" />

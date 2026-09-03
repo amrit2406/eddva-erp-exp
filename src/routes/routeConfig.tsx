@@ -322,6 +322,9 @@ import TransportDriversPage from '../features/transport/pages/drivers/DriversPag
 import TransportCreateDriverPage from '../features/transport/pages/drivers/CreateDriverPage';
 import TransportEditDriverPage from '../features/transport/pages/drivers/EditDriverPage';
 import TransportDriverDetailPage from '../features/transport/pages/drivers/DriverDetailPage';
+// Transport Tracking
+import TransportAlertsPage from '../features/transport/pages/tracking/AlertsPage';
+import TransportVehicleTrackingPage from '../features/transport/pages/tracking/VehicleTrackingPage';
 
 export const routeConfig = [
   {
@@ -1679,6 +1682,18 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Transport Tracking Routes
+  {
+    path: '/transport/tracking',
+    element: TransportAlertsPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/tracking/vehicles/:vehicleId',
+    element: TransportVehicleTrackingPage,
     isProtected: true,
   },
 

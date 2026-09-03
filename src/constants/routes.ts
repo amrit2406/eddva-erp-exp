@@ -144,6 +144,8 @@ export const ROUTES = {
   INVENTORY_ROLES_EDIT: '/inventory/roles/:id/edit',
   INVENTORY_USERS: '/inventory/users',
   INVENTORY_USERS_NEW: '/inventory/users/new',
+  TRANSPORT_TRACKING: '/transport/tracking',
+  TRANSPORT_TRACKING_VEHICLE: '/transport/tracking/vehicles/:vehicleId',
   TRANSPORT_DRIVERS: '/transport/drivers',
   TRANSPORT_DRIVERS_NEW: '/transport/drivers/new',
   TRANSPORT_DRIVERS_DETAILS: '/transport/drivers/:id',
