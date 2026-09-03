@@ -303,6 +303,10 @@ import TransportCreateUserPage from '../features/transport/pages/rbac/CreateUser
 import TransportPermissionsPage from '../features/transport/pages/rbac/PermissionsPage';
 import TransportCreatePermissionPage from '../features/transport/pages/rbac/CreatePermissionPage';
 import TransportEditPermissionPage from '../features/transport/pages/rbac/EditPermissionPage';
+// Transport Vehicles
+import TransportVehiclesPage from '../features/transport/pages/vehicles/VehiclesPage';
+import TransportCreateVehiclePage from '../features/transport/pages/vehicles/CreateVehiclePage';
+import TransportEditVehiclePage from '../features/transport/pages/vehicles/EditVehiclePage';
 
 export const routeConfig = [
   {
@@ -1660,6 +1664,23 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Transport Vehicles Routes
+  {
+    path: '/transport/vehicles',
+    element: TransportVehiclesPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/vehicles/new',
+    element: TransportCreateVehiclePage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/vehicles/:id/edit',
+    element: TransportEditVehiclePage,
     isProtected: true,
   },
 
