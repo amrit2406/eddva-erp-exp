@@ -2,6 +2,8 @@ import axiosInstance from '../../../lib/axios';
 import type {
   TransportPermissionCatalog,
   TransportMyPermissions,
+  TransportPermissionEntry,
+  TransportPermissionFormData,
   TransportRole,
   TransportRoleFormData,
   TransportRoleUpdateData,
@@ -18,6 +20,41 @@ export async function getPermissionsCatalog(): Promise<TransportPermissionCatalo
 export async function getMyPermissions(): Promise<TransportMyPermissions> {
   const response = await axiosInstance.get('/transport/roles/permissions/me');
   return response.data.data || response.data || [];
+}
+
+// Dynamic Permissions Registry Endpoints
+export async function getPermissions(): Promise<TransportPermissionEntry[]> {
+  const response = await axiosInstance.get('/transport/permissions');
+  // This endpoint returns the same catalog shape as the roles/permissions/catalog endpoint
+  if (response.data.data?.all_permissions) {
+    return response.data.data.all_permissions;
+  }
+  if (response.data.all_permissions) {
+    return response.data.all_permissions;
+  }
+  return response.data.data || response.data || [];
+}
+
+export async function createPermission(data: TransportPermissionFormData): Promise<TransportPermissionEntry> {
+  const response = await axiosInstance.post('/transport/permissions', data);
+  return response.data.data || response.data;
+}
+
+export async function getPermission(id: string | number): Promise<TransportPermissionEntry> {
+  const response = await axiosInstance.get(`/transport/permissions/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function updatePermission(
+  id: string | number,
+  data: Partial<TransportPermissionFormData>
+): Promise<TransportPermissionEntry> {
+  const response = await axiosInstance.patch(`/transport/permissions/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deletePermission(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/transport/permissions/${id}`);
 }
 
 export async function getRoles(): Promise<TransportRole[]> {

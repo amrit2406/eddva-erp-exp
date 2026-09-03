@@ -141,6 +141,7 @@ const navItems: NavItem[] = [
     label: 'Transport',
     icon: Bus,
     children: [
+      { path: '/transport/permissions', label: 'Permissions', icon: Key },
       { path: '/transport/roles', label: 'Roles', icon: Shield },
       { path: '/transport/users', label: 'Users', icon: Users },
     ]

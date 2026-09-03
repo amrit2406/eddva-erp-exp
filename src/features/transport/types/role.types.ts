@@ -32,6 +32,15 @@ export interface TransportRolePermissionRule {
 
 export type TransportMyPermissions = TransportRolePermissionRule[];
 
+export interface TransportPermissionFormData {
+  resource: string;
+  action: string;
+  name: string;
+  category: string;
+  description?: string;
+  is_active?: boolean;
+}
+
 export interface TransportRole {
   role_id: number;
   institute_id: string;

@@ -300,6 +300,9 @@ import TransportCreateRolePage from '../features/transport/pages/rbac/CreateRole
 import TransportEditRolePage from '../features/transport/pages/rbac/EditRolePage';
 import TransportUsersPage from '../features/transport/pages/rbac/UsersPage';
 import TransportCreateUserPage from '../features/transport/pages/rbac/CreateUserPage';
+import TransportPermissionsPage from '../features/transport/pages/rbac/PermissionsPage';
+import TransportCreatePermissionPage from '../features/transport/pages/rbac/CreatePermissionPage';
+import TransportEditPermissionPage from '../features/transport/pages/rbac/EditPermissionPage';
 
 export const routeConfig = [
   {
@@ -1661,6 +1664,21 @@ export const routeConfig = [
   },
 
   // Transport Roles & Permissions Routes
+  {
+    path: '/transport/permissions',
+    element: TransportPermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/permissions/new',
+    element: TransportCreatePermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/transport/permissions/:id/edit',
+    element: TransportEditPermissionPage,
+    isProtected: true,
+  },
   {
     path: '/transport/roles',
     element: TransportRolesPage,
