@@ -152,6 +152,15 @@ const navItems: NavItem[] = [
       { path: '/transport/fees/plans', label: 'Fee Plans', icon: CreditCard },
     ]
   },
+  {
+    path: '/accounts',
+    label: 'Accounts',
+    icon: Wallet,
+    children: [
+      { path: '/accounts/roles', label: 'Roles', icon: Shield },
+      { path: '/accounts/users', label: 'Users', icon: Users },
+    ]
+  },
   // { path: '/students', label: 'Students', icon: Users },
   // { path: '/teachers', label: 'Teachers', icon: GraduationCap },
   // { path: '/attendance', label: 'Attendance', icon: Calendar },

@@ -294,6 +294,12 @@ import InventoryCreateUserPage from '../features/inventory/pages/rbac/CreateUser
 import InventoryPermissionsPage from '../features/inventory/pages/rbac/PermissionsPage';
 import InventoryCreatePermissionPage from '../features/inventory/pages/rbac/CreatePermissionPage';
 import InventoryEditPermissionPage from '../features/inventory/pages/rbac/EditPermissionPage';
+// Accounts RBAC
+import AccountsRolesPage from '../features/accounts/pages/rbac/RolesPage';
+import AccountsCreateRolePage from '../features/accounts/pages/rbac/CreateRolePage';
+import AccountsEditRolePage from '../features/accounts/pages/rbac/EditRolePage';
+import AccountsUsersPage from '../features/accounts/pages/rbac/UsersPage';
+import AccountsCreateUserPage from '../features/accounts/pages/rbac/CreateUserPage';
 // Transport RBAC
 import TransportRolesPage from '../features/transport/pages/rbac/RolesPage';
 import TransportCreateRolePage from '../features/transport/pages/rbac/CreateRolePage';
@@ -1696,6 +1702,33 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Accounts Roles & Permissions Routes
+  {
+    path: '/accounts/roles',
+    element: AccountsRolesPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/roles/new',
+    element: AccountsCreateRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/roles/:id/edit',
+    element: AccountsEditRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/users',
+    element: AccountsUsersPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/users/new',
+    element: AccountsCreateUserPage,
     isProtected: true,
   },
 
