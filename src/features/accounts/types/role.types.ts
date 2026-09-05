@@ -32,6 +32,15 @@ export interface AccountsRolePermissionRule {
 
 export type AccountsMyPermissions = AccountsRolePermissionRule[];
 
+export interface AccountsPermissionFormData {
+  resource: string;
+  action: string;
+  name: string;
+  category: string;
+  description?: string;
+  is_active?: boolean;
+}
+
 export interface AccountsRole {
   role_id: number;
   institute_id: string;

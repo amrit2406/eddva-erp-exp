@@ -300,6 +300,9 @@ import AccountsCreateRolePage from '../features/accounts/pages/rbac/CreateRolePa
 import AccountsEditRolePage from '../features/accounts/pages/rbac/EditRolePage';
 import AccountsUsersPage from '../features/accounts/pages/rbac/UsersPage';
 import AccountsCreateUserPage from '../features/accounts/pages/rbac/CreateUserPage';
+import AccountsPermissionsPage from '../features/accounts/pages/rbac/PermissionsPage';
+import AccountsCreatePermissionPage from '../features/accounts/pages/rbac/CreatePermissionPage';
+import AccountsEditPermissionPage from '../features/accounts/pages/rbac/EditPermissionPage';
 // Transport RBAC
 import TransportRolesPage from '../features/transport/pages/rbac/RolesPage';
 import TransportCreateRolePage from '../features/transport/pages/rbac/CreateRolePage';
@@ -1706,6 +1709,21 @@ export const routeConfig = [
   },
 
   // Accounts Roles & Permissions Routes
+  {
+    path: '/accounts/permissions',
+    element: AccountsPermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/permissions/new',
+    element: AccountsCreatePermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/permissions/:id/edit',
+    element: AccountsEditPermissionPage,
+    isProtected: true,
+  },
   {
     path: '/accounts/roles',
     element: AccountsRolesPage,

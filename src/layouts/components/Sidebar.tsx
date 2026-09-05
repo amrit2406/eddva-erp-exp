@@ -157,6 +157,7 @@ const navItems: NavItem[] = [
     label: 'Accounts',
     icon: Wallet,
     children: [
+      { path: '/accounts/permissions', label: 'Permissions', icon: Key },
       { path: '/accounts/roles', label: 'Roles', icon: Shield },
       { path: '/accounts/users', label: 'Users', icon: Users },
     ]

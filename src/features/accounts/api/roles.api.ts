@@ -2,6 +2,8 @@ import axiosInstance from '../../../lib/axios';
 import type {
   AccountsPermissionCatalog,
   AccountsMyPermissions,
+  AccountsPermissionEntry,
+  AccountsPermissionFormData,
   AccountsRole,
   AccountsRoleFormData,
   AccountsRoleUpdateData,
@@ -18,6 +20,41 @@ export async function getPermissionsCatalog(): Promise<AccountsPermissionCatalog
 export async function getMyPermissions(): Promise<AccountsMyPermissions> {
   const response = await axiosInstance.get('/accounts/roles/permissions/me');
   return response.data.data || response.data || [];
+}
+
+// Dynamic Permissions Registry Endpoints
+export async function getPermissions(): Promise<AccountsPermissionEntry[]> {
+  const response = await axiosInstance.get('/accounts/permissions');
+  // This endpoint returns the same catalog shape as the roles/permissions/catalog endpoint
+  if (response.data.data?.all_permissions) {
+    return response.data.data.all_permissions;
+  }
+  if (response.data.all_permissions) {
+    return response.data.all_permissions;
+  }
+  return response.data.data || response.data || [];
+}
+
+export async function createPermission(data: AccountsPermissionFormData): Promise<AccountsPermissionEntry> {
+  const response = await axiosInstance.post('/accounts/permissions', data);
+  return response.data.data || response.data;
+}
+
+export async function getPermission(id: string | number): Promise<AccountsPermissionEntry> {
+  const response = await axiosInstance.get(`/accounts/permissions/${id}`);
+  return response.data.data || response.data;
+}
+
+export async function updatePermission(
+  id: string | number,
+  data: Partial<AccountsPermissionFormData>
+): Promise<AccountsPermissionEntry> {
+  const response = await axiosInstance.patch(`/accounts/permissions/${id}`, data);
+  return response.data.data || response.data;
+}
+
+export async function deletePermission(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/accounts/permissions/${id}`);
 }
 
 export async function getRoles(): Promise<AccountsRole[]> {
