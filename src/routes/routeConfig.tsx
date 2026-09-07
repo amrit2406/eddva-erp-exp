@@ -314,6 +314,10 @@ import EditLedgerAccountPage from '../features/accounts/pages/coa/EditLedgerAcco
 import CostCentersPage from '../features/accounts/pages/cost-centers/CostCentersPage';
 import CreateCostCenterPage from '../features/accounts/pages/cost-centers/CreateCostCenterPage';
 import EditCostCenterPage from '../features/accounts/pages/cost-centers/EditCostCenterPage';
+// Accounts Financial Years
+import FinancialYearsPage from '../features/accounts/pages/financial-years/FinancialYearsPage';
+import CreateFinancialYearPage from '../features/accounts/pages/financial-years/CreateFinancialYearPage';
+import FinancialYearDetailPage from '../features/accounts/pages/financial-years/FinancialYearDetailPage';
 // Transport RBAC
 import TransportRolesPage from '../features/transport/pages/rbac/RolesPage';
 import TransportCreateRolePage from '../features/transport/pages/rbac/CreateRolePage';
@@ -1716,6 +1720,23 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Accounts Financial Years Routes
+  {
+    path: '/accounts/financial-years',
+    element: FinancialYearsPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/financial-years/new',
+    element: CreateFinancialYearPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/financial-years/:id',
+    element: FinancialYearDetailPage,
     isProtected: true,
   },
 

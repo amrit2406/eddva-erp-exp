@@ -163,6 +163,7 @@ const navItems: NavItem[] = [
       { path: '/accounts/coa/groups', label: 'Account Groups', icon: Folder },
       { path: '/accounts/coa/ledger-accounts', label: 'Ledger Accounts', icon: BookOpen },
       { path: '/accounts/cost-centers', label: 'Cost Centers', icon: Building2 },
+      { path: '/accounts/financial-years', label: 'Financial Years', icon: Calendar },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },
