@@ -42,7 +42,7 @@ export default function FinancialYearsPage() {
     }
     try {
       await closeFinancialYear(id);
-      setFinancialYears(financialYears.map((fy) => (fy.id === id ? { ...fy, isClosed: true } : fy)));
+      setFinancialYears(financialYears.map((fy) => (fy.id === id ? { ...fy, status: 'CLOSED' } : fy)));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;

@@ -84,15 +84,15 @@ export default function FinancialYearDetailPage() {
             <span
               className={cn(
                 'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-                financialYear.isClosed ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-700'
+                financialYear.status === 'OPEN' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
               )}
             >
-              {financialYear.isClosed ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />}
-              {financialYear.isClosed ? 'Closed' : 'Open'}
+              {financialYear.status === 'OPEN' ? <LockOpen className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+              {financialYear.status === 'OPEN' ? 'Open' : 'Closed'}
             </span>
           </h1>
         </div>
-        {!financialYear.isClosed && (
+        {financialYear.status === 'OPEN' && (
           <Button variant="secondary" onClick={handleClose} disabled={closing}>
             <Lock className="h-4 w-4 mr-2" />
             {closing ? 'Closing...' : 'Close Year'}

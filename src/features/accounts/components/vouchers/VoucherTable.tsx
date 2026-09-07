@@ -14,8 +14,8 @@ const statusColors: Record<string, string> = {
   CANCELLED: 'bg-red-100 text-red-700',
 };
 
-function voucherTotal(voucher: Voucher): number {
-  return voucher.entries?.reduce((sum, e) => sum + (Number(e.debitAmount) || 0), 0) ?? 0;
+function displayStatus(voucher: Voucher): string {
+  return voucher.cancelledAt ? 'CANCELLED' : voucher.status;
 }
 
 export default function VoucherTable({ vouchers, className }: VoucherTableProps) {
@@ -50,23 +50,25 @@ export default function VoucherTable({ vouchers, className }: VoucherTableProps)
                     className="flex items-center gap-2 font-medium text-slate-900 hover:text-[#008BE9]"
                   >
                     <Receipt className="h-4 w-4 text-slate-400" />
-                    {voucher.voucherNo ?? `#${voucher.id}`}
+                    {voucher.voucherNumber}
                   </Link>
                 </td>
-                <td className="py-3 px-4 text-sm text-slate-600">{voucher.voucherTypeCode}</td>
+                <td className="py-3 px-4 text-sm text-slate-600">{voucher.voucherType?.code ?? '—'}</td>
                 <td className="py-3 px-4 text-sm text-slate-600">
                   {new Date(voucher.voucherDate).toLocaleDateString()}
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600">{voucher.referenceNo || '—'}</td>
-                <td className="py-3 px-4 text-sm text-slate-900 font-medium">₹{voucherTotal(voucher).toFixed(2)}</td>
+                <td className="py-3 px-4 text-sm text-slate-900 font-medium">
+                  ₹{Number(voucher.totalDebit).toFixed(2)}
+                </td>
                 <td className="py-3 px-4">
                   <span
                     className={cn(
                       'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
-                      statusColors[voucher.status] ?? 'bg-slate-100 text-slate-600'
+                      statusColors[displayStatus(voucher)] ?? 'bg-slate-100 text-slate-600'
                     )}
                   >
-                    {voucher.status}
+                    {displayStatus(voucher)}
                   </span>
                 </td>
               </tr>

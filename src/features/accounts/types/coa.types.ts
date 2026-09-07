@@ -25,8 +25,8 @@ export interface LedgerAccount {
   accountCode: string;
   accountName: string;
   groupId: string;
-  group?: { id: string; groupName: string } | null;
-  openingBalance: number;
+  group?: { id: string; groupName: string; nature?: string } | null;
+  openingBalance: string | number;
   openingBalanceType: OpeningBalanceType | string;
   allowVoucherEntry: boolean;
   isActive: boolean;

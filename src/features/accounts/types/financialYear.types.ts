@@ -1,9 +1,11 @@
+export type FinancialYearStatus = 'OPEN' | 'CLOSED';
+
 export interface FinancialYear {
   id: string;
   fyLabel: string;
   startDate: string;
   endDate: string;
-  isClosed: boolean;
+  status: FinancialYearStatus | string;
   closedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;

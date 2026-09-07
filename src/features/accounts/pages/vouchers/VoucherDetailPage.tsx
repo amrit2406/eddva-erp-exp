@@ -5,9 +5,11 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import CancelVoucherModal from '../../components/vouchers/CancelVoucherModal';
 import { getVoucher, postVoucher, cancelVoucher } from '../../api/vouchers.api';
+import { getCostCenters } from '../../api/costCenters.api';
 import { getApiErrorMessage } from '../../utils/errors';
 import { cn } from '../../../../utils/cn';
 import type { Voucher } from '../../types/voucher.types';
+import type { CostCenter } from '../../types/costCenter.types';
 
 const statusColors: Record<string, string> = {
   DRAFT: 'bg-slate-100 text-slate-600',
@@ -15,9 +17,14 @@ const statusColors: Record<string, string> = {
   CANCELLED: 'bg-red-100 text-red-700',
 };
 
+function displayStatus(voucher: Voucher): string {
+  return voucher.cancelledAt ? 'CANCELLED' : voucher.status;
+}
+
 export default function VoucherDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [voucher, setVoucher] = useState<Voucher | null>(null);
+  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
@@ -33,8 +40,9 @@ export default function VoucherDetailPage() {
     if (!id) return;
     try {
       setLoading(true);
-      const data = await getVoucher(id);
+      const [data, costCenterData] = await Promise.all([getVoucher(id), getCostCenters()]);
       setVoucher(data);
+      setCostCenters(costCenterData);
     } catch (err: any) {
       if (err.response?.status === 401) return;
       setError(getApiErrorMessage(err, 'Failed to load voucher'));
@@ -45,7 +53,7 @@ export default function VoucherDetailPage() {
 
   const handlePost = async () => {
     if (!id || !voucher) return;
-    if (!window.confirm(`Post ${voucher.voucherTypeCode} voucher ${voucher.voucherNo ?? `#${voucher.id}`}? This finalizes it in the ledger.`)) {
+    if (!window.confirm(`Post ${voucher.voucherType?.code ?? ''} voucher ${voucher.voucherNumber}? This finalizes it in the ledger.`)) {
       return;
     }
     try {
@@ -84,8 +92,8 @@ export default function VoucherDetailPage() {
     return <div className="text-center py-8 text-slate-500">Voucher not found.</div>;
   }
 
-  const totalDebit = voucher.entries.reduce((sum, e) => sum + (Number(e.debitAmount) || 0), 0);
-  const totalCredit = voucher.entries.reduce((sum, e) => sum + (Number(e.creditAmount) || 0), 0);
+  const costCenterName = (costCenterId?: string | null) =>
+    costCenterId ? costCenters.find((cc) => cc.id === costCenterId)?.name ?? '—' : '—';
 
   return (
     <div className="space-y-6">
@@ -97,9 +105,9 @@ export default function VoucherDetailPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
             <Receipt className="h-6 w-6 text-slate-400" />
-            {voucher.voucherTypeCode} {voucher.voucherNo ?? `#${voucher.id}`}
-            <span className={cn('inline-flex items-center px-2 py-1 rounded-full text-xs font-medium', statusColors[voucher.status] ?? 'bg-slate-100 text-slate-600')}>
-              {voucher.status}
+            {voucher.voucherType?.code ?? ''} {voucher.voucherNumber}
+            <span className={cn('inline-flex items-center px-2 py-1 rounded-full text-xs font-medium', statusColors[displayStatus(voucher)] ?? 'bg-slate-100 text-slate-600')}>
+              {displayStatus(voucher)}
             </span>
           </h1>
           <p className="text-slate-600 mt-1">
@@ -108,7 +116,7 @@ export default function VoucherDetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {voucher.status === 'DRAFT' && (
+          {voucher.status === 'DRAFT' && !voucher.cancelledAt && (
             <>
               <Link to={`/accounts/vouchers/${voucher.id}/edit`}>
                 <Button variant="secondary">
@@ -122,7 +130,7 @@ export default function VoucherDetailPage() {
               </Button>
             </>
           )}
-          {(voucher.status === 'DRAFT' || voucher.status === 'POSTED') && (
+          {(voucher.status === 'DRAFT' || voucher.status === 'POSTED') && !voucher.cancelledAt && (
             <Button variant="danger" onClick={() => setIsCancelModalOpen(true)}>
               <Ban className="h-4 w-4 mr-2" />
               Cancel
@@ -157,13 +165,13 @@ export default function VoucherDetailPage() {
                     <td className="py-2 px-4 text-sm text-slate-900">
                       {entry.account ? `${entry.account.accountCode} — ${entry.account.accountName}` : entry.accountId}
                     </td>
-                    <td className="py-2 px-4 text-sm text-slate-600">{entry.costCenter?.name ?? '—'}</td>
+                    <td className="py-2 px-4 text-sm text-slate-600">{costCenterName(entry.costCenterId)}</td>
                     <td className="py-2 px-4 text-sm text-slate-600">{entry.narration || '—'}</td>
                     <td className="py-2 px-4 text-sm text-slate-900 text-right">
-                      {entry.debitAmount ? `₹${Number(entry.debitAmount).toFixed(2)}` : '—'}
+                      {Number(entry.debitAmount) ? `₹${Number(entry.debitAmount).toFixed(2)}` : '—'}
                     </td>
                     <td className="py-2 px-4 text-sm text-slate-900 text-right">
-                      {entry.creditAmount ? `₹${Number(entry.creditAmount).toFixed(2)}` : '—'}
+                      {Number(entry.creditAmount) ? `₹${Number(entry.creditAmount).toFixed(2)}` : '—'}
                     </td>
                   </tr>
                 ))}
@@ -173,8 +181,8 @@ export default function VoucherDetailPage() {
                   <td colSpan={3} className="py-2 px-4 text-sm text-slate-700 text-right">
                     Total
                   </td>
-                  <td className="py-2 px-4 text-sm text-slate-900 text-right">₹{totalDebit.toFixed(2)}</td>
-                  <td className="py-2 px-4 text-sm text-slate-900 text-right">₹{totalCredit.toFixed(2)}</td>
+                  <td className="py-2 px-4 text-sm text-slate-900 text-right">₹{Number(voucher.totalDebit).toFixed(2)}</td>
+                  <td className="py-2 px-4 text-sm text-slate-900 text-right">₹{Number(voucher.totalCredit).toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>

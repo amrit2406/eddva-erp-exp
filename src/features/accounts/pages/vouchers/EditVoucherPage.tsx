@@ -49,8 +49,8 @@ export default function EditVoucherPage() {
       setEntries(
         voucherData.entries.map((en) => ({
           accountId: en.accountId,
-          debitAmount: en.debitAmount,
-          creditAmount: en.creditAmount,
+          debitAmount: Number(en.debitAmount) || 0,
+          creditAmount: Number(en.creditAmount) || 0,
           costCenterId: en.costCenterId ?? '',
           narration: en.narration ?? '',
         }))
@@ -114,7 +114,7 @@ export default function EditVoucherPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Edit Voucher</h1>
         <p className="text-slate-600 mt-1">
-          {voucher.voucherTypeCode} voucher {voucher.voucherNo ?? `#${voucher.id}`}
+          {voucher.voucherType?.code ?? ''} voucher {voucher.voucherNumber}
         </p>
       </div>
 

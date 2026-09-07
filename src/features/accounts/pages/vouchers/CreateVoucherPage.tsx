@@ -51,6 +51,10 @@ export default function CreateVoucherPage() {
       setFinancialYears(fyData);
       setAccounts(accountData);
       setCostCenters(costCenterData);
+      const openFy = fyData.find((fy) => fy.status === 'OPEN');
+      if (openFy) {
+        setHeader((prev) => ({ ...prev, fyId: openFy.id }));
+      }
     } catch (err: any) {
       if (err.response?.status === 401) return;
     } finally {

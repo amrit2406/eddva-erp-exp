@@ -20,3 +20,8 @@ export async function closeFinancialYear(id: string): Promise<FinancialYear> {
   const response = await axiosInstance.post(`/accounts/financial-years/${id}/close`);
   return response.data.data || response.data;
 }
+
+export async function getOpenFinancialYear(): Promise<FinancialYear | undefined> {
+  const years = await getFinancialYears();
+  return years.find((fy) => fy.status === 'OPEN');
+}

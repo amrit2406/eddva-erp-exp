@@ -323,6 +323,15 @@ import VouchersPage from '../features/accounts/pages/vouchers/VouchersPage';
 import CreateVoucherPage from '../features/accounts/pages/vouchers/CreateVoucherPage';
 import EditVoucherPage from '../features/accounts/pages/vouchers/EditVoucherPage';
 import VoucherDetailPage from '../features/accounts/pages/vouchers/VoucherDetailPage';
+// Accounts Reports
+import ReportsIndexPage from '../features/accounts/pages/reports/ReportsIndexPage';
+import LedgerReportPage from '../features/accounts/pages/reports/LedgerReportPage';
+import DayBookPage from '../features/accounts/pages/reports/DayBookPage';
+import CashBookPage from '../features/accounts/pages/reports/CashBookPage';
+import BankBookPage from '../features/accounts/pages/reports/BankBookPage';
+import TrialBalancePage from '../features/accounts/pages/reports/TrialBalancePage';
+import BalanceSheetPage from '../features/accounts/pages/reports/BalanceSheetPage';
+import IncomeExpenditurePage from '../features/accounts/pages/reports/IncomeExpenditurePage';
 // Transport RBAC
 import TransportRolesPage from '../features/transport/pages/rbac/RolesPage';
 import TransportCreateRolePage from '../features/transport/pages/rbac/CreateRolePage';
@@ -1725,6 +1734,48 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Accounts Reports Routes
+  {
+    path: '/accounts/reports',
+    element: ReportsIndexPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/reports/ledger',
+    element: LedgerReportPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/reports/day-book',
+    element: DayBookPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/reports/cash-book',
+    element: CashBookPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/reports/bank-book',
+    element: BankBookPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/reports/trial-balance',
+    element: TrialBalancePage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/reports/balance-sheet',
+    element: BalanceSheetPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/reports/income-expenditure',
+    element: IncomeExpenditurePage,
     isProtected: true,
   },
 

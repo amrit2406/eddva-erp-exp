@@ -1,18 +1,30 @@
-import type { LedgerAccount } from './coa.types';
-import type { CostCenter } from './costCenter.types';
-
 export type VoucherTypeCode = 'PAYMENT' | 'RECEIPT' | 'JOURNAL' | 'CONTRA';
 export type VoucherStatus = 'DRAFT' | 'POSTED' | 'CANCELLED';
 
+export interface VoucherType {
+  id: string;
+  code: VoucherTypeCode | string;
+  name: string;
+  prefix?: string;
+  isActive?: boolean;
+}
+
+export interface VoucherEntryAccountRef {
+  id?: string;
+  accountCode: string;
+  accountName: string;
+}
+
 export interface VoucherEntry {
   id?: string;
+  voucherId?: string;
   accountId: string;
-  account?: LedgerAccount;
-  debitAmount: number;
-  creditAmount: number;
+  account?: VoucherEntryAccountRef;
+  debitAmount: string | number;
+  creditAmount: string | number;
   costCenterId?: string | null;
-  costCenter?: CostCenter | null;
   narration?: string | null;
+  voucherDate?: string;
 }
 
 export interface VoucherEntryFormData {
@@ -25,13 +37,21 @@ export interface VoucherEntryFormData {
 
 export interface Voucher {
   id: string;
-  voucherNo?: string;
-  voucherTypeCode: VoucherTypeCode | string;
+  instituteId?: string;
+  voucherNumber: string;
+  voucherTypeId: string;
+  voucherType?: VoucherType;
   fyId: string;
+  financialYear?: { id: string; fyLabel: string };
   voucherDate: string;
   narration?: string | null;
   referenceNo?: string | null;
+  totalDebit: string | number;
+  totalCredit: string | number;
   status: VoucherStatus | string;
+  cancelledAt?: string | null;
+  cancelledBy?: string | null;
+  reversalOfId?: string | null;
   entries: VoucherEntry[];
   createdAt?: string;
   updatedAt?: string;
