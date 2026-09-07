@@ -4,6 +4,7 @@ import { ArrowLeft, Edit, Send, Ban, Receipt } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import CancelVoucherModal from '../../components/vouchers/CancelVoucherModal';
+import VoucherAttachments from '../../components/vouchers/VoucherAttachments';
 import { getVoucher, postVoucher, cancelVoucher } from '../../api/vouchers.api';
 import { getCostCenters } from '../../api/costCenters.api';
 import { getApiErrorMessage } from '../../utils/errors';
@@ -187,6 +188,12 @@ export default function VoucherDetailPage() {
               </tfoot>
             </table>
           </div>
+        </div>
+      </Card>
+
+      <Card className="border-slate-200">
+        <div className="p-6">
+          <VoucherAttachments voucherId={voucher.id} />
         </div>
       </Card>
 
