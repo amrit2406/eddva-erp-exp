@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { createMembershipRule } from '../../api/library.api';
+import { createMembershipRule, getMembershipRules } from '../../api/library.api';
 import type { MembershipRuleFormData } from '../../types/library.types';
 import { ROUTES } from '../../../../constants/routes';
+
+const MEMBER_TYPES = [
+  { value: 'student', label: 'Student' },
+  { value: 'staff', label: 'Staff' },
+  { value: 'faculty', label: 'Faculty' },
+];
 
 export default function CreateMembershipRulePage() {
   const navigate = useNavigate();
@@ -16,8 +22,15 @@ export default function CreateMembershipRulePage() {
     grace_period_days: 2,
     max_fine_cap: 100
   });
+  const [existingTypes, setExistingTypes] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getMembershipRules()
+      .then((rules) => setExistingTypes(new Set(rules.map((r) => r.member_type))))
+      .catch((err) => console.error('Failed to load existing membership rules:', err));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +43,7 @@ export default function CreateMembershipRulePage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err.response?.data?.message || 'Failed to create membership rule');
+      setError(err.response?.data?.error?.message || err.response?.data?.message || 'Failed to create membership rule');
     } finally {
       setSubmitting(false);
     }
@@ -64,10 +77,11 @@ export default function CreateMembershipRulePage() {
                 required
               >
                 <option value="">Select member type</option>
-                <option value="student">Student</option>
-                <option value="teacher">Teacher</option>
-                <option value="staff">Staff</option>
-                <option value="guest">Guest</option>
+                {MEMBER_TYPES.map((t) => (
+                  <option key={t.value} value={t.value} disabled={existingTypes.has(t.value)}>
+                    {t.label}{existingTypes.has(t.value) ? ' (rule already exists)' : ''}
+                  </option>
+                ))}
               </select>
             </div>
 

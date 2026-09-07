@@ -60,7 +60,7 @@ export default function EditMembershipRulePage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err.response?.data?.message || 'Failed to update membership rule');
+      setError(err.response?.data?.error?.message || err.response?.data?.message || 'Failed to update membership rule');
     } finally {
       setSubmitting(false);
     }
@@ -109,9 +109,8 @@ export default function EditMembershipRulePage() {
               >
                 <option value="">Select member type</option>
                 <option value="student">Student</option>
-                <option value="teacher">Teacher</option>
                 <option value="staff">Staff</option>
-                <option value="guest">Guest</option>
+                <option value="faculty">Faculty</option>
               </select>
             </div>
 
