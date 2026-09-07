@@ -21,7 +21,7 @@ export default function CreateSalesReceiptPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to create sales receipt');
+      alert(error.response?.data?.error?.message || error.message || 'Failed to create sales receipt');
     } finally {
       setIsSubmitting(false);
     }

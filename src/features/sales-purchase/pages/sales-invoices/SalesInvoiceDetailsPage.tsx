@@ -115,12 +115,14 @@ export default function SalesInvoiceDetailsPage() {
               </Button>
             </>
           )}
-          <Link to={`/sales-purchase/sales-invoices/${id}/edit`}>
-            <Button variant="primary" size="sm">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          </Link>
+          {salesInvoice?.status === 'DRAFT' && (
+            <Link to={`/sales-purchase/sales-invoices/${id}/edit`}>
+              <Button variant="primary" size="sm">
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

@@ -25,12 +25,11 @@ export default function EditInvoicePage() {
       setLoading(true);
       const data = await getInvoice(invoiceId);
       setDefaultValues({
-        invoiceType: data.invoiceType,
-        customerId: data.customerId,
+        vendorInvoiceNumber: data.vendorInvoiceNumber || '',
         vendorId: data.vendorId,
+        poId: data.poId,
+        grnId: data.grnId,
         invoiceDate: data.invoiceDate,
-        dueDate: data.dueDate,
-        warehouseId: data.warehouseId,
         discount: data.discount,
         items: data.items,
       });
@@ -55,7 +54,7 @@ export default function EditInvoicePage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update invoice');
+      alert(error.response?.data?.error?.message || error.message || 'Failed to update invoice');
     } finally {
       setIsSubmitting(false);
     }

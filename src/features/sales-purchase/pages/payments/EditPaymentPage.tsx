@@ -25,12 +25,11 @@ export default function EditPaymentPage() {
       setLoading(true);
       const data = await getPayment(paymentId);
       setDefaultValues({
-        paymentType: data.paymentType,
-        invoiceId: data.invoiceId,
+        purchaseInvoiceId: data.purchaseInvoiceId,
         paymentDate: data.paymentDate,
         amount: data.amount,
-        paymentMethod: data.paymentMethod,
-        reference: data.reference,
+        mode: data.mode,
+        referenceNo: data.referenceNo,
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);

@@ -3,7 +3,7 @@ import Input from '../../../../components/ui/Input';
 import Button from '../../../../components/ui/Button';
 import { cn } from '../../../../utils/cn';
 import type { GRNFormData, GRNItem } from '../../types/sales-purchase.types';
-import { getPurchaseOrders, getWarehouses, getVendors, getItems } from '../../api/sales-purchase.api';
+import { getPurchaseOrders, getPurchaseOrder, getWarehouses, getVendors, getItems } from '../../api/sales-purchase.api';
 import type { PurchaseOrder, Warehouse, Vendor, Item } from '../../types/sales-purchase.types';
 
 interface GRNFormProps {
@@ -29,11 +29,36 @@ export default function GRNForm({
   const [itemsList, setItemsList] = useState<Item[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [selectedPOId, setSelectedPOId] = useState<string>(defaultValues?.poId || '');
+  const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingPOItems, setLoadingPOItems] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!selectedPOId) {
+      setSelectedPO(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingPOItems(true);
+    getPurchaseOrder(selectedPOId)
+      .then((po) => {
+        if (!cancelled) setSelectedPO(po);
+      })
+      .catch((error) => {
+        console.error('Failed to load purchase order items:', error);
+        if (!cancelled) setSelectedPO(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingPOItems(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPOId]);
 
   async function loadData() {
     try {
@@ -69,14 +94,13 @@ export default function GRNForm({
     setItems(newItems);
   };
 
-  const handleItemChange = (index: number, itemId: string) => {
-    const selectedPO = purchaseOrders.find(po => po.id === selectedPOId);
-    const poItem = selectedPO?.items?.find(item => item.itemId === itemId);
+  const handleItemChange = (index: number, poItemId: string) => {
+    const poItem = selectedPO?.items?.find(item => item.id === poItemId);
     const newItems = [...items];
-    newItems[index] = { 
-      ...newItems[index], 
-      itemId,
-      poItemId: poItem?.id || itemId 
+    newItems[index] = {
+      ...newItems[index],
+      itemId: poItem?.itemId || '',
+      poItemId,
     };
     setItems(newItems);
   };
@@ -90,10 +114,7 @@ export default function GRNForm({
       vendorId: formData.get('vendorId') as string,
       receivedDate: new Date(formData.get('receivedDate') as string).toISOString(),
       warehouseId: formData.get('warehouseId') as string,
-      items: items.filter(item => item.itemId && item.receivedQty > 0).map(item => ({
-        ...item,
-        poItemId: item.poItemId || item.itemId
-      })),
+      items: items.filter(item => item.poItemId && item.receivedQty > 0),
     };
 
     console.log('Submitting GRN data:', JSON.stringify(data, null, 2));
@@ -114,7 +135,10 @@ export default function GRNForm({
               <select
                 name="poId"
                 defaultValue={defaultValues?.poId}
-                onChange={(e) => setSelectedPOId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedPOId(e.target.value);
+                  setItems([{ poItemId: '', itemId: '', receivedQty: 0, acceptedQty: 0, rejectedQty: 0 }]);
+                }}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
@@ -188,16 +212,26 @@ export default function GRNForm({
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-slate-500 mb-1">Item</label>
                 <select
-                  value={item.itemId}
+                  value={item.poItemId}
                   onChange={(e) => handleItemChange(index, e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!selectedPOId || loadingPOItems}
+                  className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100"
                 >
-                  <option value="">Select item</option>
-                  {itemsList.map((itemOption) => (
-                    <option key={itemOption.id} value={itemOption.id}>
-                      {itemOption.itemName}
-                    </option>
-                  ))}
+                  <option value="">
+                    {!selectedPOId
+                      ? 'Select a purchase order first'
+                      : loadingPOItems
+                        ? 'Loading items...'
+                        : 'Select item'}
+                  </option>
+                  {selectedPO?.items?.map((poItem) => {
+                    const itemOption = itemsList.find((i) => i.id === poItem.itemId);
+                    return (
+                      <option key={poItem.id} value={poItem.id}>
+                        {itemOption?.itemName || poItem.itemId}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
               <div>

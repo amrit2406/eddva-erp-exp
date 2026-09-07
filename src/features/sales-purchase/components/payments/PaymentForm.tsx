@@ -32,12 +32,6 @@ export default function PaymentForm({
     try {
       setLoading(true);
       const data = await getInvoices();
-      console.log('All invoices:', data);
-      data.forEach((inv, i) => {
-        console.log(`Invoice ${i} invoiceType:`, inv.invoiceType);
-      });
-      const purchaseInvoices = data.filter(inv => inv.invoiceType === 'PURCHASE');
-      console.log('Purchase invoices:', purchaseInvoices);
       setInvoices(data);
     } catch (error) {
       console.error('Failed to load invoices:', error);
@@ -80,9 +74,9 @@ export default function PaymentForm({
                 required
               >
                 <option value="">Select invoice</option>
-                {invoices.filter(inv => inv.invoiceType === 'PURCHASE' || inv.invoiceType === undefined || inv.invoiceType === null).map((invoice) => (
+                {invoices.map((invoice) => (
                   <option key={invoice.id} value={invoice.id}>
-                    INV-{invoice.id.slice(0, 8)}
+                    {invoice.invoiceNumber || `INV-${invoice.id.slice(0, 8)}`}
                   </option>
                 ))}
               </select>

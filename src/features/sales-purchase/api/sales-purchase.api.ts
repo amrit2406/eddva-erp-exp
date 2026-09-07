@@ -25,6 +25,7 @@ import type {
   GRNFormData,
   Invoice,
   InvoiceFormData,
+  MatchResult,
   Payment,
   PaymentFormData,
   SalesOrder,
@@ -351,11 +352,12 @@ export async function getInvoicePDF(id: string): Promise<Blob> {
   return response.data;
 }
 
-export async function validateInvoice(id: string): Promise<void> {
-  await axiosInstance.post(`/purchase-invoices/${id}/validate`);
+export async function validateInvoice(id: string): Promise<MatchResult> {
+  const response = await axiosInstance.post(`/purchase-invoices/${id}/validate`);
+  return response.data?.data || response.data;
 }
 
-export async function getInvoiceMatchResult(id: string): Promise<any> {
+export async function getInvoiceMatchResult(id: string): Promise<MatchResult> {
   const response = await axiosInstance.get(`/purchase-invoices/${id}/match-result`);
   return response.data?.data || response.data;
 }

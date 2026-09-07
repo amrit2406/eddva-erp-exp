@@ -208,6 +208,7 @@ export interface PurchaseOrderItem {
 
 export interface PurchaseOrder {
   id: string;
+  poNumber?: string;
   vendorId: string;
   poDate: string;
   expectedDeliveryDate: string;
@@ -237,17 +238,21 @@ export interface GRNItem {
   receivedQty: number;
   acceptedQty: number;
   rejectedQty: number;
+  id?: string;
+  item?: { id: string; itemCode: string; itemName: string };
+  poItem?: { id: string; quantity: number; unitPrice: number };
 }
 
 export interface GRN {
   id: string;
+  grnNumber?: string;
   poId: string;
   vendorId: string;
   receivedDate: string;
   warehouseId: string;
   items: GRNItem[];
   status: string;
-  purchaseOrder?: PurchaseOrder;
+  po?: { id: string; poNumber: string; poDate?: string };
   vendor?: Vendor;
   warehouse?: Warehouse;
   createdAt?: string;
@@ -262,35 +267,54 @@ export interface GRNFormData {
   items: GRNItem[];
 }
 
-// Invoices
+// Invoices (Purchase Invoices — see SalesInvoice for the separate sales flow)
 export interface InvoiceItem {
   itemId: string;
   quantity: number;
   unitPrice: number;
   taxCodeId: string;
+  id?: string;
+  item?: { id: string; itemCode: string; itemName: string };
 }
 
 export interface Invoice {
   id: string;
-  invoiceType: 'SALES' | 'PURCHASE';
+  invoiceNumber?: string;
   vendorInvoiceNumber?: string;
-  customerId?: string;
-  vendorId?: string;
+  vendorId: string;
   poId?: string;
   grnId?: string;
   invoiceDate: string;
   dueDate: string;
-  warehouseId: string;
   discount: number;
   items: InvoiceItem[];
   status: string;
-  customer?: Customer;
+  paymentStatus?: string;
+  subtotal?: number;
+  taxAmount?: number;
+  grandTotal?: number;
   vendor?: Vendor;
-  purchaseOrder?: PurchaseOrder;
-  grn?: GRN;
-  warehouse?: Warehouse;
+  po?: { id: string; poNumber: string; poDate?: string };
+  grn?: { id: string; grnNumber: string; receivedDate?: string };
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface MatchMismatch {
+  type: 'QUANTITY' | 'PRICE' | 'ITEM_NOT_FOUND' | 'TAX';
+  itemId: string;
+  message: string;
+  poQuantity?: number;
+  receivedQuantity?: number;
+  invoiceQuantity?: number;
+  poUnitPrice?: number;
+  invoiceUnitPrice?: number;
+  difference?: number;
+}
+
+export interface MatchResult {
+  matched: boolean;
+  mismatches: MatchMismatch[];
 }
 
 export interface InvoiceFormData {
@@ -303,20 +327,18 @@ export interface InvoiceFormData {
   items: InvoiceItem[];
 }
 
-// Payments
+// Payments (Purchase Payments — see SalesReceipt for the separate sales flow)
 export interface Payment {
   id: string;
-  paymentType: 'RECEIVED' | 'PAID';
-  purchaseInvoiceId?: string;
-  invoiceId?: string;
+  paymentNumber?: string;
+  purchaseInvoiceId: string;
   paymentDate: string;
   amount: number;
   mode: string;
   referenceNo?: string;
-  status: string;
-  invoice?: Invoice;
+  purchaseInvoice?: Invoice;
+  creator?: { id: string; name: string };
   createdAt?: string;
-  updatedAt?: string;
 }
 
 export interface PaymentFormData {
@@ -367,12 +389,16 @@ export interface SalesInvoiceItem {
 
 export interface SalesInvoice {
   id: string;
+  invoiceNumber?: string;
   customerId: string;
   soId?: string;
   invoiceDate: string;
+  dueDate?: string;
   discount: number;
   items: SalesInvoiceItem[];
   status: string;
+  paymentStatus?: string;
+  grandTotal?: number;
   customer?: Customer;
   salesOrder?: SalesOrder;
   createdAt?: string;

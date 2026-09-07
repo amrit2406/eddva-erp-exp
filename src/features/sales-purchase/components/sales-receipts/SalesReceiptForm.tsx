@@ -72,11 +72,16 @@ export default function SalesReceiptForm({
                 required
               >
                 <option value="">Select sales invoice</option>
-                {salesInvoices.map((invoice) => (
-                  <option key={invoice.id} value={invoice.id}>
-                    {invoice.id}
-                  </option>
-                ))}
+                {salesInvoices
+                  .filter((invoice) =>
+                    invoice.id === defaultValues?.salesInvoiceId ||
+                    (invoice.status === 'POSTED' && invoice.paymentStatus !== 'PAID')
+                  )
+                  .map((invoice) => (
+                    <option key={invoice.id} value={invoice.id}>
+                      {invoice.invoiceNumber || invoice.id} (Total: {(Number(invoice.grandTotal) || 0).toFixed(2)}, {invoice.paymentStatus})
+                    </option>
+                  ))}
               </select>
             </div>
             <div>

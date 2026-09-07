@@ -36,19 +36,19 @@ export default function GRNTable({ grns, className, onDelete }: GRNTableProps) {
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <Package className="h-4 w-4 text-slate-400" />
-                    <div className="font-medium text-slate-900">GRN-{grn.id.slice(0, 8)}</div>
+                    <div className="font-medium text-slate-900">{grn.grnNumber || `GRN-${grn.id.slice(0, 8)}`}</div>
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600">
                   <div className="flex items-center gap-1">
                     <ShoppingCart className="h-3 w-3 text-slate-400" />
-                    PO-{grn.purchaseOrderId?.slice(0, 8) || '-'}
+                    {grn.po?.poNumber || `PO-${grn.poId?.slice(0, 8) || '-'}`}
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3 text-slate-400" />
-                    {grn.grnDate ? new Date(grn.grnDate).toLocaleDateString() : '-'}
+                    {grn.receivedDate ? new Date(grn.receivedDate).toLocaleDateString() : '-'}
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden lg:table-cell">

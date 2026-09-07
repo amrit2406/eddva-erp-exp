@@ -83,7 +83,7 @@ export default function GRNDetailsPage() {
                   <Package className="h-4 w-4" />
                   <span className="text-sm font-medium">GRN Number</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">GRN-{grn.id.slice(0, 8)}</div>
+                <div className="text-lg font-bold text-slate-900">{grn.grnNumber || `GRN-${grn.id.slice(0, 8)}`}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -92,7 +92,7 @@ export default function GRNDetailsPage() {
                   <ShoppingCart className="h-4 w-4" />
                   <span className="text-sm font-medium">Purchase Order</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">PO-{grn.purchaseOrderId?.slice(0, 8) || '-'}</div>
+                <div className="text-lg font-bold text-slate-900">{grn.po?.poNumber || `PO-${grn.poId?.slice(0, 8) || '-'}`}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -101,7 +101,7 @@ export default function GRNDetailsPage() {
                   <Calendar className="h-4 w-4" />
                   <span className="text-sm font-medium">GRN Date</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{grn.grnDate ? new Date(grn.grnDate).toLocaleDateString() : '-'}</div>
+                <div className="text-lg font-bold text-slate-900">{grn.receivedDate ? new Date(grn.receivedDate).toLocaleDateString() : '-'}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -132,13 +132,15 @@ export default function GRNDetailsPage() {
                   <tbody>
                     {grn.items.map((item, index) => {
                       const itemDetails = itemsMap.get(item.itemId);
+                      const unitPrice = Number(item.poItem?.unitPrice) || 0;
+                      const receivedQty = Number(item.receivedQty) || 0;
                       return (
                         <tr key={index} className="border-b border-slate-100">
-                          <td className="py-2 px-4 text-sm text-slate-900">{itemDetails?.itemName || item.itemId}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.quantity}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.receivedQuantity}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.unitPrice.toFixed(2)}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{(item.receivedQuantity * item.unitPrice).toFixed(2)}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900">{item.item?.itemName || itemDetails?.itemName || item.itemId}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.poItem?.quantity ?? '-'}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{receivedQty}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{unitPrice.toFixed(2)}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{(receivedQty * unitPrice).toFixed(2)}</td>
                         </tr>
                       );
                     })}

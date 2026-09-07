@@ -25,8 +25,9 @@ export default function EditGRNPage() {
       setLoading(true);
       const data = await getGRN(grnId);
       setDefaultValues({
-        purchaseOrderId: data.purchaseOrderId,
-        grnDate: data.grnDate,
+        poId: data.poId,
+        vendorId: data.vendorId,
+        receivedDate: data.receivedDate,
         warehouseId: data.warehouseId,
         items: data.items,
       });

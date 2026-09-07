@@ -52,7 +52,7 @@ export default function EditSalesReceiptPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update sales receipt');
+      alert(error.response?.data?.error?.message || error.message || 'Failed to update sales receipt');
     } finally {
       setIsSubmitting(false);
     }

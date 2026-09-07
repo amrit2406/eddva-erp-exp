@@ -4,7 +4,15 @@ import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import { getInvoice, getItems, postInvoice, cancelInvoice, validateInvoice, getInvoicePDF } from '../../api/sales-purchase.api';
-import type { Invoice, Item } from '../../types/sales-purchase.types';
+import type { Invoice, Item, MatchMismatch } from '../../types/sales-purchase.types';
+
+function getErrorMessage(error: any, fallback: string): string {
+  return error?.response?.data?.error?.message || error?.message || fallback;
+}
+
+function formatMismatches(mismatches: MatchMismatch[]): string {
+  return mismatches.map((m) => `- ${m.message}`).join('\n');
+}
 
 export default function InvoiceDetailsPage() {
   const { id } = useParams();
@@ -49,10 +57,13 @@ export default function InvoiceDetailsPage() {
     if (!id) return;
     try {
       await postInvoice(id);
-      if (id) loadInvoice(id);
+      alert('Invoice posted successfully');
+      loadInvoice(id);
     } catch (error: any) {
       console.error('Failed to post invoice:', error);
-      alert('Failed to post invoice');
+      const details: MatchMismatch[] | undefined = error?.response?.data?.error?.details;
+      const message = getErrorMessage(error, 'Failed to post invoice');
+      alert(details?.length ? `${message}\n\n${formatMismatches(details)}` : message);
     }
   };
 
@@ -64,19 +75,23 @@ export default function InvoiceDetailsPage() {
       if (id) loadInvoice(id);
     } catch (error: any) {
       console.error('Failed to cancel invoice:', error);
-      alert('Failed to cancel invoice');
+      alert(getErrorMessage(error, 'Failed to cancel invoice'));
     }
   };
 
   const handleValidate = async () => {
     if (!id) return;
     try {
-      await validateInvoice(id);
-      alert('Invoice validated successfully');
-      if (id) loadInvoice(id);
+      const result = await validateInvoice(id);
+      if (result.matched) {
+        alert('3-way match passed: PO, GRN and Invoice quantities/prices are consistent.');
+      } else {
+        alert(`3-way match failed:\n\n${formatMismatches(result.mismatches)}`);
+      }
+      loadInvoice(id);
     } catch (error: any) {
       console.error('Failed to validate invoice:', error);
-      alert('Failed to validate invoice');
+      alert(getErrorMessage(error, 'Failed to validate invoice'));
     }
   };
 
@@ -87,14 +102,23 @@ export default function InvoiceDetailsPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `invoice-${id}.pdf`;
+      a.download = `${invoice?.invoiceNumber || id}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error: any) {
       console.error('Failed to download PDF:', error);
-      alert('Failed to download PDF');
+      let message = 'Failed to download PDF';
+      if (error?.response?.data instanceof Blob && error.response.data.type === 'application/json') {
+        try {
+          const parsed = JSON.parse(await error.response.data.text());
+          message = parsed?.error?.message || message;
+        } catch {
+          // response body wasn't valid JSON; fall back to the generic message
+        }
+      }
+      alert(message);
     }
   };
 
@@ -134,12 +158,14 @@ export default function InvoiceDetailsPage() {
               Cancel
             </Button>
           )}
-          <Link to={`/sales-purchase/invoices/${id}/edit`}>
-            <Button variant="primary" size="sm">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          </Link>
+          {invoice?.status === 'DRAFT' && (
+            <Link to={`/sales-purchase/invoices/${id}/edit`}>
+              <Button variant="primary" size="sm">
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -160,16 +186,16 @@ export default function InvoiceDetailsPage() {
                   <FileText className="h-4 w-4" />
                   <span className="text-sm font-medium">Invoice Number</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">INV-{invoice.id.slice(0, 8)}</div>
+                <div className="text-lg font-bold text-slate-900">{invoice.invoiceNumber || `INV-${invoice.id.slice(0, 8)}`}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
               <div className="p-4">
                 <div className="flex items-center gap-2 text-slate-600 mb-2">
                   <Building2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">Party</span>
+                  <span className="text-sm font-medium">Vendor</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{invoice.invoiceType === 'SALES' ? invoice.customer?.customerName : invoice.vendor?.vendorName || '-'}</div>
+                <div className="text-lg font-bold text-slate-900">{invoice.vendor?.vendorName || '-'}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -187,7 +213,7 @@ export default function InvoiceDetailsPage() {
                   <IndianRupee className="h-4 w-4" />
                   <span className="text-sm font-medium">Total</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{invoice.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0).toFixed(2)}</div>
+                <div className="text-lg font-bold text-slate-900">{(Number(invoice.grandTotal) || 0).toFixed(2)}</div>
               </div>
             </Card>
           </div>
@@ -230,7 +256,11 @@ export default function InvoiceDetailsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Subtotal</span>
-                  <span className="text-slate-900">{invoice.items.reduce((sum, item) => sum + (item.quantity * (Number(item.unitPrice) || 0)), 0).toFixed(2)}</span>
+                  <span className="text-slate-900">{(Number(invoice.subtotal) || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Tax (GST)</span>
+                  <span className="text-slate-900">{(Number(invoice.taxAmount) || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Discount</span>
@@ -238,7 +268,7 @@ export default function InvoiceDetailsPage() {
                 </div>
                 <div className="flex justify-between text-sm font-semibold border-t border-slate-200 pt-2">
                   <span className="text-slate-900">Total</span>
-                  <span className="text-slate-900">{(invoice.items.reduce((sum, item) => sum + (item.quantity * (Number(item.unitPrice) || 0)), 0) - (Number(invoice.discount) || 0)).toFixed(2)}</span>
+                  <span className="text-slate-900">{(Number(invoice.grandTotal) || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>

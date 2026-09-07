@@ -97,19 +97,6 @@ export default function InvoiceForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Invoice Type <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="invoiceType"
-                defaultValue="PURCHASE"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="PURCHASE">Purchase Invoice</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
                 Vendor Invoice Number <span className="text-red-500">*</span>
               </label>
               <Input
@@ -149,7 +136,7 @@ export default function InvoiceForm({
                 <option value="">Select purchase order</option>
                 {purchaseOrders.map((po) => (
                   <option key={po.id} value={po.id}>
-                    PO-{po.id.slice(0, 8)}
+                    {po.poNumber || `PO-${po.id.slice(0, 8)}`}
                   </option>
                 ))}
               </select>
@@ -166,7 +153,7 @@ export default function InvoiceForm({
                 <option value="">Select GRN</option>
                 {grns.map((grn) => (
                   <option key={grn.id} value={grn.id}>
-                    GRN-{grn.id.slice(0, 8)}
+                    {grn.grnNumber || `GRN-${grn.id.slice(0, 8)}`}
                   </option>
                 ))}
               </select>
