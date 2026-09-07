@@ -332,6 +332,8 @@ import BankBookPage from '../features/accounts/pages/reports/BankBookPage';
 import TrialBalancePage from '../features/accounts/pages/reports/TrialBalancePage';
 import BalanceSheetPage from '../features/accounts/pages/reports/BalanceSheetPage';
 import IncomeExpenditurePage from '../features/accounts/pages/reports/IncomeExpenditurePage';
+// Accounts Account Mappings
+import AccountMappingsPage from '../features/accounts/pages/account-mappings/AccountMappingsPage';
 // Transport RBAC
 import TransportRolesPage from '../features/transport/pages/rbac/RolesPage';
 import TransportCreateRolePage from '../features/transport/pages/rbac/CreateRolePage';
@@ -1734,6 +1736,13 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Accounts Account Mappings Routes
+  {
+    path: '/accounts/account-mappings',
+    element: AccountMappingsPage,
     isProtected: true,
   },
 

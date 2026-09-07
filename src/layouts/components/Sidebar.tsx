@@ -166,6 +166,7 @@ const navItems: NavItem[] = [
       { path: '/accounts/financial-years', label: 'Financial Years', icon: Calendar },
       { path: '/accounts/vouchers', label: 'Vouchers', icon: Receipt },
       { path: '/accounts/reports', label: 'Reports', icon: BarChart2 },
+      { path: '/accounts/account-mappings', label: 'Account Mappings', icon: Settings },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },

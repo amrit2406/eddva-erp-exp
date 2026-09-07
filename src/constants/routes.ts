@@ -144,6 +144,7 @@ export const ROUTES = {
   INVENTORY_ROLES_EDIT: '/inventory/roles/:id/edit',
   INVENTORY_USERS: '/inventory/users',
   INVENTORY_USERS_NEW: '/inventory/users/new',
+  ACCOUNTS_ACCOUNT_MAPPINGS: '/accounts/account-mappings',
   ACCOUNTS_REPORTS: '/accounts/reports',
   ACCOUNTS_REPORTS_LEDGER: '/accounts/reports/ledger',
   ACCOUNTS_REPORTS_DAY_BOOK: '/accounts/reports/day-book',
