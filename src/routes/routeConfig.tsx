@@ -318,6 +318,11 @@ import EditCostCenterPage from '../features/accounts/pages/cost-centers/EditCost
 import FinancialYearsPage from '../features/accounts/pages/financial-years/FinancialYearsPage';
 import CreateFinancialYearPage from '../features/accounts/pages/financial-years/CreateFinancialYearPage';
 import FinancialYearDetailPage from '../features/accounts/pages/financial-years/FinancialYearDetailPage';
+// Accounts Vouchers
+import VouchersPage from '../features/accounts/pages/vouchers/VouchersPage';
+import CreateVoucherPage from '../features/accounts/pages/vouchers/CreateVoucherPage';
+import EditVoucherPage from '../features/accounts/pages/vouchers/EditVoucherPage';
+import VoucherDetailPage from '../features/accounts/pages/vouchers/VoucherDetailPage';
 // Transport RBAC
 import TransportRolesPage from '../features/transport/pages/rbac/RolesPage';
 import TransportCreateRolePage from '../features/transport/pages/rbac/CreateRolePage';
@@ -1720,6 +1725,28 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Accounts Vouchers Routes
+  {
+    path: '/accounts/vouchers',
+    element: VouchersPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/vouchers/new',
+    element: CreateVoucherPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/vouchers/:id',
+    element: VoucherDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/vouchers/:id/edit',
+    element: EditVoucherPage,
     isProtected: true,
   },
 
