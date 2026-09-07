@@ -310,6 +310,10 @@ import EditAccountGroupPage from '../features/accounts/pages/coa/EditAccountGrou
 import LedgerAccountsPage from '../features/accounts/pages/coa/LedgerAccountsPage';
 import CreateLedgerAccountPage from '../features/accounts/pages/coa/CreateLedgerAccountPage';
 import EditLedgerAccountPage from '../features/accounts/pages/coa/EditLedgerAccountPage';
+// Accounts Cost Centers
+import CostCentersPage from '../features/accounts/pages/cost-centers/CostCentersPage';
+import CreateCostCenterPage from '../features/accounts/pages/cost-centers/CreateCostCenterPage';
+import EditCostCenterPage from '../features/accounts/pages/cost-centers/EditCostCenterPage';
 // Transport RBAC
 import TransportRolesPage from '../features/transport/pages/rbac/RolesPage';
 import TransportCreateRolePage from '../features/transport/pages/rbac/CreateRolePage';
@@ -1712,6 +1716,23 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Accounts Cost Centers Routes
+  {
+    path: '/accounts/cost-centers',
+    element: CostCentersPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/cost-centers/new',
+    element: CreateCostCenterPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/cost-centers/:id/edit',
+    element: EditCostCenterPage,
     isProtected: true,
   },
 
