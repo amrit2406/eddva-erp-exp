@@ -303,6 +303,13 @@ import AccountsCreateUserPage from '../features/accounts/pages/rbac/CreateUserPa
 import AccountsPermissionsPage from '../features/accounts/pages/rbac/PermissionsPage';
 import AccountsCreatePermissionPage from '../features/accounts/pages/rbac/CreatePermissionPage';
 import AccountsEditPermissionPage from '../features/accounts/pages/rbac/EditPermissionPage';
+// Accounts Chart of Accounts
+import AccountGroupsPage from '../features/accounts/pages/coa/AccountGroupsPage';
+import CreateAccountGroupPage from '../features/accounts/pages/coa/CreateAccountGroupPage';
+import EditAccountGroupPage from '../features/accounts/pages/coa/EditAccountGroupPage';
+import LedgerAccountsPage from '../features/accounts/pages/coa/LedgerAccountsPage';
+import CreateLedgerAccountPage from '../features/accounts/pages/coa/CreateLedgerAccountPage';
+import EditLedgerAccountPage from '../features/accounts/pages/coa/EditLedgerAccountPage';
 // Transport RBAC
 import TransportRolesPage from '../features/transport/pages/rbac/RolesPage';
 import TransportCreateRolePage from '../features/transport/pages/rbac/CreateRolePage';
@@ -1705,6 +1712,38 @@ export const routeConfig = [
   {
     path: '/inventory/users/new',
     element: InventoryCreateUserPage,
+    isProtected: true,
+  },
+
+  // Accounts Chart of Accounts Routes
+  {
+    path: '/accounts/coa/groups',
+    element: AccountGroupsPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/coa/groups/new',
+    element: CreateAccountGroupPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/coa/groups/:id/edit',
+    element: EditAccountGroupPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/coa/ledger-accounts',
+    element: LedgerAccountsPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/coa/ledger-accounts/new',
+    element: CreateLedgerAccountPage,
+    isProtected: true,
+  },
+  {
+    path: '/accounts/coa/ledger-accounts/:id/edit',
+    element: EditLedgerAccountPage,
     isProtected: true,
   },
 

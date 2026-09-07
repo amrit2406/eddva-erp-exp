@@ -160,6 +160,8 @@ const navItems: NavItem[] = [
       { path: '/accounts/permissions', label: 'Permissions', icon: Key },
       { path: '/accounts/roles', label: 'Roles', icon: Shield },
       { path: '/accounts/users', label: 'Users', icon: Users },
+      { path: '/accounts/coa/groups', label: 'Account Groups', icon: Folder },
+      { path: '/accounts/coa/ledger-accounts', label: 'Ledger Accounts', icon: BookOpen },
     ]
   },
   // { path: '/students', label: 'Students', icon: Users },
