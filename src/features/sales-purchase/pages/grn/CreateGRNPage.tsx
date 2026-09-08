@@ -10,21 +10,21 @@ import type { GRNFormData } from '../../types/sales-purchase.types';
 export default function CreateGRNPage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (data: GRNFormData) => {
     try {
       setIsSubmitting(true);
-      console.log('Submitting GRN data:', data);
+      setError(null);
       await createGRN(data);
       navigate('/sales-purchase/grn');
     } catch (error: any) {
       console.error('Failed to create GRN:', error);
-      console.error('Error response:', error.response?.data);
       if (error.response?.status === 401) {
         return;
       }
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
-      alert(errorMessage || 'Failed to create GRN');
+      const errorMessage = error.response?.data?.error?.message || error.response?.data?.message || error.message;
+      setError(errorMessage || 'Failed to create GRN');
     } finally {
       setIsSubmitting(false);
     }
@@ -47,6 +47,11 @@ export default function CreateGRNPage() {
 
       <Card className="border-slate-200">
         <div className="p-6">
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
           <GRNForm
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}

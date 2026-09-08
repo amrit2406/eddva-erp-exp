@@ -13,6 +13,7 @@ export default function EditGRNPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultValues, setDefaultValues] = useState<GRNFormData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -45,6 +46,7 @@ export default function EditGRNPage() {
     if (!id) return;
     try {
       setIsSubmitting(true);
+      setError(null);
       await updateGRN(id, data);
       navigate('/sales-purchase/grn');
     } catch (error: any) {
@@ -52,7 +54,7 @@ export default function EditGRNPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update GRN');
+      setError(error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Failed to update GRN');
     } finally {
       setIsSubmitting(false);
     }
@@ -80,6 +82,11 @@ export default function EditGRNPage() {
       ) : (
         <Card className="border-slate-200">
           <div className="p-6">
+            {error && (
+              <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
             {defaultValues && (
               <GRNForm
                 defaultValues={defaultValues}

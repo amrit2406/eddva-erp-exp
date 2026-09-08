@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Input from '../../../../components/ui/Input';
 import Button from '../../../../components/ui/Button';
 import { cn } from '../../../../utils/cn';
@@ -21,6 +22,7 @@ export default function GRNForm({
   isSubmitting = false,
   className,
 }: GRNFormProps) {
+  const navigate = useNavigate();
   const [items, setItems] = useState<GRNItem[]>(
     defaultValues?.items || [{ poItemId: '', itemId: '', receivedQty: 0, acceptedQty: 0, rejectedQty: 0 }]
   );
@@ -281,7 +283,7 @@ export default function GRNForm({
       </div>
 
       <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-        <Button variant="secondary" type="button" className="w-full sm:w-auto">
+        <Button variant="secondary" type="button" className="w-full sm:w-auto" onClick={() => navigate('/sales-purchase/grn')}>
           Cancel
         </Button>
         <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
