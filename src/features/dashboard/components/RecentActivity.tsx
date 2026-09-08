@@ -1,12 +1,12 @@
 import Card from '../../../components/ui/Card';
 import { formatDateTime } from '../../../utils/formatDate';
 import type { RecentActivityItem } from '../index';
-import { Clock, User, DollarSign, FileText, CheckCircle } from 'lucide-react';
+import { Clock, User, IndianRupee, FileText, CheckCircle } from 'lucide-react';
 
 const activityIcons: Record<string, React.ElementType> = {
   student: User,
   teacher: User,
-  fee: DollarSign,
+  fee: IndianRupee,
   exam: FileText,
   attendance: CheckCircle,
 };

@@ -14,26 +14,6 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  {
-    path: '/front-office',
-    label: 'Front Office',
-    icon: Building,
-    children: [
-      { path: '/front-office', label: 'Dashboard', icon: LayoutDashboard },
-      { path: '/front-office/permissions', label: 'Permissions', icon: Key },
-      { path: '/front-office/roles', label: 'Roles', icon: Shield },
-      { path: '/front-office/users', label: 'Users', icon: Users },
-      { path: '/front-office/notifications', label: 'Notifications', icon: Bell },
-      { path: '/front-office/departments', label: 'Departments', icon: Building2 },
-      { path: '/front-office/employees', label: 'Employees', icon: UserPlus },
-      { path: '/front-office/employees/available', label: 'Available Employees', icon: Search },
-      { path: '/front-office/visitors', label: 'Visitors', icon: UserCheck },
-      { path: '/front-office/visitor-logs', label: 'Visitor Logs', icon: LogIn },
-      { path: '/front-office/enquiries', label: 'Enquiries', icon: MessageSquare },
-      { path: '/front-office/appointments', label: 'Appointments', icon: Calendar },
-      { path: '/front-office/complaints', label: 'Complaints', icon: AlertTriangle },
-    ]
-  },
   { 
     path: '/sales-purchase', 
     label: 'Sales & Purchase', 
@@ -95,6 +75,26 @@ const navItems: NavItem[] = [
       { path: '/library/books', label: 'Books', icon: BookOpen },
       { path: '/library/issues', label: 'Issues', icon: AlertTriangle },
       { path: '/library/reservations', label: 'Reservations', icon: Clock },
+    ]
+  },
+  {
+    path: '/front-office',
+    label: 'Front Office',
+    icon: Building,
+    children: [
+      { path: '/front-office', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/front-office/permissions', label: 'Permissions', icon: Key },
+      { path: '/front-office/roles', label: 'Roles', icon: Shield },
+      { path: '/front-office/users', label: 'Users', icon: Users },
+      { path: '/front-office/notifications', label: 'Notifications', icon: Bell },
+      { path: '/front-office/departments', label: 'Departments', icon: Building2 },
+      { path: '/front-office/employees', label: 'Employees', icon: UserPlus },
+      { path: '/front-office/employees/available', label: 'Available Employees', icon: Search },
+      { path: '/front-office/visitors', label: 'Visitors', icon: UserCheck },
+      { path: '/front-office/visitor-logs', label: 'Visitor Logs', icon: LogIn },
+      { path: '/front-office/enquiries', label: 'Enquiries', icon: MessageSquare },
+      { path: '/front-office/appointments', label: 'Appointments', icon: Calendar },
+      { path: '/front-office/complaints', label: 'Complaints', icon: AlertTriangle },
     ]
   },
   {

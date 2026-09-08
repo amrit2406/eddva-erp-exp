@@ -1,5 +1,5 @@
 import Card from '../../../components/ui/Card';
-import { DollarSign } from 'lucide-react';
+import { IndianRupee } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatCurrency';
 
 export default function FeeOverview() {
@@ -7,7 +7,7 @@ export default function FeeOverview() {
     <Card className="p-6 border-slate-200 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-slate-900">Pending Fees</h3>
-        <DollarSign className="h-5 w-5 text-slate-400" />
+        <IndianRupee className="h-5 w-5 text-slate-400" />
       </div>
       <div className="space-y-3">
         <div className="flex justify-between items-center">

@@ -52,7 +52,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Pending Fees"
-          value={`$${stats.pendingFees.toLocaleString()}`}
+          value={`₹${stats.pendingFees.toLocaleString()}`}
           icon={IndianRupee}
           trend={{ value: 8, isPositive: false }}
         />
