@@ -86,6 +86,7 @@ export default function EditTaxCodePage() {
                 onSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
                 submitText="Update Tax Code"
+                isEdit
               />
             )}
           </div>

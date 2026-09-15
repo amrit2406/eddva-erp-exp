@@ -5,12 +5,15 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import RoleTable from '../../components/rbac/RoleTable';
 import { getRoles, deleteRole } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
+import { useToast } from '../../../../hooks/useToast';
 import type { Role } from '../../types/sales-purchase.types';
 
 export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadRoles();
@@ -25,7 +28,7 @@ export default function RolesPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load roles');
+      setError(getApiErrorMessage(err, 'Failed to load roles'));
     } finally {
       setLoading(false);
     }
@@ -38,11 +41,12 @@ export default function RolesPage() {
     try {
       await deleteRole(id);
       setRoles(roles.filter((r) => r.id !== id));
+      toast.success('Role deleted successfully.');
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to delete role');
+      toast.error(getApiErrorMessage(err, 'Failed to delete role'));
     }
   };
 

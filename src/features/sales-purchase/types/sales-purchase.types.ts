@@ -38,10 +38,10 @@ export interface TaxCode {
 
 export interface TaxCodeFormData {
   name: string;
-  cgstPct: number;
-  sgstPct: number;
-  igstPct: number;
-  effectiveFrom: string;
+  cgstPct?: number;
+  sgstPct?: number;
+  igstPct?: number;
+  effectiveFrom?: string;
 }
 
 // Payment Terms

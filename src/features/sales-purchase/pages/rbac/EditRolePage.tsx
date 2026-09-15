@@ -13,6 +13,7 @@ export default function EditRolePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -44,13 +45,14 @@ export default function EditRolePage() {
     
     try {
       setSubmitting(true);
+      setSubmitError(null);
       await updateRole(id, data);
       navigate('/sales-purchase/roles');
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to update role');
+      setSubmitError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Failed to update role');
     } finally {
       setSubmitting(false);
     }
@@ -112,6 +114,11 @@ export default function EditRolePage() {
       </div>
       <Card className="border-slate-200">
         <div className="p-6">
+          {submitError && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {submitError}
+            </div>
+          )}
           <RoleForm
             permissions={permissions}
             defaultValues={defaultValues}

@@ -11,6 +11,7 @@ export default function CreateRolePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     loadPermissions();
@@ -34,13 +35,14 @@ export default function CreateRolePage() {
   const handleSubmit = async (data: RoleFormData) => {
     try {
       setSubmitting(true);
+      setSubmitError(null);
       await createRole(data);
       navigate('/sales-purchase/roles');
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to create role');
+      setSubmitError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Failed to create role');
     } finally {
       setSubmitting(false);
     }
@@ -82,6 +84,11 @@ export default function CreateRolePage() {
       </div>
       <Card className="border-slate-200">
         <div className="p-6">
+          {submitError && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {submitError}
+            </div>
+          )}
           <RoleForm
             permissions={permissions}
             onSubmit={handleSubmit}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Input from '../../../../components/ui/Input';
 import Button from '../../../../components/ui/Button';
 import { cn } from '../../../../utils/cn';
@@ -22,6 +23,7 @@ export default function UserForm({
   isSubmitting = false,
   className,
 }: UserFormProps) {
+  const navigate = useNavigate();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(true);
 
@@ -51,9 +53,9 @@ export default function UserForm({
       roleId: formData.get('roleId') as string,
     };
 
-    // Only include password on create, not on edit
+    // On edit, password is optional — only send it if the user typed a new one
     const password = formData.get('password') as string;
-    if (password && !isEdit) {
+    if (password) {
       data.password = password;
     }
 
@@ -91,19 +93,17 @@ export default function UserForm({
             required
           />
         </div>
-        {!isEdit && (
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Password <span className="text-red-500">*</span>
-            </label>
-            <Input
-              name="password"
-              type="password"
-              placeholder="Enter password"
-              required
-            />
-          </div>
-        )}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Password {!isEdit && <span className="text-red-500">*</span>}
+          </label>
+          <Input
+            name="password"
+            type="password"
+            placeholder={isEdit ? 'Leave blank to keep current password' : 'Enter password'}
+            required={!isEdit}
+          />
+        </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-slate-700 mb-1">
             Role <span className="text-red-500">*</span>
@@ -142,7 +142,7 @@ export default function UserForm({
       </div>
 
       <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-        <Button variant="secondary" type="button" className="w-full sm:w-auto">
+        <Button variant="secondary" type="button" className="w-full sm:w-auto" onClick={() => navigate('/sales-purchase/users')}>
           Cancel
         </Button>
         <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
