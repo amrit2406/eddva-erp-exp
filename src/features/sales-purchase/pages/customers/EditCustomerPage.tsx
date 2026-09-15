@@ -4,14 +4,15 @@ import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import CustomerForm from '../../components/customers/CustomerForm';
-import { getCustomer, updateCustomer } from '../../api/sales-purchase.api';
-import type { CustomerFormData } from '../../types/sales-purchase.types';
+import { getCustomer, updateCustomer, getPaymentTerms } from '../../api/sales-purchase.api';
+import type { CustomerFormData, PaymentTerm } from '../../types/sales-purchase.types';
 
 export default function EditCustomerPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultValues, setDefaultValues] = useState<CustomerFormData | null>(null);
+  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,19 +24,28 @@ export default function EditCustomerPage() {
   async function loadData(customerId: string) {
     try {
       setLoading(true);
-      const data = await getCustomer(customerId);
+      const [data] = await Promise.all([
+        getCustomer(customerId),
+        getPaymentTerms()
+          .then(setPaymentTerms)
+          .catch((err) => {
+            if (err.response?.status !== 401) {
+              console.error('Failed to load payment terms:', err);
+            }
+          }),
+      ]);
       setDefaultValues({
-        customerName: data.customerName,
-        gstin: data.gstin,
-        addressLine1: data.addressLine1,
-        addressLine2: data.addressLine2,
-        city: data.city,
-        state: data.state,
-        pincode: data.pincode,
-        paymentTermId: data.paymentTermId,
-        creditLimit: data.creditLimit,
+        customer_name: data.customer_name,
+        gstin: data.gstin || undefined,
+        tax_id: data.tax_id || undefined,
+        address_line1: data.address_line1 || undefined,
+        address_line2: data.address_line2 || undefined,
+        city: data.city || undefined,
+        state: data.state || undefined,
+        pincode: data.pincode || undefined,
+        payment_term_id: data.payment_term_id || undefined,
+        credit_limit: data.credit_limit ? Number(data.credit_limit) : undefined,
         status: data.status,
-        contacts: data.contacts,
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);
@@ -92,6 +102,7 @@ export default function EditCustomerPage() {
                 onSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
                 submitText="Update Customer"
+                paymentTerms={paymentTerms}
               />
             )}
           </div>

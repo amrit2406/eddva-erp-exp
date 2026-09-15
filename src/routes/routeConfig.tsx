@@ -55,7 +55,6 @@ import EditUOMPage from '../features/sales-purchase/pages/uom/EditUOMPage';
 import TaxCodesPage from '../features/sales-purchase/pages/tax-codes/TaxCodesPage';
 import CreateTaxCodePage from '../features/sales-purchase/pages/tax-codes/CreateTaxCodePage';
 import TaxCodeDetailsPage from '../features/sales-purchase/pages/tax-codes/TaxCodeDetailsPage';
-import EditTaxCodePage from '../features/sales-purchase/pages/tax-codes/EditTaxCodePage';
 import PaymentTermsPage from '../features/sales-purchase/pages/payment-terms/PaymentTermsPage';
 import CreatePaymentTermPage from '../features/sales-purchase/pages/payment-terms/CreatePaymentTermPage';
 import PaymentTermDetailsPage from '../features/sales-purchase/pages/payment-terms/PaymentTermDetailsPage';
@@ -80,6 +79,10 @@ import PurchaseOrdersPage from '../features/sales-purchase/pages/purchase-orders
 import CreatePurchaseOrderPage from '../features/sales-purchase/pages/purchase-orders/CreatePurchaseOrderPage';
 import PurchaseOrderDetailsPage from '../features/sales-purchase/pages/purchase-orders/PurchaseOrderDetailsPage';
 import EditPurchaseOrderPage from '../features/sales-purchase/pages/purchase-orders/EditPurchaseOrderPage';
+import ApprovalRulesPage from '../features/sales-purchase/pages/approval-rules/ApprovalRulesPage';
+import CreateApprovalRulePage from '../features/sales-purchase/pages/approval-rules/CreateApprovalRulePage';
+import ApprovalRuleDetailsPage from '../features/sales-purchase/pages/approval-rules/ApprovalRuleDetailsPage';
+import EditApprovalRulePage from '../features/sales-purchase/pages/approval-rules/EditApprovalRulePage';
 import GRNsPage from '../features/sales-purchase/pages/grn/GRNsPage';
 import CreateGRNPage from '../features/sales-purchase/pages/grn/CreateGRNPage';
 import GRNDetailsPage from '../features/sales-purchase/pages/grn/GRNDetailsPage';
@@ -118,7 +121,6 @@ import CreatePermissionPage from '../features/sales-purchase/pages/rbac/CreatePe
 import EditPermissionPage from '../features/sales-purchase/pages/rbac/EditPermissionPage';
 import UsersPage from '../features/sales-purchase/pages/rbac/UsersPage';
 import CreateUserPage from '../features/sales-purchase/pages/rbac/CreateUserPage';
-import EditUserPage from '../features/sales-purchase/pages/rbac/EditUserPage';
 // Canteen RBAC
 import CanteenRolesPage from '../features/canteen/pages/rbac/RolesPage';
 import CanteenCreateRolePage from '../features/canteen/pages/rbac/CreateRolePage';
@@ -653,11 +655,6 @@ export const routeConfig = [
     isProtected: true,
   },
   {
-    path: '/sales-purchase/tax-codes/:id/edit',
-    element: EditTaxCodePage,
-    isProtected: true,
-  },
-  {
     path: '/sales-purchase/payment-terms',
     element: PaymentTermsPage,
     isProtected: true,
@@ -775,6 +772,26 @@ export const routeConfig = [
   {
     path: '/sales-purchase/purchase-orders/:id/edit',
     element: EditPurchaseOrderPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/approval-rules',
+    element: ApprovalRulesPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/approval-rules/new',
+    element: CreateApprovalRulePage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/approval-rules/:id',
+    element: ApprovalRuleDetailsPage,
+    isProtected: true,
+  },
+  {
+    path: '/sales-purchase/approval-rules/:id/edit',
+    element: EditApprovalRulePage,
     isProtected: true,
   },
   {
@@ -952,12 +969,7 @@ export const routeConfig = [
     element: CreateUserPage,
     isProtected: true,
   },
-  {
-    path: '/sales-purchase/users/:id/edit',
-    element: EditUserPage,
-    isProtected: true,
-  },
-  
+
   // Canteen RBAC Routes
   {
     path: '/canteen/roles',

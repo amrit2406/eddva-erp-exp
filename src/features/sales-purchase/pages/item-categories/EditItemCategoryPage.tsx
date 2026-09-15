@@ -25,7 +25,7 @@ export default function EditItemCategoryPage() {
       setLoading(true);
       const data = await getItemCategory(categoryId);
       setDefaultValues({
-        categoryName: data.categoryName,
+        name: data.name,
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);

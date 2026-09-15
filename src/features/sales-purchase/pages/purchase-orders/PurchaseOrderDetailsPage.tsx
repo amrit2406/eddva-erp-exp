@@ -1,22 +1,38 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, ShoppingCart, Calendar, Building2, Package, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Edit, ShoppingCart, Calendar, Building2, Package, CheckCircle, XCircle, Clock, Ban } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getPurchaseOrder, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, cancelPurchaseOrder, getItems } from '../../api/sales-purchase.api';
-import type { PurchaseOrder, Item } from '../../types/sales-purchase.types';
+import { getPurchaseOrder, submitPurchaseOrder, approvePurchaseOrder, rejectPurchaseOrder, cancelPurchaseOrder } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
+import type { PurchaseOrder } from '../../types/sales-purchase.types';
+import { cn } from '../../../../utils/cn';
+
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case 'APPROVED':
+    case 'CLOSED':
+      return 'bg-green-100 text-green-800';
+    case 'SUBMITTED':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'REJECTED':
+    case 'CANCELLED':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-slate-100 text-slate-800';
+  }
+}
 
 export default function PurchaseOrderDetailsPage() {
   const { id } = useParams();
   const [purchaseOrder, setPurchaseOrder] = useState<PurchaseOrder | null>(null);
-  const [itemsMap, setItemsMap] = useState<Map<string, Item>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadPurchaseOrder(id);
-      loadItems();
     }
   }, [id]);
 
@@ -35,24 +51,27 @@ export default function PurchaseOrderDetailsPage() {
     }
   }
 
-  async function loadItems() {
+  const handleAction = async (action: () => Promise<unknown>) => {
+    if (!id) return;
     try {
-      const data = await getItems();
-      const map = new Map(data.map((item) => [item.id, item]));
-      setItemsMap(map);
-    } catch (err) {
-      console.error('Failed to load items:', err);
-    }
-  }
-
-  const handleAction = async (action: () => Promise<void>) => {
-    try {
+      setActionLoading(true);
       await action();
-      if (id) loadPurchaseOrder(id);
+      await loadPurchaseOrder(id);
     } catch (error: any) {
-      console.error('Action failed:', error);
-      alert('Action failed');
+      if (error.response?.status === 401) {
+        return;
+      }
+      alert(getApiErrorMessage(error, 'Action failed'));
+    } finally {
+      setActionLoading(false);
     }
+  };
+
+  const handleReject = () => {
+    if (!purchaseOrder) return;
+    const reason = window.prompt('Reason for rejecting this purchase order (optional):');
+    if (reason === null) return;
+    handleAction(() => rejectPurchaseOrder(purchaseOrder.po_id, reason || undefined));
   };
 
   return (
@@ -68,12 +87,14 @@ export default function PurchaseOrderDetailsPage() {
           <h1 className="text-2xl font-bold text-slate-900">Purchase Order Details</h1>
           <p className="text-slate-600 mt-1">View purchase order information</p>
         </div>
-        <Link to={`/sales-purchase/purchase-orders/${id}/edit`}>
-          <Button variant="primary" size="sm">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        </Link>
+        {purchaseOrder?.status === 'DRAFT' && (
+          <Link to={`/sales-purchase/purchase-orders/${id}/edit`}>
+            <Button variant="primary" size="sm">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          </Link>
+        )}
       </div>
 
       {loading ? (
@@ -93,7 +114,7 @@ export default function PurchaseOrderDetailsPage() {
                   <ShoppingCart className="h-4 w-4" />
                   <span className="text-sm font-medium">PO Number</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">PO-{purchaseOrder.id.slice(0, 8)}</div>
+                <div className="text-lg font-bold text-slate-900">{purchaseOrder.po_number}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -102,7 +123,7 @@ export default function PurchaseOrderDetailsPage() {
                   <Building2 className="h-4 w-4" />
                   <span className="text-sm font-medium">Vendor</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{purchaseOrder.vendor?.vendorName || '-'}</div>
+                <div className="text-lg font-bold text-slate-900">{purchaseOrder.vendor?.vendor_name || '-'}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -111,7 +132,7 @@ export default function PurchaseOrderDetailsPage() {
                   <Calendar className="h-4 w-4" />
                   <span className="text-sm font-medium">PO Date</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{purchaseOrder.poDate ? new Date(purchaseOrder.poDate).toLocaleDateString() : '-'}</div>
+                <div className="text-lg font-bold text-slate-900">{purchaseOrder.po_date ? new Date(purchaseOrder.po_date).toLocaleDateString() : '-'}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -120,12 +141,16 @@ export default function PurchaseOrderDetailsPage() {
                   <Package className="h-4 w-4" />
                   <span className="text-sm font-medium">Status</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {purchaseOrder.status === 'DRAFT' && <Clock className="h-4 w-4 text-slate-400" />}
-                  {purchaseOrder.status === 'APPROVED' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                  {purchaseOrder.status === 'REJECTED' && <XCircle className="h-4 w-4 text-red-500" />}
-                  <span className="text-lg font-bold text-slate-900">{purchaseOrder.status}</span>
-                </div>
+                <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-semibold', statusBadgeClass(purchaseOrder.status))}>
+                  {purchaseOrder.status === 'DRAFT' && <Clock className="h-4 w-4" />}
+                  {(purchaseOrder.status === 'APPROVED' || purchaseOrder.status === 'CLOSED') && <CheckCircle className="h-4 w-4" />}
+                  {purchaseOrder.status === 'REJECTED' && <XCircle className="h-4 w-4" />}
+                  {purchaseOrder.status === 'CANCELLED' && <Ban className="h-4 w-4" />}
+                  {purchaseOrder.status}
+                </span>
+                {purchaseOrder.status === 'REJECTED' && purchaseOrder.rejection_reason && (
+                  <p className="text-xs text-slate-500 mt-2">Reason: {purchaseOrder.rejection_reason}</p>
+                )}
               </div>
             </Card>
           </div>
@@ -135,26 +160,27 @@ export default function PurchaseOrderDetailsPage() {
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Actions</h3>
               <div className="flex flex-wrap gap-2">
                 {purchaseOrder.status === 'DRAFT' && (
-                  <>
-                    <Button variant="primary" size="sm" onClick={() => handleAction(() => submitPurchaseOrder(purchaseOrder.id))}>
-                      Submit
-                    </Button>
-                  </>
+                  <Button variant="primary" size="sm" disabled={actionLoading} onClick={() => handleAction(() => submitPurchaseOrder(purchaseOrder.po_id))}>
+                    Submit
+                  </Button>
                 )}
                 {purchaseOrder.status === 'SUBMITTED' && (
                   <>
-                    <Button variant="primary" size="sm" onClick={() => handleAction(() => approvePurchaseOrder(purchaseOrder.id))}>
+                    <Button variant="primary" size="sm" disabled={actionLoading} onClick={() => handleAction(() => approvePurchaseOrder(purchaseOrder.po_id))}>
                       Approve
                     </Button>
-                    <Button variant="secondary" size="sm" onClick={() => handleAction(() => rejectPurchaseOrder(purchaseOrder.id))}>
+                    <Button variant="secondary" size="sm" disabled={actionLoading} onClick={handleReject}>
                       Reject
                     </Button>
                   </>
                 )}
                 {(purchaseOrder.status === 'DRAFT' || purchaseOrder.status === 'SUBMITTED') && (
-                  <Button variant="secondary" size="sm" onClick={() => handleAction(() => cancelPurchaseOrder(purchaseOrder.id))}>
+                  <Button variant="secondary" size="sm" disabled={actionLoading} onClick={() => handleAction(() => cancelPurchaseOrder(purchaseOrder.po_id))}>
                     Cancel
                   </Button>
+                )}
+                {!['DRAFT', 'SUBMITTED'].includes(purchaseOrder.status) && (
+                  <p className="text-sm text-slate-500">No actions available for this status.</p>
                 )}
               </div>
             </div>
@@ -170,22 +196,22 @@ export default function PurchaseOrderDetailsPage() {
                       <th className="text-left py-2 px-4 text-sm font-semibold text-slate-700">Item</th>
                       <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Quantity</th>
                       <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Unit Price</th>
+                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Line Discount</th>
+                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Tax</th>
                       <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Total</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {purchaseOrder.items.map((item, index) => {
-                      const itemDetails = itemsMap.get(item.itemId);
-                      const unitPrice = Number(item.unitPrice) || 0;
-                      return (
-                        <tr key={index} className="border-b border-slate-100">
-                          <td className="py-2 px-4 text-sm text-slate-900">{itemDetails?.itemName || item.itemId}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.quantity}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{unitPrice.toFixed(2)}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{(item.quantity * unitPrice).toFixed(2)}</td>
-                        </tr>
-                      );
-                    })}
+                    {(purchaseOrder.items || []).map((item) => (
+                      <tr key={item.po_item_id} className="border-b border-slate-100">
+                        <td className="py-2 px-4 text-sm text-slate-900">{item.item?.item_name || item.item_id}</td>
+                        <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.quantity}</td>
+                        <td className="py-2 px-4 text-sm text-slate-900 text-right">{Number(item.unit_price).toFixed(2)}</td>
+                        <td className="py-2 px-4 text-sm text-slate-900 text-right">{Number(item.line_discount || 0).toFixed(2)}</td>
+                        <td className="py-2 px-4 text-sm text-slate-900 text-right">{Number(item.line_tax_amount || 0).toFixed(2)}</td>
+                        <td className="py-2 px-4 text-sm text-slate-900 text-right">{Number(item.line_total).toFixed(2)}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -198,15 +224,19 @@ export default function PurchaseOrderDetailsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Subtotal</span>
-                  <span className="text-slate-900">{purchaseOrder.items.reduce((sum, item) => sum + (item.quantity * (Number(item.unitPrice) || 0)), 0).toFixed(2)}</span>
+                  <span className="text-slate-900">{Number(purchaseOrder.subtotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Discount</span>
-                  <span className="text-slate-900">{(Number(purchaseOrder.discount) || 0).toFixed(2)}</span>
+                  <span className="text-slate-900">{Number(purchaseOrder.discount || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Tax</span>
+                  <span className="text-slate-900">{Number(purchaseOrder.tax_amount || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold border-t border-slate-200 pt-2">
-                  <span className="text-slate-900">Total</span>
-                  <span className="text-slate-900">{(purchaseOrder.items.reduce((sum, item) => sum + (item.quantity * (Number(item.unitPrice) || 0)), 0) - (Number(purchaseOrder.discount) || 0)).toFixed(2)}</span>
+                  <span className="text-slate-900">Grand Total</span>
+                  <span className="text-slate-900">{Number(purchaseOrder.grand_total || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>

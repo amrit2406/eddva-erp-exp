@@ -31,13 +31,13 @@ export default function ItemsPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this item?')) {
       return;
     }
     try {
       await deleteItem(id);
-      setItems(items.filter((i) => i.id !== id));
+      setItems(items.filter((i) => i.item_id !== id));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;

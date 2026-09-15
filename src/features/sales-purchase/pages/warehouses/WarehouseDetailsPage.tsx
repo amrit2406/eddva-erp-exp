@@ -73,7 +73,7 @@ export default function WarehouseDetailsPage() {
                   <div className="mt-1 flex items-center gap-2">
                     <Building className="h-5 w-5 text-slate-400" />
                     <p className="text-lg font-medium text-slate-900">{warehouse.name}</p>
-                    {warehouse.isDefault && (
+                    {warehouse.is_default && (
                       <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                     )}
                   </div>
@@ -82,22 +82,22 @@ export default function WarehouseDetailsPage() {
                   <label className="text-sm font-medium text-slate-500">Address</label>
                   <div className="mt-1 flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{warehouse.address}</p>
+                    <p className="text-slate-900">{warehouse.address || '-'}</p>
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-500">Default</label>
-                  <p className="mt-1 text-slate-900">{warehouse.isDefault ? 'Yes' : 'No'}</p>
+                  <p className="mt-1 text-slate-900">{warehouse.is_default ? 'Yes' : 'No'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-500">Warehouse ID</label>
-                  <p className="mt-1 text-slate-900">{warehouse.id}</p>
+                  <p className="mt-1 text-slate-900">{warehouse.warehouse_id}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-500">Created At</label>
                   <div className="mt-1 flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{warehouse.createdAt ? new Date(warehouse.createdAt).toLocaleString() : '-'}</p>
+                    <p className="text-slate-900">{warehouse.created_at ? new Date(warehouse.created_at).toLocaleString() : '-'}</p>
                   </div>
                 </div>
               </div>

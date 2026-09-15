@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import TaxCodeTable from '../../components/tax-codes/TaxCodeTable';
-import { getTaxCodes } from '../../api/sales-purchase.api';
+import { getTaxCodes, deleteTaxCode, setTaxCodeActive } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
 import type { TaxCode } from '../../types/sales-purchase.types';
 
 export default function TaxCodesPage() {
@@ -31,6 +32,33 @@ export default function TaxCodesPage() {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this tax code?')) {
+      return;
+    }
+    try {
+      await deleteTaxCode(id);
+      setTaxCodes(taxCodes.filter((t) => t.tax_code_id !== id));
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      alert(getApiErrorMessage(err, 'Failed to delete tax code'));
+    }
+  };
+
+  const handleToggleActive = async (id: number, isActive: boolean) => {
+    try {
+      const updated = await setTaxCodeActive(id, isActive);
+      setTaxCodes(taxCodes.map((t) => (t.tax_code_id === id ? updated : t)));
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      alert(getApiErrorMessage(err, 'Failed to update tax code status'));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -53,7 +81,7 @@ export default function TaxCodesPage() {
           ) : error ? (
             <div className="text-center py-8 text-red-500">{error}</div>
           ) : (
-            <TaxCodeTable taxCodes={taxCodes} />
+            <TaxCodeTable taxCodes={taxCodes} onDelete={handleDelete} onToggleActive={handleToggleActive} />
           )}
         </div>
       </Card>

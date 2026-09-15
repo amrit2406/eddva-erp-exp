@@ -144,7 +144,7 @@ export default function SalesInvoiceDetailsPage() {
                   <label className="text-sm font-medium text-slate-500">Customer</label>
                   <div className="mt-1 flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-slate-400" />
-                    <p className="text-lg font-medium text-slate-900">{salesInvoice.customer?.customerName || '-'}</p>
+                    <p className="text-lg font-medium text-slate-900">{salesInvoice.customer?.customer_name || '-'}</p>
                   </div>
                 </div>
                 <div>

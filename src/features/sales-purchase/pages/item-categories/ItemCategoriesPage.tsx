@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import ItemCategoryTable from '../../components/item-categories/ItemCategoryTable';
-import { getItemCategories } from '../../api/sales-purchase.api';
+import { getItemCategories, deleteItemCategory } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
 import type { ItemCategory } from '../../types/sales-purchase.types';
 
 export default function ItemCategoriesPage() {
@@ -32,6 +33,21 @@ export default function ItemCategoriesPage() {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this category?')) {
+      return;
+    }
+    try {
+      await deleteItemCategory(id);
+      setCategories(categories.filter((c) => c.category_id !== id));
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      alert(getApiErrorMessage(err, 'Failed to delete category'));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -54,7 +70,7 @@ export default function ItemCategoriesPage() {
           ) : error ? (
             <div className="text-center py-8 text-red-500">{error}</div>
           ) : (
-            <ItemCategoryTable categories={categories} />
+            <ItemCategoryTable categories={categories} onDelete={handleDelete} />
           )}
         </div>
       </Card>

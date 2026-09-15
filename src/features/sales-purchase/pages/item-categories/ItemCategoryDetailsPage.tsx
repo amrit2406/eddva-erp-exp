@@ -72,19 +72,19 @@ export default function ItemCategoryDetailsPage() {
                   <label className="text-sm font-medium text-slate-500">Category Name</label>
                   <div className="mt-1 flex items-center gap-2">
                     <Package className="h-5 w-5 text-slate-400" />
-                    <p className="text-lg font-medium text-slate-900">{category.categoryName}</p>
+                    <p className="text-lg font-medium text-slate-900">{category.name}</p>
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-500">Category ID</label>
-                  <p className="mt-1 text-slate-900">{category.id}</p>
+                  <p className="mt-1 text-slate-900">{category.category_id}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-500">Created At</label>
                   <div className="mt-1 flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-slate-400" />
                     <p className="text-slate-900">
-                      {category.createdAt ? new Date(category.createdAt).toLocaleString() : '-'}
+                      {category.created_at ? new Date(category.created_at).toLocaleString() : '-'}
                     </p>
                   </div>
                 </div>

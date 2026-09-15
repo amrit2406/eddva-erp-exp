@@ -25,7 +25,7 @@ export default function EditPaymentTermPage() {
       setLoading(true);
       const data = await getPaymentTerm(termId);
       setDefaultValues({
-        termName: data.termName,
+        term_name: data.term_name,
         days: data.days,
       });
     } catch (error: any) {

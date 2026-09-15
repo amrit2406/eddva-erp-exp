@@ -97,11 +97,11 @@ export default function GRNForm({
   };
 
   const handleItemChange = (index: number, poItemId: string) => {
-    const poItem = selectedPO?.items?.find(item => item.id === poItemId);
+    const poItem = selectedPO?.items?.find(item => String(item.po_item_id) === poItemId);
     const newItems = [...items];
     newItems[index] = {
       ...newItems[index],
-      itemId: poItem?.itemId || '',
+      itemId: poItem?.item_id ? String(poItem.item_id) : '',
       poItemId,
     };
     setItems(newItems);
@@ -146,8 +146,8 @@ export default function GRNForm({
               >
                 <option value="">Select purchase order</option>
                 {purchaseOrders.map((po) => (
-                  <option key={po.id} value={po.id}>
-                    PO-{po.id.slice(0, 8)}
+                  <option key={po.po_id} value={po.po_id}>
+                    {po.po_number}
                   </option>
                 ))}
               </select>
@@ -164,7 +164,7 @@ export default function GRNForm({
               >
                 <option value="">Select warehouse</option>
                 {warehouses.map((warehouse) => (
-                  <option key={warehouse.id} value={warehouse.id}>
+                  <option key={warehouse.warehouse_id} value={warehouse.warehouse_id}>
                     {warehouse.name}
                   </option>
                 ))}
@@ -182,8 +182,8 @@ export default function GRNForm({
               >
                 <option value="">Select vendor</option>
                 {vendors.map((vendor) => (
-                  <option key={vendor.id} value={vendor.id}>
-                    {vendor.vendorName}
+                  <option key={vendor.vendor_id} value={vendor.vendor_id}>
+                    {vendor.vendor_name}
                   </option>
                 ))}
               </select>
@@ -227,10 +227,10 @@ export default function GRNForm({
                         : 'Select item'}
                   </option>
                   {selectedPO?.items?.map((poItem) => {
-                    const itemOption = itemsList.find((i) => i.id === poItem.itemId);
+                    const itemOption = itemsList.find((i) => i.item_id === poItem.item_id) || poItem.item;
                     return (
-                      <option key={poItem.id} value={poItem.id}>
-                        {itemOption?.itemName || poItem.itemId}
+                      <option key={poItem.po_item_id} value={poItem.po_item_id}>
+                        {itemOption?.item_name || poItem.item_id}
                       </option>
                     );
                   })}

@@ -26,8 +26,8 @@ export default function EditWarehousePage() {
       const data = await getWarehouse(warehouseId);
       setDefaultValues({
         name: data.name,
-        address: data.address,
-        isDefault: data.isDefault,
+        address: data.address || '',
+        is_default: data.is_default,
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);

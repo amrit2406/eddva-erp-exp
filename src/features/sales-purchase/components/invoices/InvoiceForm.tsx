@@ -118,8 +118,8 @@ export default function InvoiceForm({
               >
                 <option value="">Select vendor</option>
                 {vendors.map((vendor) => (
-                  <option key={vendor.id} value={vendor.id}>
-                    {vendor.vendorName}
+                  <option key={vendor.vendor_id} value={vendor.vendor_id}>
+                    {vendor.vendor_name}
                   </option>
                 ))}
               </select>
@@ -135,8 +135,8 @@ export default function InvoiceForm({
               >
                 <option value="">Select purchase order</option>
                 {purchaseOrders.map((po) => (
-                  <option key={po.id} value={po.id}>
-                    {po.poNumber || `PO-${po.id.slice(0, 8)}`}
+                  <option key={po.po_id} value={po.po_id}>
+                    {po.po_number}
                   </option>
                 ))}
               </select>
@@ -200,8 +200,8 @@ export default function InvoiceForm({
                 >
                   <option value="">Select item</option>
                   {itemsList.map((itemOption) => (
-                    <option key={itemOption.id} value={itemOption.id}>
-                      {itemOption.itemName}
+                    <option key={itemOption.item_id} value={itemOption.item_id}>
+                      {itemOption.item_name}
                     </option>
                   ))}
                 </select>
@@ -237,7 +237,7 @@ export default function InvoiceForm({
                   >
                     <option value="">Select tax</option>
                     {taxCodes.map((taxCode) => (
-                      <option key={taxCode.id} value={taxCode.id}>
+                      <option key={taxCode.tax_code_id} value={taxCode.tax_code_id}>
                         {taxCode.name}
                       </option>
                     ))}

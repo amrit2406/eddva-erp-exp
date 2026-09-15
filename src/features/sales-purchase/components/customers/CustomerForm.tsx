@@ -1,10 +1,11 @@
 import Input from '../../../../components/ui/Input';
 import Button from '../../../../components/ui/Button';
 import { cn } from '../../../../utils/cn';
-import type { CustomerFormData } from '../../types/sales-purchase.types';
+import type { CustomerFormData, PaymentTerm } from '../../types/sales-purchase.types';
 
 interface CustomerFormProps {
   defaultValues?: CustomerFormData;
+  paymentTerms?: PaymentTerm[];
   onSubmit?: (data: CustomerFormData) => void;
   submitText?: string;
   isSubmitting?: boolean;
@@ -13,6 +14,7 @@ interface CustomerFormProps {
 
 export default function CustomerForm({
   defaultValues,
+  paymentTerms = [],
   onSubmit,
   submitText = 'Save',
   isSubmitting = false,
@@ -23,20 +25,22 @@ export default function CustomerForm({
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     
     const data: CustomerFormData = {
-      customerName: formData.get('customerName') as string,
+      customer_name: formData.get('customer_name') as string,
       status: formData.get('status') as string,
-      contacts: defaultValues?.contacts || [],
     };
 
     // Only include optional fields if they have values
     const gstin = formData.get('gstin') as string;
     if (gstin) data.gstin = gstin;
 
-    const addressLine1 = formData.get('addressLine1') as string;
-    if (addressLine1) data.addressLine1 = addressLine1;
+    const taxId = formData.get('tax_id') as string;
+    if (taxId) data.tax_id = taxId;
 
-    const addressLine2 = formData.get('addressLine2') as string;
-    if (addressLine2) data.addressLine2 = addressLine2;
+    const addressLine1 = formData.get('address_line1') as string;
+    if (addressLine1) data.address_line1 = addressLine1;
+
+    const addressLine2 = formData.get('address_line2') as string;
+    if (addressLine2) data.address_line2 = addressLine2;
 
     const city = formData.get('city') as string;
     if (city) data.city = city;
@@ -47,11 +51,11 @@ export default function CustomerForm({
     const pincode = formData.get('pincode') as string;
     if (pincode) data.pincode = pincode;
 
-    const paymentTermId = formData.get('paymentTermId') as string;
-    if (paymentTermId) data.paymentTermId = paymentTermId;
+    const paymentTermId = formData.get('payment_term_id') as string;
+    if (paymentTermId) data.payment_term_id = Number(paymentTermId);
 
-    const creditLimit = formData.get('creditLimit') as string;
-    if (creditLimit) data.creditLimit = Number(creditLimit);
+    const creditLimit = formData.get('credit_limit') as string;
+    if (creditLimit) data.credit_limit = Number(creditLimit);
 
     onSubmit?.(data);
   };
@@ -64,8 +68,8 @@ export default function CustomerForm({
             Customer Name <span className="text-red-500">*</span>
           </label>
           <Input
-            name="customerName"
-            defaultValue={defaultValues?.customerName}
+            name="customer_name"
+            defaultValue={defaultValues?.customer_name}
             placeholder="Enter customer name"
             required
           />
@@ -76,6 +80,14 @@ export default function CustomerForm({
             name="gstin"
             defaultValue={defaultValues?.gstin}
             placeholder="Enter GSTIN (e.g., 27BBBBB0000B1Z6)"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Tax ID</label>
+          <Input
+            name="tax_id"
+            defaultValue={defaultValues?.tax_id}
+            placeholder="Enter Tax ID (PAN)"
           />
         </div>
         <div>
@@ -98,16 +110,16 @@ export default function CustomerForm({
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-1">Address Line 1</label>
             <Input
-              name="addressLine1"
-              defaultValue={defaultValues?.addressLine1}
+              name="address_line1"
+              defaultValue={defaultValues?.address_line1}
               placeholder="Building, Street, Area"
             />
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-1">Address Line 2</label>
             <Input
-              name="addressLine2"
-              defaultValue={defaultValues?.addressLine2}
+              name="address_line2"
+              defaultValue={defaultValues?.address_line2}
               placeholder="Landmark, Phase"
             />
           </div>
@@ -144,20 +156,24 @@ export default function CustomerForm({
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Payment Term</label>
             <select
-              name="paymentTermId"
-              defaultValue={defaultValues?.paymentTermId}
+              name="payment_term_id"
+              defaultValue={defaultValues?.payment_term_id ? String(defaultValues.payment_term_id) : ''}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select payment term</option>
-              {/* Payment terms will be loaded dynamically */}
+              {paymentTerms.map((term) => (
+                <option key={term.payment_term_id} value={term.payment_term_id}>
+                  {term.term_name} ({term.days} days)
+                </option>
+              ))}
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Credit Limit</label>
             <Input
-              name="creditLimit"
+              name="credit_limit"
               type="number"
-              defaultValue={defaultValues?.creditLimit}
+              defaultValue={defaultValues?.credit_limit}
               placeholder="Enter credit limit"
             />
           </div>

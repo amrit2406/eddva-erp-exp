@@ -38,7 +38,7 @@ export default function GRNDetailsPage() {
   async function loadItems() {
     try {
       const data = await getItems();
-      const map = new Map(data.map((item) => [item.id, item]));
+      const map = new Map(data.map((item) => [String(item.item_id), item]));
       setItemsMap(map);
     } catch (err) {
       console.error('Failed to load items:', err);
@@ -136,7 +136,7 @@ export default function GRNDetailsPage() {
                       const receivedQty = Number(item.receivedQty) || 0;
                       return (
                         <tr key={index} className="border-b border-slate-100">
-                          <td className="py-2 px-4 text-sm text-slate-900">{item.item?.itemName || itemDetails?.itemName || item.itemId}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900">{item.item?.itemName || itemDetails?.item_name || item.itemId}</td>
                           <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.poItem?.quantity ?? '-'}</td>
                           <td className="py-2 px-4 text-sm text-slate-900 text-right">{receivedQty}</td>
                           <td className="py-2 px-4 text-sm text-slate-900 text-right">{unitPrice.toFixed(2)}</td>

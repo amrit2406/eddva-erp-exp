@@ -6,7 +6,7 @@ import { cn } from '../../../../utils/cn';
 interface VendorTableProps {
   vendors: Vendor[];
   className?: string;
-  onDelete?: (id: string) => void;
+  onDelete?: (id: number) => void;
 }
 
 export default function VendorTable({ vendors, className, onDelete }: VendorTableProps) {
@@ -32,11 +32,11 @@ export default function VendorTable({ vendors, className, onDelete }: VendorTabl
             </tr>
           ) : (
             vendors.map((vendor) => (
-              <tr key={vendor.id} className="border-b border-slate-100 hover:bg-slate-50">
+              <tr key={vendor.vendor_id} className="border-b border-slate-100 hover:bg-slate-50">
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-slate-400" />
-                    <div className="font-medium text-slate-900">{vendor.vendorName}</div>
+                    <div className="font-medium text-slate-900">{vendor.vendor_name}</div>
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600">{vendor.gstin || '-'}</td>
@@ -49,14 +49,14 @@ export default function VendorTable({ vendors, className, onDelete }: VendorTabl
                 <td className="py-3 px-4 text-sm text-slate-600 hidden lg:table-cell">
                   <div className="flex items-center gap-1">
                     <IndianRupee className="h-3 w-3 text-slate-400" />
-                    {vendor.creditLimit ? vendor.creditLimit.toLocaleString() : '-'}
+                    {vendor.credit_limit ? Number(vendor.credit_limit).toLocaleString() : '-'}
                   </div>
                 </td>
                 <td className="py-3 px-4">
                   <span className={cn(
                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                    vendor.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 
-                    vendor.status === 'INACTIVE' ? 'bg-red-100 text-red-800' : 
+                    vendor.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                    vendor.status === 'INACTIVE' ? 'bg-red-100 text-red-800' :
                     'bg-slate-100 text-slate-800'
                   )}>
                     {vendor.status}
@@ -64,20 +64,20 @@ export default function VendorTable({ vendors, className, onDelete }: VendorTabl
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <Link to={`/sales-purchase/vendors/${vendor.id}`}>
+                    <Link to={`/sales-purchase/vendors/${vendor.vendor_id}`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="View">
                         <Eye className="h-4 w-4" />
                       </button>
                     </Link>
-                    <Link to={`/sales-purchase/vendors/${vendor.id}/edit`}>
+                    <Link to={`/sales-purchase/vendors/${vendor.vendor_id}/edit`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="Edit">
                         <Edit className="h-4 w-4" />
                       </button>
                     </Link>
-                    <button 
-                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600" 
+                    <button
+                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600"
                       title="Delete"
-                      onClick={() => onDelete?.(vendor.id)}
+                      onClick={() => onDelete?.(vendor.vendor_id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

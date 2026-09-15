@@ -31,13 +31,13 @@ export default function CustomersPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this customer?')) {
       return;
     }
     try {
       await deleteCustomer(id);
-      setCustomers(customers.filter((c) => c.id !== id));
+      setCustomers(customers.filter((c) => c.customer_id !== id));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;

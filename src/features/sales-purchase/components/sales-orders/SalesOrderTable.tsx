@@ -37,7 +37,7 @@ export default function SalesOrderTable({ salesOrders, className, onDelete }: Sa
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-slate-400" />
-                    <div className="text-sm text-slate-900">{salesOrder.customer?.customerName || '-'}</div>
+                    <div className="text-sm text-slate-900">{salesOrder.customer?.customer_name || '-'}</div>
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">

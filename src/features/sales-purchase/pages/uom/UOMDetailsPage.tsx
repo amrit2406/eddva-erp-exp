@@ -76,18 +76,18 @@ export default function UOMDetailsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-500">Code</label>
-                  <p className="mt-1 text-slate-900">{uom.code}</p>
+                  <label className="text-sm font-medium text-slate-500">Symbol</label>
+                  <p className="mt-1 text-slate-900">{uom.symbol}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-500">UOM ID</label>
-                  <p className="mt-1 text-slate-900">{uom.id}</p>
+                  <p className="mt-1 text-slate-900">{uom.uom_id}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-500">Created At</label>
                   <div className="mt-1 flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{uom.createdAt ? new Date(uom.createdAt).toLocaleString() : '-'}</p>
+                    <p className="text-slate-900">{uom.created_at ? new Date(uom.created_at).toLocaleString() : '-'}</p>
                   </div>
                 </div>
               </div>

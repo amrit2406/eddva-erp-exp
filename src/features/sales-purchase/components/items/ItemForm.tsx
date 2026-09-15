@@ -29,41 +29,29 @@ export default function ItemForm({
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const data: ItemFormData = {
-      itemCode: formData.get('itemCode') as string,
-      itemName: formData.get('itemName') as string,
-      categoryId: formData.get('categoryId') as string,
-      uomId: formData.get('uomId') as string,
-      quantity: parseFloat(formData.get('quantity') as string),
-      hsnSacCode: formData.get('hsnSacCode') as string,
-      purchasePrice: parseFloat(formData.get('purchasePrice') as string),
-      salesPrice: parseFloat(formData.get('salesPrice') as string),
-      taxCodeId: formData.get('taxCodeId') as string,
+      item_name: formData.get('item_name') as string,
+      category_id: Number(formData.get('category_id')),
+      uom_id: Number(formData.get('uom_id')),
+      purchase_price: parseFloat(formData.get('purchase_price') as string),
+      sales_price: parseFloat(formData.get('sales_price') as string),
+      tax_code_id: Number(formData.get('tax_code_id')),
     };
+    const hsnSacCode = formData.get('hsn_sac_code') as string;
+    if (hsnSacCode) data.hsn_sac_code = hsnSacCode;
     onSubmit?.(data);
   };
 
   return (
     <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Item Code <span className="text-red-500">*</span>
-          </label>
-          <Input
-            name="itemCode"
-            defaultValue={defaultValues?.itemCode}
-            placeholder="e.g., ITEM-001"
-            required
-          />
-        </div>
-        <div>
+        <div className="md:col-span-2">
           <label className="block text-sm font-medium text-slate-700 mb-1">
             Item Name <span className="text-red-500">*</span>
           </label>
           <Input
-            name="itemName"
-            defaultValue={defaultValues?.itemName}
-            placeholder="e.g., Steel Rod 10mm"
+            name="item_name"
+            defaultValue={defaultValues?.item_name}
+            placeholder="e.g., A4 Copier Paper (Ream)"
             required
           />
         </div>
@@ -72,10 +60,10 @@ export default function ItemForm({
             Category <span className="text-red-500">*</span>
           </label>
           <Select
-            name="categoryId"
-            defaultValue={defaultValues?.categoryId}
+            name="category_id"
+            defaultValue={defaultValues?.category_id ? String(defaultValues.category_id) : undefined}
             placeholder="Select category"
-            options={categories.map((cat) => ({ value: cat.id, label: cat.categoryName }))}
+            options={categories.map((cat) => ({ value: String(cat.category_id), label: cat.name }))}
             required
           />
         </div>
@@ -84,35 +72,21 @@ export default function ItemForm({
             Unit of Measure <span className="text-red-500">*</span>
           </label>
           <Select
-            name="uomId"
-            defaultValue={defaultValues?.uomId}
+            name="uom_id"
+            defaultValue={defaultValues?.uom_id ? String(defaultValues.uom_id) : undefined}
             placeholder="Select UOM"
-            options={uoms.map((uom) => ({ value: uom.id, label: `${uom.name} (${uom.code})` }))}
+            options={uoms.map((uom) => ({ value: String(uom.uom_id), label: `${uom.name} (${uom.symbol})` }))}
             required
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
-            Quantity <span className="text-red-500">*</span>
+            HSN/SAC Code
           </label>
           <Input
-            name="quantity"
-            type="number"
-            step="0.01"
-            defaultValue={defaultValues?.quantity}
-            placeholder="Enter quantity"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            HSN/SAC Code <span className="text-red-500">*</span>
-          </label>
-          <Input
-            name="hsnSacCode"
-            defaultValue={defaultValues?.hsnSacCode}
-            placeholder="e.g., 72142090"
-            required
+            name="hsn_sac_code"
+            defaultValue={defaultValues?.hsn_sac_code}
+            placeholder="e.g., 4802"
           />
         </div>
         <div>
@@ -120,10 +94,10 @@ export default function ItemForm({
             Purchase Price <span className="text-red-500">*</span>
           </label>
           <Input
-            name="purchasePrice"
+            name="purchase_price"
             type="number"
             step="0.01"
-            defaultValue={defaultValues?.purchasePrice}
+            defaultValue={defaultValues?.purchase_price}
             placeholder="Enter purchase price"
             required
           />
@@ -133,10 +107,10 @@ export default function ItemForm({
             Sales Price <span className="text-red-500">*</span>
           </label>
           <Input
-            name="salesPrice"
+            name="sales_price"
             type="number"
             step="0.01"
-            defaultValue={defaultValues?.salesPrice}
+            defaultValue={defaultValues?.sales_price}
             placeholder="Enter sales price"
             required
           />
@@ -146,10 +120,10 @@ export default function ItemForm({
             Tax Code <span className="text-red-500">*</span>
           </label>
           <Select
-            name="taxCodeId"
-            defaultValue={defaultValues?.taxCodeId}
+            name="tax_code_id"
+            defaultValue={defaultValues?.tax_code_id ? String(defaultValues.tax_code_id) : undefined}
             placeholder="Select tax code"
-            options={taxCodes.map((tax) => ({ value: tax.id, label: tax.name }))}
+            options={taxCodes.map((tax) => ({ value: String(tax.tax_code_id), label: tax.name }))}
             required
           />
         </div>

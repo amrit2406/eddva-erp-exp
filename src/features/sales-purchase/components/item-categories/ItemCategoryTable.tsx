@@ -6,9 +6,10 @@ import { cn } from '../../../../utils/cn';
 interface ItemCategoryTableProps {
   categories: ItemCategory[];
   className?: string;
+  onDelete?: (id: number) => void;
 }
 
-export default function ItemCategoryTable({ categories, className }: ItemCategoryTableProps) {
+export default function ItemCategoryTable({ categories, className, onDelete }: ItemCategoryTableProps) {
   return (
     <div className={cn('overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0', className)}>
       <table className="w-full min-w-[600px]">
@@ -28,26 +29,30 @@ export default function ItemCategoryTable({ categories, className }: ItemCategor
             </tr>
           ) : (
             categories.map((category) => (
-              <tr key={category.id} className="border-b border-slate-100 hover:bg-slate-50">
+              <tr key={category.category_id} className="border-b border-slate-100 hover:bg-slate-50">
                 <td className="py-3 px-4">
-                  <div className="font-medium text-slate-900">{category.categoryName}</div>
+                  <div className="font-medium text-slate-900">{category.name}</div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">
-                  {category.createdAt ? new Date(category.createdAt).toLocaleDateString() : '-'}
+                  {category.created_at ? new Date(category.created_at).toLocaleDateString() : '-'}
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <Link to={`/sales-purchase/item-categories/${category.id}`}>
+                    <Link to={`/sales-purchase/item-categories/${category.category_id}`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="View">
                         <Eye className="h-4 w-4" />
                       </button>
                     </Link>
-                    <Link to={`/sales-purchase/item-categories/${category.id}/edit`}>
+                    <Link to={`/sales-purchase/item-categories/${category.category_id}/edit`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="Edit">
                         <Edit className="h-4 w-4" />
                       </button>
                     </Link>
-                    <button className="p-1.5 hover:bg-red-100 rounded-lg text-red-600" title="Delete">
+                    <button
+                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600"
+                      title="Delete"
+                      onClick={() => onDelete?.(category.category_id)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>

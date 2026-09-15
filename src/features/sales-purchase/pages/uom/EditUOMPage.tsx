@@ -26,7 +26,7 @@ export default function EditUOMPage() {
       const data = await getUOM(uomId);
       setDefaultValues({
         name: data.name,
-        code: data.code,
+        symbol: data.symbol,
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);

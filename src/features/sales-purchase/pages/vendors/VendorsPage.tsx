@@ -31,13 +31,13 @@ export default function VendorsPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this vendor?')) {
       return;
     }
     try {
       await deleteVendor(id);
-      setVendors(vendors.filter((v) => v.id !== id));
+      setVendors(vendors.filter((v) => v.vendor_id !== id));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;

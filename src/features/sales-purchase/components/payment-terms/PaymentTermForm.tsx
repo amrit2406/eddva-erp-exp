@@ -22,7 +22,7 @@ export default function PaymentTermForm({
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const data: PaymentTermFormData = {
-      termName: formData.get('termName') as string,
+      term_name: formData.get('term_name') as string,
       days: parseInt(formData.get('days') as string),
     };
     onSubmit?.(data);
@@ -36,8 +36,8 @@ export default function PaymentTermForm({
             Term Name <span className="text-red-500">*</span>
           </label>
           <Input
-            name="termName"
-            defaultValue={defaultValues?.termName}
+            name="term_name"
+            defaultValue={defaultValues?.term_name}
             placeholder="Enter term name (e.g., Net 30)"
             required
           />

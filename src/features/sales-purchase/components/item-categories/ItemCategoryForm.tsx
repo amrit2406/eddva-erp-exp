@@ -22,7 +22,7 @@ export default function ItemCategoryForm({
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const data: ItemCategoryFormData = {
-      categoryName: formData.get('categoryName') as string,
+      name: formData.get('name') as string,
     };
     onSubmit?.(data);
   };
@@ -34,8 +34,8 @@ export default function ItemCategoryForm({
           Category Name <span className="text-red-500">*</span>
         </label>
         <Input
-          name="categoryName"
-          defaultValue={defaultValues?.categoryName}
+          name="name"
+          defaultValue={defaultValues?.name}
           placeholder="Enter category name (e.g., Raw Materials)"
           required
         />

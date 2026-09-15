@@ -46,7 +46,7 @@ export default function InvoiceDetailsPage() {
   async function loadItems() {
     try {
       const data = await getItems();
-      const map = new Map(data.map((item) => [item.id, item]));
+      const map = new Map(data.map((item) => [String(item.item_id), item]));
       setItemsMap(map);
     } catch (err) {
       console.error('Failed to load items:', err);
@@ -195,7 +195,7 @@ export default function InvoiceDetailsPage() {
                   <Building2 className="h-4 w-4" />
                   <span className="text-sm font-medium">Vendor</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{invoice.vendor?.vendorName || '-'}</div>
+                <div className="text-lg font-bold text-slate-900">{invoice.vendor?.vendor_name || '-'}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -237,7 +237,7 @@ export default function InvoiceDetailsPage() {
                       const unitPrice = Number(item.unitPrice) || 0;
                       return (
                         <tr key={index} className="border-b border-slate-100">
-                          <td className="py-2 px-4 text-sm text-slate-900">{itemDetails?.itemName || item.itemId}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900">{itemDetails?.item_name || item.itemId}</td>
                           <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.quantity}</td>
                           <td className="py-2 px-4 text-sm text-slate-900 text-right">{unitPrice.toFixed(2)}</td>
                           <td className="py-2 px-4 text-sm text-slate-900 text-right">{(item.quantity * unitPrice).toFixed(2)}</td>

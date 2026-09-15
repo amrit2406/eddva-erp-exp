@@ -33,15 +33,13 @@ export default function EditItemPage() {
         getTaxCodes(),
       ]);
       setDefaultValues({
-        itemCode: itemData.itemCode,
-        itemName: itemData.itemName,
-        categoryId: itemData.categoryId,
-        uomId: itemData.uomId,
-        quantity: itemData.quantity,
-        hsnSacCode: itemData.hsnSacCode,
-        purchasePrice: itemData.purchasePrice,
-        salesPrice: itemData.salesPrice,
-        taxCodeId: itemData.taxCodeId,
+        item_name: itemData.item_name,
+        category_id: itemData.category_id,
+        uom_id: itemData.uom_id,
+        hsn_sac_code: itemData.hsn_sac_code || undefined,
+        purchase_price: Number(itemData.purchase_price),
+        sales_price: Number(itemData.sales_price),
+        tax_code_id: itemData.tax_code_id,
       });
       setCategories(categoriesData);
       setUOMs(uomsData);

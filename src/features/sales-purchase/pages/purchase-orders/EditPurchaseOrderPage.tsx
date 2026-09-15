@@ -25,12 +25,18 @@ export default function EditPurchaseOrderPage() {
       setLoading(true);
       const data = await getPurchaseOrder(poId);
       setDefaultValues({
-        vendorId: data.vendorId,
-        poDate: data.poDate,
-        expectedDeliveryDate: data.expectedDeliveryDate,
-        warehouseId: data.warehouseId,
-        discount: data.discount,
-        items: data.items,
+        vendor_id: data.vendor_id,
+        po_date: data.po_date,
+        expected_delivery_date: data.expected_delivery_date || '',
+        warehouse_id: data.warehouse_id,
+        discount: Number(data.discount) || 0,
+        items: (data.items || []).map((item) => ({
+          item_id: item.item_id,
+          quantity: Number(item.quantity),
+          unit_price: Number(item.unit_price),
+          tax_code_id: item.tax_code_id,
+          line_discount: Number(item.line_discount) || 0,
+        })),
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);

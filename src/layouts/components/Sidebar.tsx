@@ -31,6 +31,7 @@ const navItems: NavItem[] = [
       { path: '/sales-purchase/vendors', label: 'Vendors', icon: Database },
       { path: '/sales-purchase/customers', label: 'Customers', icon: Database },
       { path: '/sales-purchase/purchase-orders', label: 'Purchase Orders', icon: Database },
+      { path: '/sales-purchase/approval-rules', label: 'PO Approval Rules', icon: Database },
       { path: '/sales-purchase/grn', label: 'Goods Received Notes', icon: Database },
       { path: '/sales-purchase/invoices', label: 'Purchase-Invoices', icon: Database },
       { path: '/sales-purchase/payments', label: 'Purchase-Payments', icon: Database },

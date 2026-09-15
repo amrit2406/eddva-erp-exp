@@ -23,7 +23,7 @@ export default function UOMForm({
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const data: UOMFormData = {
       name: formData.get('name') as string,
-      code: formData.get('code') as string,
+      symbol: formData.get('symbol') as string,
     };
     onSubmit?.(data);
   };
@@ -38,18 +38,18 @@ export default function UOMForm({
           <Input
             name="name"
             defaultValue={defaultValues?.name}
-            placeholder="Enter UOM name (e.g., Pieces)"
+            placeholder="Enter UOM name (e.g., Kilogram)"
             required
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
-            Code <span className="text-red-500">*</span>
+            Symbol <span className="text-red-500">*</span>
           </label>
           <Input
-            name="code"
-            defaultValue={defaultValues?.code}
-            placeholder="Enter code (e.g., PCS)"
+            name="symbol"
+            defaultValue={defaultValues?.symbol}
+            placeholder="Enter symbol (e.g., kg)"
             required
           />
         </div>

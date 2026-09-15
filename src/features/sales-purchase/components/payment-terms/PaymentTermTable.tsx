@@ -6,9 +6,10 @@ import { cn } from '../../../../utils/cn';
 interface PaymentTermTableProps {
   paymentTerms: PaymentTerm[];
   className?: string;
+  onDelete?: (id: number) => void;
 }
 
-export default function PaymentTermTable({ paymentTerms, className }: PaymentTermTableProps) {
+export default function PaymentTermTable({ paymentTerms, className, onDelete }: PaymentTermTableProps) {
   return (
     <div className={cn('overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0', className)}>
       <table className="w-full min-w-[600px]">
@@ -29,9 +30,9 @@ export default function PaymentTermTable({ paymentTerms, className }: PaymentTer
             </tr>
           ) : (
             paymentTerms.map((term) => (
-              <tr key={term.id} className="border-b border-slate-100 hover:bg-slate-50">
+              <tr key={term.payment_term_id} className="border-b border-slate-100 hover:bg-slate-50">
                 <td className="py-3 px-4">
-                  <div className="font-medium text-slate-900">{term.termName}</div>
+                  <div className="font-medium text-slate-900">{term.term_name}</div>
                 </td>
                 <td className="py-3 px-4">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
@@ -39,21 +40,25 @@ export default function PaymentTermTable({ paymentTerms, className }: PaymentTer
                   </span>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">
-                  {term.createdAt ? new Date(term.createdAt).toLocaleDateString() : '-'}
+                  {term.created_at ? new Date(term.created_at).toLocaleDateString() : '-'}
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <Link to={`/sales-purchase/payment-terms/${term.id}`}>
+                    <Link to={`/sales-purchase/payment-terms/${term.payment_term_id}`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="View">
                         <Eye className="h-4 w-4" />
                       </button>
                     </Link>
-                    <Link to={`/sales-purchase/payment-terms/${term.id}/edit`}>
+                    <Link to={`/sales-purchase/payment-terms/${term.payment_term_id}/edit`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="Edit">
                         <Edit className="h-4 w-4" />
                       </button>
                     </Link>
-                    <button className="p-1.5 hover:bg-red-100 rounded-lg text-red-600" title="Delete">
+                    <button
+                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600"
+                      title="Delete"
+                      onClick={() => onDelete?.(term.payment_term_id)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>

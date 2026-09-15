@@ -24,7 +24,7 @@ export default function WarehouseForm({
     const data: WarehouseFormData = {
       name: formData.get('name') as string,
       address: formData.get('address') as string,
-      isDefault: formData.get('isDefault') === 'true',
+      is_default: formData.get('is_default') === 'true',
     };
     onSubmit?.(data);
   };
@@ -56,12 +56,13 @@ export default function WarehouseForm({
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
-          name="isDefault"
-          id="isDefault"
-          defaultChecked={defaultValues?.isDefault}
+          name="is_default"
+          id="is_default"
+          value="true"
+          defaultChecked={defaultValues?.is_default}
           className="h-4 w-4 rounded border-slate-300 text-[#008BE9] focus:ring-[#008BE9]"
         />
-        <label htmlFor="isDefault" className="text-sm text-slate-700">
+        <label htmlFor="is_default" className="text-sm text-slate-700">
           Set as default warehouse
         </label>
       </div>

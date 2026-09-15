@@ -80,7 +80,7 @@ export default function PaymentDetailsPage() {
                   <Building2 className="h-4 w-4" />
                   <span className="text-sm font-medium">Vendor</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{payment.purchaseInvoice?.vendor?.vendorName || '-'}</div>
+                <div className="text-lg font-bold text-slate-900">{payment.purchaseInvoice?.vendor?.vendor_name || '-'}</div>
               </div>
             </Card>
             <Card className="border-slate-200">

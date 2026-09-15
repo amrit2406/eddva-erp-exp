@@ -31,13 +31,13 @@ export default function PurchaseOrdersPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this purchase order?')) {
       return;
     }
     try {
       await deletePurchaseOrder(id);
-      setPurchaseOrders(purchaseOrders.filter((po) => po.id !== id));
+      setPurchaseOrders(purchaseOrders.filter((po) => po.po_id !== id));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;

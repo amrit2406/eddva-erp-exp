@@ -6,7 +6,7 @@ import { cn } from '../../../../utils/cn';
 interface CustomerTableProps {
   customers: Customer[];
   className?: string;
-  onDelete?: (id: string) => void;
+  onDelete?: (id: number) => void;
 }
 
 export default function CustomerTable({ customers, className, onDelete }: CustomerTableProps) {
@@ -32,11 +32,11 @@ export default function CustomerTable({ customers, className, onDelete }: Custom
             </tr>
           ) : (
             customers.map((customer) => (
-              <tr key={customer.id} className="border-b border-slate-100 hover:bg-slate-50">
+              <tr key={customer.customer_id} className="border-b border-slate-100 hover:bg-slate-50">
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-slate-400" />
-                    <div className="font-medium text-slate-900">{customer.customerName}</div>
+                    <div className="font-medium text-slate-900">{customer.customer_name}</div>
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600">{customer.gstin || '-'}</td>
@@ -49,14 +49,14 @@ export default function CustomerTable({ customers, className, onDelete }: Custom
                 <td className="py-3 px-4 text-sm text-slate-600 hidden lg:table-cell">
                   <div className="flex items-center gap-1">
                     <IndianRupee className="h-3 w-3 text-slate-400" />
-                    {customer.creditLimit ? customer.creditLimit.toLocaleString() : '-'}
+                    {customer.credit_limit ? Number(customer.credit_limit).toLocaleString() : '-'}
                   </div>
                 </td>
                 <td className="py-3 px-4">
                   <span className={cn(
                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                    customer.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 
-                    customer.status === 'INACTIVE' ? 'bg-red-100 text-red-800' : 
+                    customer.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                    customer.status === 'INACTIVE' ? 'bg-red-100 text-red-800' :
                     'bg-slate-100 text-slate-800'
                   )}>
                     {customer.status}
@@ -64,20 +64,20 @@ export default function CustomerTable({ customers, className, onDelete }: Custom
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <Link to={`/sales-purchase/customers/${customer.id}`}>
+                    <Link to={`/sales-purchase/customers/${customer.customer_id}`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="View">
                         <Eye className="h-4 w-4" />
                       </button>
                     </Link>
-                    <Link to={`/sales-purchase/customers/${customer.id}/edit`}>
+                    <Link to={`/sales-purchase/customers/${customer.customer_id}/edit`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="Edit">
                         <Edit className="h-4 w-4" />
                       </button>
                     </Link>
-                    <button 
-                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600" 
+                    <button
+                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600"
                       title="Delete"
-                      onClick={() => onDelete?.(customer.id)}
+                      onClick={() => onDelete?.(customer.customer_id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

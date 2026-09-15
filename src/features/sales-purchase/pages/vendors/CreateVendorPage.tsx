@@ -1,15 +1,26 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import VendorForm from '../../components/vendors/VendorForm';
-import { createVendor } from '../../api/sales-purchase.api';
-import type { VendorFormData } from '../../types/sales-purchase.types';
+import { createVendor, getPaymentTerms } from '../../api/sales-purchase.api';
+import type { VendorFormData, PaymentTerm } from '../../types/sales-purchase.types';
 
 export default function CreateVendorPage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([]);
+
+  useEffect(() => {
+    getPaymentTerms()
+      .then(setPaymentTerms)
+      .catch((err) => {
+        if (err.response?.status !== 401) {
+          console.error('Failed to load payment terms:', err);
+        }
+      });
+  }, []);
 
   const handleSubmit = async (data: VendorFormData) => {
     try {
@@ -51,6 +62,7 @@ export default function CreateVendorPage() {
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
             submitText="Create Vendor"
+            paymentTerms={paymentTerms}
           />
         </div>
       </Card>

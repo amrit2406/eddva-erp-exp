@@ -101,8 +101,8 @@ export default function SalesOrderForm({
               >
                 <option value="">Select customer</option>
                 {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.customerName}
+                  <option key={customer.customer_id} value={customer.customer_id}>
+                    {customer.customer_name}
                   </option>
                 ))}
               </select>
@@ -177,8 +177,8 @@ export default function SalesOrderForm({
                         >
                           <option value="">Select item</option>
                           {items.map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.itemName}
+                            <option key={item.item_id} value={item.item_id}>
+                              {item.item_name}
                             </option>
                           ))}
                         </select>
@@ -211,7 +211,7 @@ export default function SalesOrderForm({
                         >
                           <option value="">Select tax code</option>
                           {taxCodes.map((taxCode) => (
-                            <option key={taxCode.id} value={taxCode.id}>
+                            <option key={taxCode.tax_code_id} value={taxCode.tax_code_id}>
                               {taxCode.name}
                             </option>
                           ))}

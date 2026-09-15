@@ -42,7 +42,7 @@ export default function InvoiceTable({ invoices, className, onDelete }: InvoiceT
                 <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">
                   <div className="flex items-center gap-1">
                     <Building2 className="h-3 w-3 text-slate-400" />
-                    {invoice.vendor?.vendorName || '-'}
+                    {invoice.vendor?.vendor_name || '-'}
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden lg:table-cell">

@@ -15,12 +15,17 @@ import type {
   Vendor,
   VendorFormData,
   VendorContact,
+  VendorContactFormData,
   VendorBankDetail,
+  VendorBankDetailFormData,
   Customer,
   CustomerFormData,
   CustomerContact,
+  CustomerContactFormData,
   PurchaseOrder,
   PurchaseOrderFormData,
+  ApprovalRule,
+  ApprovalRuleFormData,
   GRN,
   GRNFormData,
   Invoice,
@@ -36,250 +41,352 @@ import type {
   SalesReceiptFormData,
   PurchaseRegisterItem,
   SalesRegisterItem,
-  Permission,
-  PermissionFormData,
-  Role,
-  RoleFormData,
-  User,
-  UserFormData
 } from '../types/sales-purchase.types';
 
 // Item Categories
 export async function getItemCategories(): Promise<ItemCategory[]> {
-  const response = await axiosInstance.get('/item-categories');
+  const response = await axiosInstance.get('/sales-purchase/item-categories');
   return response.data?.data || response.data;
 }
 
-export async function getItemCategory(id: string): Promise<ItemCategory> {
-  const response = await axiosInstance.get(`/item-categories/${id}`);
+export async function getItemCategory(id: string | number): Promise<ItemCategory> {
+  const response = await axiosInstance.get(`/sales-purchase/item-categories/${id}`);
   return response.data?.data || response.data;
 }
 
 export async function createItemCategory(data: ItemCategoryFormData): Promise<ItemCategory> {
-  const response = await axiosInstance.post('/item-categories', data);
+  const response = await axiosInstance.post('/sales-purchase/item-categories', data);
   return response.data?.data || response.data;
 }
 
-export async function updateItemCategory(id: string, data: ItemCategoryFormData): Promise<ItemCategory> {
-  const response = await axiosInstance.patch(`/item-categories/${id}`, data);
+export async function updateItemCategory(id: string | number, data: Partial<ItemCategoryFormData>): Promise<ItemCategory> {
+  const response = await axiosInstance.patch(`/sales-purchase/item-categories/${id}`, data);
   return response.data?.data || response.data;
+}
+
+export async function deleteItemCategory(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/item-categories/${id}`);
 }
 
 // UOM
 export async function getUOMs(): Promise<UOM[]> {
-  const response = await axiosInstance.get('/uom');
+  const response = await axiosInstance.get('/sales-purchase/uoms');
   return response.data?.data || response.data;
 }
 
 export async function createUOM(data: UOMFormData): Promise<UOM> {
-  const response = await axiosInstance.post('/uom', data);
+  const response = await axiosInstance.post('/sales-purchase/uoms', data);
   return response.data?.data || response.data;
 }
 
-export async function getUOM(id: string): Promise<UOM> {
-  const response = await axiosInstance.get(`/uom/${id}`);
+export async function getUOM(id: string | number): Promise<UOM> {
+  const response = await axiosInstance.get(`/sales-purchase/uoms/${id}`);
   return response.data?.data || response.data;
 }
 
-export async function updateUOM(id: string, data: UOMFormData): Promise<UOM> {
-  const response = await axiosInstance.patch(`/uom/${id}`, data);
+export async function updateUOM(id: string | number, data: Partial<UOMFormData>): Promise<UOM> {
+  const response = await axiosInstance.patch(`/sales-purchase/uoms/${id}`, data);
   return response.data?.data || response.data;
+}
+
+export async function deleteUOM(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/uoms/${id}`);
 }
 
 // Tax Codes
 export async function getTaxCodes(): Promise<TaxCode[]> {
-  const response = await axiosInstance.get('/tax-codes');
+  const response = await axiosInstance.get('/sales-purchase/tax-codes');
   return response.data?.data || response.data;
 }
 
 export async function createTaxCode(data: TaxCodeFormData): Promise<TaxCode> {
-  const response = await axiosInstance.post('/tax-codes', data);
+  const response = await axiosInstance.post('/sales-purchase/tax-codes', data);
   return response.data?.data || response.data;
 }
 
-export async function getTaxCode(id: string): Promise<TaxCode> {
-  const response = await axiosInstance.get(`/tax-codes/${id}`);
+export async function getTaxCode(id: string | number): Promise<TaxCode> {
+  const response = await axiosInstance.get(`/sales-purchase/tax-codes/${id}`);
   return response.data?.data || response.data;
 }
 
-export async function updateTaxCode(id: string, data: TaxCodeFormData): Promise<TaxCode> {
-  const response = await axiosInstance.patch(`/tax-codes/${id}`, data);
+export async function deleteTaxCode(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/tax-codes/${id}`);
+}
+
+export async function setTaxCodeActive(id: string | number, isActive: boolean): Promise<TaxCode> {
+  const response = await axiosInstance.patch(`/sales-purchase/tax-codes/${id}/active`, { is_active: isActive });
   return response.data?.data || response.data;
 }
 
 // Payment Terms
 export async function getPaymentTerms(): Promise<PaymentTerm[]> {
-  const response = await axiosInstance.get('/payment-terms');
+  const response = await axiosInstance.get('/sales-purchase/payment-terms');
   return response.data?.data || response.data;
 }
 
 export async function createPaymentTerm(data: PaymentTermFormData): Promise<PaymentTerm> {
-  const response = await axiosInstance.post('/payment-terms', data);
+  const response = await axiosInstance.post('/sales-purchase/payment-terms', data);
   return response.data?.data || response.data;
 }
 
-export async function getPaymentTerm(id: string): Promise<PaymentTerm> {
-  const response = await axiosInstance.get(`/payment-terms/${id}`);
+export async function getPaymentTerm(id: string | number): Promise<PaymentTerm> {
+  const response = await axiosInstance.get(`/sales-purchase/payment-terms/${id}`);
   return response.data?.data || response.data;
 }
 
-export async function updatePaymentTerm(id: string, data: PaymentTermFormData): Promise<PaymentTerm> {
-  const response = await axiosInstance.patch(`/payment-terms/${id}`, data);
+export async function updatePaymentTerm(id: string | number, data: Partial<PaymentTermFormData>): Promise<PaymentTerm> {
+  const response = await axiosInstance.patch(`/sales-purchase/payment-terms/${id}`, data);
   return response.data?.data || response.data;
+}
+
+export async function deletePaymentTerm(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/payment-terms/${id}`);
 }
 
 // Warehouses
 export async function getWarehouses(): Promise<Warehouse[]> {
-  const response = await axiosInstance.get('/warehouses');
+  const response = await axiosInstance.get('/sales-purchase/warehouses');
   return response.data?.data || response.data;
 }
 
 export async function createWarehouse(data: WarehouseFormData): Promise<Warehouse> {
-  const response = await axiosInstance.post('/warehouses', data);
+  const response = await axiosInstance.post('/sales-purchase/warehouses', data);
   return response.data?.data || response.data;
 }
 
-export async function getWarehouse(id: string): Promise<Warehouse> {
-  const response = await axiosInstance.get(`/warehouses/${id}`);
+export async function getWarehouse(id: string | number): Promise<Warehouse> {
+  const response = await axiosInstance.get(`/sales-purchase/warehouses/${id}`);
   return response.data?.data || response.data;
 }
 
-export async function updateWarehouse(id: string, data: WarehouseFormData): Promise<Warehouse> {
-  const response = await axiosInstance.patch(`/warehouses/${id}`, data);
+export async function updateWarehouse(id: string | number, data: Partial<WarehouseFormData>): Promise<Warehouse> {
+  const response = await axiosInstance.patch(`/sales-purchase/warehouses/${id}`, data);
   return response.data?.data || response.data;
+}
+
+export async function deleteWarehouse(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/warehouses/${id}`);
 }
 
 // Items
 export async function getItems(): Promise<Item[]> {
-  const response = await axiosInstance.get('/items');
+  const response = await axiosInstance.get('/sales-purchase/items');
   return response.data?.data || response.data;
 }
 
 export async function createItem(data: ItemFormData): Promise<Item> {
-  const response = await axiosInstance.post('/items', data);
+  const response = await axiosInstance.post('/sales-purchase/items', data);
   return response.data?.data || response.data;
 }
 
-export async function getItem(id: string): Promise<Item> {
-  const response = await axiosInstance.get(`/items/${id}`);
+export async function getItem(id: string | number): Promise<Item> {
+  const response = await axiosInstance.get(`/sales-purchase/items/${id}`);
   return response.data?.data || response.data;
 }
 
-export async function updateItem(id: string, data: Partial<ItemFormData>): Promise<Item> {
-  const response = await axiosInstance.patch(`/items/${id}`, data);
+export async function updateItem(id: string | number, data: Partial<ItemFormData>): Promise<Item> {
+  const response = await axiosInstance.patch(`/sales-purchase/items/${id}`, data);
   return response.data?.data || response.data;
 }
 
-export async function deleteItem(id: string): Promise<void> {
-  await axiosInstance.delete(`/items/${id}`);
+export async function deleteItem(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/items/${id}`);
 }
 
 // Vendors
 export async function getVendors(): Promise<Vendor[]> {
-  const response = await axiosInstance.get('/vendors');
+  const response = await axiosInstance.get('/sales-purchase/vendors');
   return response.data?.data || response.data;
 }
 
-export async function getVendor(id: string): Promise<Vendor> {
-  const response = await axiosInstance.get(`/vendors/${id}`);
+export async function getVendor(id: string | number): Promise<Vendor> {
+  const response = await axiosInstance.get(`/sales-purchase/vendors/${id}`);
   return response.data?.data || response.data;
 }
 
 export async function createVendor(data: VendorFormData): Promise<Vendor> {
-  const response = await axiosInstance.post('/vendors', data);
+  const response = await axiosInstance.post('/sales-purchase/vendors', data);
   return response.data?.data || response.data;
 }
 
-export async function updateVendor(id: string, data: Partial<VendorFormData>): Promise<Vendor> {
-  const response = await axiosInstance.patch(`/vendors/${id}`, data);
+export async function updateVendor(id: string | number, data: Partial<VendorFormData>): Promise<Vendor> {
+  const response = await axiosInstance.patch(`/sales-purchase/vendors/${id}`, data);
   return response.data?.data || response.data;
 }
 
-export async function deleteVendor(id: string): Promise<void> {
-  await axiosInstance.delete(`/vendors/${id}`);
+export async function deleteVendor(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/vendors/${id}`);
 }
 
-export async function addVendorContact(id: string, data: VendorContact): Promise<void> {
-  await axiosInstance.post(`/vendors/${id}/contacts`, data);
+export async function getVendorContacts(vendorId: string | number): Promise<VendorContact[]> {
+  const response = await axiosInstance.get(`/sales-purchase/vendors/${vendorId}/contacts`);
+  return response.data?.data || response.data;
 }
 
-export async function addVendorBankDetail(id: string, data: VendorBankDetail): Promise<void> {
-  await axiosInstance.post(`/vendors/${id}/bank-details`, data);
+export async function addVendorContact(vendorId: string | number, data: VendorContactFormData): Promise<VendorContact> {
+  const response = await axiosInstance.post(`/sales-purchase/vendors/${vendorId}/contacts`, data);
+  return response.data?.data || response.data;
+}
+
+export async function updateVendorContact(
+  vendorId: string | number,
+  contactId: string | number,
+  data: Partial<VendorContactFormData>
+): Promise<VendorContact> {
+  const response = await axiosInstance.patch(`/sales-purchase/vendors/${vendorId}/contacts/${contactId}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deleteVendorContact(vendorId: string | number, contactId: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/vendors/${vendorId}/contacts/${contactId}`);
+}
+
+export async function getVendorBankDetails(vendorId: string | number): Promise<VendorBankDetail[]> {
+  const response = await axiosInstance.get(`/sales-purchase/vendors/${vendorId}/bank-details`);
+  return response.data?.data || response.data;
+}
+
+export async function addVendorBankDetail(vendorId: string | number, data: VendorBankDetailFormData): Promise<VendorBankDetail> {
+  const response = await axiosInstance.post(`/sales-purchase/vendors/${vendorId}/bank-details`, data);
+  return response.data?.data || response.data;
+}
+
+export async function updateVendorBankDetail(
+  vendorId: string | number,
+  bankId: string | number,
+  data: Partial<VendorBankDetailFormData>
+): Promise<VendorBankDetail> {
+  const response = await axiosInstance.patch(`/sales-purchase/vendors/${vendorId}/bank-details/${bankId}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deleteVendorBankDetail(vendorId: string | number, bankId: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/vendors/${vendorId}/bank-details/${bankId}`);
 }
 
 // Customers
 export async function getCustomers(): Promise<Customer[]> {
-  const response = await axiosInstance.get('/customers');
+  const response = await axiosInstance.get('/sales-purchase/customers');
   return response.data?.data || response.data;
 }
 
-export async function getCustomer(id: string): Promise<Customer> {
-  const response = await axiosInstance.get(`/customers/${id}`);
+export async function getCustomer(id: string | number): Promise<Customer> {
+  const response = await axiosInstance.get(`/sales-purchase/customers/${id}`);
   return response.data?.data || response.data;
 }
 
 export async function createCustomer(data: CustomerFormData): Promise<Customer> {
-  const response = await axiosInstance.post('/customers', data);
+  const response = await axiosInstance.post('/sales-purchase/customers', data);
   return response.data?.data || response.data;
 }
 
-export async function updateCustomer(id: string, data: Partial<CustomerFormData>): Promise<Customer> {
-  const response = await axiosInstance.patch(`/customers/${id}`, data);
+export async function updateCustomer(id: string | number, data: Partial<CustomerFormData>): Promise<Customer> {
+  const response = await axiosInstance.patch(`/sales-purchase/customers/${id}`, data);
   return response.data?.data || response.data;
 }
 
-export async function deleteCustomer(id: string): Promise<void> {
-  await axiosInstance.delete(`/customers/${id}`);
+export async function deleteCustomer(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/customers/${id}`);
 }
 
-export async function addCustomerContact(id: string, data: CustomerContact): Promise<void> {
-  await axiosInstance.post(`/customers/${id}/contacts`, data);
+export async function getCustomerContacts(customerId: string | number): Promise<CustomerContact[]> {
+  const response = await axiosInstance.get(`/sales-purchase/customers/${customerId}/contacts`);
+  return response.data?.data || response.data;
+}
+
+export async function addCustomerContact(customerId: string | number, data: CustomerContactFormData): Promise<CustomerContact> {
+  const response = await axiosInstance.post(`/sales-purchase/customers/${customerId}/contacts`, data);
+  return response.data?.data || response.data;
+}
+
+export async function updateCustomerContact(
+  customerId: string | number,
+  contactId: string | number,
+  data: Partial<CustomerContactFormData>
+): Promise<CustomerContact> {
+  const response = await axiosInstance.patch(`/sales-purchase/customers/${customerId}/contacts/${contactId}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deleteCustomerContact(customerId: string | number, contactId: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/customers/${customerId}/contacts/${contactId}`);
 }
 
 // Purchase Orders
 export async function getPurchaseOrders(): Promise<PurchaseOrder[]> {
-  const response = await axiosInstance.get('/purchase-orders');
+  const response = await axiosInstance.get('/sales-purchase/purchase-orders');
   return response.data?.data || response.data;
 }
 
-export async function getPurchaseOrder(id: string): Promise<PurchaseOrder> {
-  const response = await axiosInstance.get(`/purchase-orders/${id}`);
+export async function getPurchaseOrder(id: string | number): Promise<PurchaseOrder> {
+  const response = await axiosInstance.get(`/sales-purchase/purchase-orders/${id}`);
   return response.data?.data || response.data;
 }
 
 export async function createPurchaseOrder(data: PurchaseOrderFormData): Promise<PurchaseOrder> {
-  const response = await axiosInstance.post('/purchase-orders', data);
+  const response = await axiosInstance.post('/sales-purchase/purchase-orders', data);
   return response.data?.data || response.data;
 }
 
-export async function updatePurchaseOrder(id: string, data: Partial<PurchaseOrderFormData>): Promise<PurchaseOrder> {
-  const response = await axiosInstance.patch(`/purchase-orders/${id}`, data);
+export async function updatePurchaseOrder(id: string | number, data: Partial<PurchaseOrderFormData>): Promise<PurchaseOrder> {
+  const response = await axiosInstance.patch(`/sales-purchase/purchase-orders/${id}`, data);
   return response.data?.data || response.data;
 }
 
-export async function deletePurchaseOrder(id: string): Promise<void> {
-  await axiosInstance.delete(`/purchase-orders/${id}`);
+export async function deletePurchaseOrder(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/purchase-orders/${id}`);
 }
 
-export async function submitPurchaseOrder(id: string): Promise<void> {
-  await axiosInstance.post(`/purchase-orders/${id}/submit`);
-}
-
-export async function approvePurchaseOrder(id: string): Promise<void> {
-  await axiosInstance.post(`/purchase-orders/${id}/approve`);
-}
-
-export async function rejectPurchaseOrder(id: string): Promise<void> {
-  await axiosInstance.post(`/purchase-orders/${id}/reject`);
-}
-
-export async function cancelPurchaseOrder(id: string): Promise<void> {
-  await axiosInstance.post(`/purchase-orders/${id}/cancel`);
-}
-
-export async function getPurchaseOrderHistory(id: string): Promise<any> {
-  const response = await axiosInstance.post(`/purchase-orders/${id}/history`);
+export async function submitPurchaseOrder(id: string | number): Promise<PurchaseOrder> {
+  const response = await axiosInstance.post(`/sales-purchase/purchase-orders/${id}/submit`);
   return response.data?.data || response.data;
+}
+
+export async function approvePurchaseOrder(id: string | number): Promise<PurchaseOrder> {
+  const response = await axiosInstance.post(`/sales-purchase/purchase-orders/${id}/approve`);
+  return response.data?.data || response.data;
+}
+
+export async function rejectPurchaseOrder(id: string | number, rejectionReason?: string): Promise<PurchaseOrder> {
+  const response = await axiosInstance.post(`/sales-purchase/purchase-orders/${id}/reject`, {
+    rejection_reason: rejectionReason,
+  });
+  return response.data?.data || response.data;
+}
+
+export async function cancelPurchaseOrder(id: string | number): Promise<PurchaseOrder> {
+  const response = await axiosInstance.post(`/sales-purchase/purchase-orders/${id}/cancel`);
+  return response.data?.data || response.data;
+}
+
+export async function getPurchaseOrderHistory(id: string | number): Promise<any> {
+  const response = await axiosInstance.post(`/sales-purchase/purchase-orders/${id}/history`);
+  return response.data?.data || response.data;
+}
+
+// PO Approval Rules
+export async function getApprovalRules(): Promise<ApprovalRule[]> {
+  const response = await axiosInstance.get('/sales-purchase/approval-rules');
+  return response.data?.data || response.data;
+}
+
+export async function getApprovalRule(id: string | number): Promise<ApprovalRule> {
+  const response = await axiosInstance.get(`/sales-purchase/approval-rules/${id}`);
+  return response.data?.data || response.data;
+}
+
+export async function createApprovalRule(data: ApprovalRuleFormData): Promise<ApprovalRule> {
+  const response = await axiosInstance.post('/sales-purchase/approval-rules', data);
+  return response.data?.data || response.data;
+}
+
+export async function updateApprovalRule(id: string | number, data: Partial<ApprovalRuleFormData>): Promise<ApprovalRule> {
+  const response = await axiosInstance.patch(`/sales-purchase/approval-rules/${id}`, data);
+  return response.data?.data || response.data;
+}
+
+export async function deleteApprovalRule(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/sales-purchase/approval-rules/${id}`);
 }
 
 // GRN (Goods Received Note)
@@ -509,93 +616,4 @@ export async function getSalesRegister(): Promise<SalesRegisterItem[]> {
   return response.data?.data || response.data;
 }
 
-// RBAC APIs
-// Permissions
-export async function getPermissions(): Promise<Permission[]> {
-  const response = await axiosInstance.get('/sales-purchase/permissions');
-  return response.data?.data || response.data;
-}
-
-export async function getPermission(id: string): Promise<Permission> {
-  const response = await axiosInstance.get(`/sales-purchase/permissions/${id}`);
-  return response.data?.data || response.data;
-}
-
-export async function createPermission(data: PermissionFormData): Promise<Permission> {
-  const response = await axiosInstance.post('/sales-purchase/permissions', data);
-  return response.data?.data || response.data;
-}
-
-export async function updatePermission(id: string, data: Partial<PermissionFormData>): Promise<Permission> {
-  const response = await axiosInstance.patch(`/sales-purchase/permissions/${id}`, data);
-  return response.data?.data || response.data;
-}
-
-export async function deletePermission(id: string): Promise<void> {
-  await axiosInstance.delete(`/sales-purchase/permissions/${id}`);
-}
-
-// Roles
-export async function getRoles(): Promise<Role[]> {
-  const response = await axiosInstance.get('/sales-purchase/roles');
-  return response.data?.data || response.data;
-}
-
-export async function getRole(id: string): Promise<Role> {
-  const response = await axiosInstance.get(`/sales-purchase/roles/${id}`);
-  return response.data?.data || response.data;
-}
-
-export async function createRole(data: RoleFormData): Promise<Role> {
-  const response = await axiosInstance.post('/sales-purchase/roles', data);
-  return response.data?.data || response.data;
-}
-
-export async function updateRole(id: string, data: Partial<RoleFormData>): Promise<Role> {
-  const response = await axiosInstance.patch(`/sales-purchase/roles/${id}`, data);
-  return response.data?.data || response.data;
-}
-
-export async function deleteRole(id: string): Promise<void> {
-  await axiosInstance.delete(`/sales-purchase/roles/${id}`);
-}
-
-export async function assignPermissionsToRole(roleId: string, permissionIds: string[]): Promise<Role> {
-  const response = await axiosInstance.patch(`/sales-purchase/roles/${roleId}/permissions`, {
-    permissionIds
-  });
-  return response.data?.data || response.data;
-}
-
-export async function addPermissionToRole(roleId: string, permissionId: string): Promise<void> {
-  await axiosInstance.post(`/sales-purchase/roles/${roleId}/permissions/${permissionId}`);
-}
-
-export async function removePermissionFromRole(roleId: string, permissionId: string): Promise<void> {
-  await axiosInstance.delete(`/sales-purchase/roles/${roleId}/permissions/${permissionId}`);
-}
-
-// Users
-export async function getUsers(): Promise<User[]> {
-  const response = await axiosInstance.get('/sales-purchase/users');
-  return response.data?.data || response.data;
-}
-
-export async function getUser(id: string): Promise<User> {
-  const response = await axiosInstance.get(`/sales-purchase/users/${id}`);
-  return response.data?.data || response.data;
-}
-
-export async function createUser(data: UserFormData): Promise<User> {
-  const response = await axiosInstance.post('/sales-purchase/users', data);
-  return response.data?.data || response.data;
-}
-
-export async function updateUser(id: string, data: Partial<UserFormData>): Promise<User> {
-  const response = await axiosInstance.patch(`/sales-purchase/users/${id}`, data);
-  return response.data?.data || response.data;
-}
-
-export async function deleteUser(id: string): Promise<void> {
-  await axiosInstance.delete(`/sales-purchase/users/${id}`);
-}
+// RBAC APIs moved to ./roles.api.ts

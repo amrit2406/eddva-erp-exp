@@ -4,14 +4,15 @@ import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import VendorForm from '../../components/vendors/VendorForm';
-import { getVendor, updateVendor } from '../../api/sales-purchase.api';
-import type { VendorFormData } from '../../types/sales-purchase.types';
+import { getVendor, updateVendor, getPaymentTerms } from '../../api/sales-purchase.api';
+import type { VendorFormData, PaymentTerm } from '../../types/sales-purchase.types';
 
 export default function EditVendorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultValues, setDefaultValues] = useState<VendorFormData | null>(null);
+  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,21 +24,28 @@ export default function EditVendorPage() {
   async function loadData(vendorId: string) {
     try {
       setLoading(true);
-      const data = await getVendor(vendorId);
+      const [data] = await Promise.all([
+        getVendor(vendorId),
+        getPaymentTerms()
+          .then(setPaymentTerms)
+          .catch((err) => {
+            if (err.response?.status !== 401) {
+              console.error('Failed to load payment terms:', err);
+            }
+          }),
+      ]);
       setDefaultValues({
-        vendorName: data.vendorName,
-        gstin: data.gstin,
-        taxId: data.taxId,
-        addressLine1: data.addressLine1,
-        addressLine2: data.addressLine2,
-        city: data.city,
-        state: data.state,
-        pincode: data.pincode,
-        paymentTermId: data.paymentTermId,
-        creditLimit: data.creditLimit,
+        vendor_name: data.vendor_name,
+        gstin: data.gstin || undefined,
+        tax_id: data.tax_id || undefined,
+        address_line1: data.address_line1 || undefined,
+        address_line2: data.address_line2 || undefined,
+        city: data.city || undefined,
+        state: data.state || undefined,
+        pincode: data.pincode || undefined,
+        payment_term_id: data.payment_term_id || undefined,
+        credit_limit: data.credit_limit ? Number(data.credit_limit) : undefined,
         status: data.status,
-        contacts: data.contacts,
-        bankDetails: data.bankDetails,
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);
@@ -94,6 +102,7 @@ export default function EditVendorPage() {
                 onSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
                 submitText="Update Vendor"
+                paymentTerms={paymentTerms}
               />
             )}
           </div>
