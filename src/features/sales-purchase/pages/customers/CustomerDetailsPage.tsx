@@ -45,7 +45,7 @@ export default function CustomerDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load customer');
+      setError(getApiErrorMessage(err, 'Failed to load customer'));
     } finally {
       setLoading(false);
     }

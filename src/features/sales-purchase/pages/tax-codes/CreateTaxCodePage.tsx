@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import TaxCodeForm from '../../components/tax-codes/TaxCodeForm';
 import { createTaxCode } from '../../api/sales-purchase.api';
 import type { TaxCodeFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreateTaxCodePage() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function CreateTaxCodePage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to create tax code');
+      alert(getApiErrorMessage(error, 'Failed to create tax code'));
     } finally {
       setIsSubmitting(false);
     }

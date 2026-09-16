@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
     label: 'Sales & Purchase', 
     icon: ShoppingCart,
     children: [
+      { path: '/sales-purchase/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/sales-purchase/permissions', label: 'Permissions', icon: Key },
       { path: '/sales-purchase/roles', label: 'Roles', icon: Shield },
       { path: '/sales-purchase/users', label: 'Users', icon: Users },

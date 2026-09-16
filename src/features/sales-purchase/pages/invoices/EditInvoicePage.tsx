@@ -25,13 +25,24 @@ export default function EditInvoicePage() {
       setLoading(true);
       const data = await getInvoice(invoiceId);
       setDefaultValues({
-        vendorInvoiceNumber: data.vendorInvoiceNumber || '',
-        vendorId: data.vendorId,
-        poId: data.poId,
-        grnId: data.grnId,
-        invoiceDate: data.invoiceDate,
-        discount: data.discount,
-        items: data.items,
+        vendor_invoice_number: data.vendor_invoice_number,
+        vendor_id: data.vendor_id,
+        purchase_order_id: data.purchase_order_id || undefined,
+        grn_id: data.grn_id || undefined,
+        invoice_date: data.invoice_date,
+        due_date: data.due_date || undefined,
+        discount: Number(data.discount) || 0,
+        items: (data.items || []).map((item) => ({
+          item_id: item.item_id,
+          po_item_id: item.po_item_id || undefined,
+          grn_item_id: item.grn_item_id || undefined,
+          quantity: Number(item.quantity),
+          unit_price: Number(item.unit_price),
+          // The API doesn't return the original tax_code_id on read (only the resulting
+          // cgst/sgst/igst rates), so the tax code must be re-selected when editing a line.
+          tax_code_id: 0,
+          line_discount: Number(item.line_discount) || 0,
+        })),
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);

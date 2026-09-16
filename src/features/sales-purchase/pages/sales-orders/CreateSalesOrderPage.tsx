@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import SalesOrderForm from '../../components/sales-orders/SalesOrderForm';
 import { createSalesOrder } from '../../api/sales-purchase.api';
 import type { SalesOrderFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreateSalesOrderPage() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function CreateSalesOrderPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to create sales order');
+      alert(getApiErrorMessage(error, 'Failed to create sales order'));
     } finally {
       setIsSubmitting(false);
     }

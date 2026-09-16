@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import PurchaseOrderForm from '../../components/purchase-orders/PurchaseOrderForm';
 import { getPurchaseOrder, updatePurchaseOrder } from '../../api/sales-purchase.api';
 import type { PurchaseOrderFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditPurchaseOrderPage() {
   const { id } = useParams();
@@ -59,7 +60,7 @@ export default function EditPurchaseOrderPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update purchase order');
+      alert(getApiErrorMessage(error, 'Failed to update purchase order'));
     } finally {
       setIsSubmitting(false);
     }

@@ -6,13 +6,35 @@ import { cn } from '../../../../utils/cn';
 interface InvoiceTableProps {
   invoices: Invoice[];
   className?: string;
-  onDelete?: (id: string) => void;
+  onDelete?: (id: number) => void;
+}
+
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case 'POSTED':
+      return 'bg-green-100 text-green-800';
+    case 'CANCELLED':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-slate-100 text-slate-800';
+  }
+}
+
+function paymentStatusBadgeClass(status: string): string {
+  switch (status) {
+    case 'PAID':
+      return 'bg-green-100 text-green-800';
+    case 'PARTIAL':
+      return 'bg-yellow-100 text-yellow-800';
+    default:
+      return 'bg-slate-100 text-slate-600';
+  }
 }
 
 export default function InvoiceTable({ invoices, className, onDelete }: InvoiceTableProps) {
   return (
     <div className={cn('overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0', className)}>
-      <table className="w-full min-w-[900px]">
+      <table className="w-full min-w-[1000px]">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50">
             <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Invoice Number</th>
@@ -20,23 +42,24 @@ export default function InvoiceTable({ invoices, className, onDelete }: InvoiceT
             <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700 hidden lg:table-cell">Invoice Date</th>
             <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Amount</th>
             <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Status</th>
+            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700 hidden md:table-cell">Payment</th>
             <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Actions</th>
           </tr>
         </thead>
         <tbody>
           {invoices.length === 0 ? (
             <tr>
-              <td colSpan={6} className="py-8 text-center text-slate-500">
+              <td colSpan={7} className="py-8 text-center text-slate-500">
                 No invoices found. Create your first invoice.
               </td>
             </tr>
           ) : (
             invoices.map((invoice) => (
-              <tr key={invoice.id} className="border-b border-slate-100 hover:bg-slate-50">
+              <tr key={invoice.pi_id} className="border-b border-slate-100 hover:bg-slate-50">
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-slate-400" />
-                    <div className="font-medium text-slate-900">{invoice.invoiceNumber || `INV-${invoice.id.slice(0, 8)}`}</div>
+                    <div className="font-medium text-slate-900">{invoice.invoice_number}</div>
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">
@@ -48,42 +71,41 @@ export default function InvoiceTable({ invoices, className, onDelete }: InvoiceT
                 <td className="py-3 px-4 text-sm text-slate-600 hidden lg:table-cell">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3 text-slate-400" />
-                    {invoice.invoiceDate ? new Date(invoice.invoiceDate).toLocaleDateString() : '-'}
+                    {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString() : '-'}
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-900">
                   <div className="flex items-center gap-1">
                     <IndianRupee className="h-3 w-3 text-slate-400" />
-                    {(Number(invoice.grandTotal) || 0).toFixed(2)}
+                    {Number(invoice.grand_total || 0).toFixed(2)}
                   </div>
                 </td>
                 <td className="py-3 px-4">
-                  <span className={cn(
-                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                    invoice.status === 'DRAFT' ? 'bg-slate-100 text-slate-800' :
-                    invoice.status === 'POSTED' ? 'bg-green-100 text-green-800' :
-                    invoice.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                    'bg-slate-100 text-slate-800'
-                  )}>
+                  <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', statusBadgeClass(invoice.status))}>
                     {invoice.status}
+                  </span>
+                </td>
+                <td className="py-3 px-4 hidden md:table-cell">
+                  <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', paymentStatusBadgeClass(invoice.payment_status))}>
+                    {invoice.payment_status}
                   </span>
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <Link to={`/sales-purchase/invoices/${invoice.id}`}>
+                    <Link to={`/sales-purchase/invoices/${invoice.pi_id}`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="View">
                         <Eye className="h-4 w-4" />
                       </button>
                     </Link>
-                    <Link to={`/sales-purchase/invoices/${invoice.id}/edit`}>
+                    <Link to={`/sales-purchase/invoices/${invoice.pi_id}/edit`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="Edit">
                         <Edit className="h-4 w-4" />
                       </button>
                     </Link>
-                    <button 
-                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600" 
+                    <button
+                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600"
                       title="Delete"
-                      onClick={() => onDelete?.(invoice.id)}
+                      onClick={() => onDelete?.(invoice.pi_id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

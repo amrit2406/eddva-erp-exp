@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import PaymentForm from '../../components/payments/PaymentForm';
 import { getPayment, updatePayment } from '../../api/sales-purchase.api';
 import type { PaymentFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditPaymentPage() {
   const { id } = useParams();
@@ -25,11 +26,11 @@ export default function EditPaymentPage() {
       setLoading(true);
       const data = await getPayment(paymentId);
       setDefaultValues({
-        purchaseInvoiceId: data.purchaseInvoiceId,
-        paymentDate: data.paymentDate,
-        amount: data.amount,
+        pi_id: data.pi_id,
+        payment_date: data.payment_date,
+        amount: Number(data.amount),
         mode: data.mode,
-        referenceNo: data.referenceNo,
+        reference_no: data.reference_no || undefined,
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);
@@ -52,7 +53,7 @@ export default function EditPaymentPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update payment');
+      alert(getApiErrorMessage(error, 'Failed to update payment'));
     } finally {
       setIsSubmitting(false);
     }

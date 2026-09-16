@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import ItemCategoryForm from '../../components/item-categories/ItemCategoryForm';
 import { getItemCategory, updateItemCategory } from '../../api/sales-purchase.api';
 import type { ItemCategoryFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditItemCategoryPage() {
   const { id } = useParams();
@@ -48,7 +49,7 @@ export default function EditItemCategoryPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update item category');
+      alert(getApiErrorMessage(error, 'Failed to update item category'));
     } finally {
       setIsSubmitting(false);
     }

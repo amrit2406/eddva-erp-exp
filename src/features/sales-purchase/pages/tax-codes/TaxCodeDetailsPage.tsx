@@ -31,7 +31,7 @@ export default function TaxCodeDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load tax code');
+      setError(getApiErrorMessage(err, 'Failed to load tax code'));
     } finally {
       setLoading(false);
     }

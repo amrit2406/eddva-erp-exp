@@ -5,6 +5,7 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import { getItemCategory } from '../../api/sales-purchase.api';
 import type { ItemCategory } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function ItemCategoryDetailsPage() {
   const { id } = useParams();
@@ -27,7 +28,7 @@ export default function ItemCategoryDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load category');
+      setError(getApiErrorMessage(err, 'Failed to load category'));
     } finally {
       setLoading(false);
     }

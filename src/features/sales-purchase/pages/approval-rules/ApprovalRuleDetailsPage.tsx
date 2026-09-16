@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import { getApprovalRule } from '../../api/sales-purchase.api';
 import { cn } from '../../../../utils/cn';
 import type { ApprovalRule } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function ApprovalRuleDetailsPage() {
   const { id } = useParams();
@@ -28,7 +29,7 @@ export default function ApprovalRuleDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load approval rule');
+      setError(getApiErrorMessage(err, 'Failed to load approval rule'));
     } finally {
       setLoading(false);
     }

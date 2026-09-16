@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import WarehouseForm from '../../components/warehouses/WarehouseForm';
 import { getWarehouse, updateWarehouse } from '../../api/sales-purchase.api';
 import type { WarehouseFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditWarehousePage() {
   const { id } = useParams();
@@ -50,7 +51,7 @@ export default function EditWarehousePage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update warehouse');
+      alert(getApiErrorMessage(error, 'Failed to update warehouse'));
     } finally {
       setIsSubmitting(false);
     }

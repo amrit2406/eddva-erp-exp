@@ -14,7 +14,7 @@ function statusBadgeClass(status: string): string {
     case 'APPROVED':
     case 'CLOSED':
       return 'bg-green-100 text-green-800';
-    case 'SUBMITTED':
+    case 'PENDING_APPROVAL':
       return 'bg-yellow-100 text-yellow-800';
     case 'REJECTED':
     case 'CANCELLED':

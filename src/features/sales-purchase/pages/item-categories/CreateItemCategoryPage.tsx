@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import ItemCategoryForm from '../../components/item-categories/ItemCategoryForm';
 import { createItemCategory } from '../../api/sales-purchase.api';
 import type { ItemCategoryFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreateItemCategoryPage() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function CreateItemCategoryPage() {
         // Let the axios interceptor handle 401
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to create item category');
+      alert(getApiErrorMessage(error, 'Failed to create item category'));
     } finally {
       setIsSubmitting(false);
     }

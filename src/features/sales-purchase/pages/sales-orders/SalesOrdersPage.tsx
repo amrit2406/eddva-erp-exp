@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import SalesOrderTable from '../../components/sales-orders/SalesOrderTable';
 import { getSalesOrders, deleteSalesOrder } from '../../api/sales-purchase.api';
 import type { SalesOrder } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function SalesOrdersPage() {
   const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
@@ -25,24 +26,24 @@ export default function SalesOrdersPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load sales orders');
+      setError(getApiErrorMessage(err, 'Failed to load sales orders'));
     } finally {
       setLoading(false);
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this sales order?')) {
       return;
     }
     try {
       await deleteSalesOrder(id);
-      setSalesOrders(salesOrders.filter((so) => so.id !== id));
+      setSalesOrders(salesOrders.filter((so) => so.so_id !== id));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to delete sales order');
+      alert(getApiErrorMessage(err, 'Failed to delete sales order'));
     }
   };
 

@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import UOMForm from '../../components/uom/UOMForm';
 import { createUOM } from '../../api/sales-purchase.api';
 import type { UOMFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreateUOMPage() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function CreateUOMPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to create UOM');
+      alert(getApiErrorMessage(error, 'Failed to create UOM'));
     } finally {
       setIsSubmitting(false);
     }

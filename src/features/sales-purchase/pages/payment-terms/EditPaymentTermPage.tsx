@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import PaymentTermForm from '../../components/payment-terms/PaymentTermForm';
 import { getPaymentTerm, updatePaymentTerm } from '../../api/sales-purchase.api';
 import type { PaymentTermFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditPaymentTermPage() {
   const { id } = useParams();
@@ -49,7 +50,7 @@ export default function EditPaymentTermPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update payment term');
+      alert(getApiErrorMessage(error, 'Failed to update payment term'));
     } finally {
       setIsSubmitting(false);
     }

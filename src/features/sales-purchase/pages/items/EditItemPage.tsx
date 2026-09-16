@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import ItemForm from '../../components/items/ItemForm';
 import { getItem, updateItem, getItemCategories, getUOMs, getTaxCodes } from '../../api/sales-purchase.api';
 import type { ItemFormData, ItemCategory, UOM, TaxCode } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditItemPage() {
   const { id } = useParams();
@@ -65,7 +66,7 @@ export default function EditItemPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update item');
+      alert(getApiErrorMessage(error, 'Failed to update item'));
     } finally {
       setIsSubmitting(false);
     }

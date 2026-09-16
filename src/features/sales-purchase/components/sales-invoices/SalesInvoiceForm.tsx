@@ -3,8 +3,8 @@ import Button from '../../../../components/ui/Button';
 import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '../../../../utils/cn';
 import { useState, useEffect } from 'react';
-import { getCustomers, getSalesOrders, getItems, getTaxCodes } from '../../api/sales-purchase.api';
-import type { SalesInvoiceFormData, SalesInvoiceItem, Customer, SalesOrder, Item, TaxCode } from '../../types/sales-purchase.types';
+import { getCustomers, getSalesOrders, getSalesOrder, getItems, getTaxCodes } from '../../api/sales-purchase.api';
+import type { SalesInvoiceFormData, SalesInvoiceItemFormData, Customer, SalesOrder, Item, TaxCode } from '../../types/sales-purchase.types';
 
 interface SalesInvoiceFormProps {
   defaultValues?: SalesInvoiceFormData;
@@ -13,6 +13,8 @@ interface SalesInvoiceFormProps {
   isSubmitting?: boolean;
   className?: string;
 }
+
+const emptyLine: SalesInvoiceItemFormData = { item_id: 0, quantity: 0, unit_price: 0, tax_code_id: 0, line_discount: 0 };
 
 export default function SalesInvoiceForm({
   defaultValues,
@@ -26,13 +28,28 @@ export default function SalesInvoiceForm({
   const [items, setItems] = useState<Item[]>([]);
   const [taxCodes, setTaxCodes] = useState<TaxCode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [invoiceItems, setInvoiceItems] = useState<SalesInvoiceItem[]>(
-    defaultValues?.items || [{ itemId: '', quantity: 0, unitPrice: 0, taxCodeId: '' }]
+  const [invoiceItems, setInvoiceItems] = useState<SalesInvoiceItemFormData[]>(
+    defaultValues?.items && defaultValues.items.length > 0 ? defaultValues.items : [{ ...emptyLine }]
   );
+  const [selectedSOId, setSelectedSOId] = useState<string>(defaultValues?.sales_order_id ? String(defaultValues.sales_order_id) : '');
+  const [selectedSO, setSelectedSO] = useState<SalesOrder | null>(null);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!selectedSOId) {
+      setSelectedSO(null);
+      return;
+    }
+    getSalesOrder(selectedSOId)
+      .then(setSelectedSO)
+      .catch((error) => {
+        console.error('Failed to load sales order items:', error);
+        setSelectedSO(null);
+      });
+  }, [selectedSOId]);
 
   async function loadData() {
     try {
@@ -55,7 +72,7 @@ export default function SalesInvoiceForm({
   }
 
   const handleAddItem = () => {
-    setInvoiceItems([...invoiceItems, { itemId: '', quantity: 0, unitPrice: 0, taxCodeId: '' }]);
+    setInvoiceItems([...invoiceItems, { ...emptyLine }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -64,23 +81,40 @@ export default function SalesInvoiceForm({
     }
   };
 
-  const handleItemChange = (index: number, field: keyof SalesInvoiceItem, value: any) => {
+  const handleItemChange = (index: number, field: keyof SalesInvoiceItemFormData, value: number) => {
     const updatedItems = [...invoiceItems];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
+    setInvoiceItems(updatedItems);
+  };
+
+  const applySOItem = (index: number, soItemId: number) => {
+    const soItem = selectedSO?.items?.find((i) => i.so_item_id === soItemId);
+    const updatedItems = [...invoiceItems];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      so_item_id: soItemId || undefined,
+      item_id: soItem?.item_id || updatedItems[index].item_id,
+      unit_price: soItem ? Number(soItem.unit_price) : updatedItems[index].unit_price,
+      tax_code_id: soItem?.tax_code_id || updatedItems[index].tax_code_id,
+    };
     setInvoiceItems(updatedItems);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
-    
+
     const data: SalesInvoiceFormData = {
-      customerId: formData.get('customerId') as string,
-      soId: formData.get('soId') as string || undefined,
-      invoiceDate: formData.get('invoiceDate') as string,
+      customer_id: Number(formData.get('customer_id')),
+      invoice_date: formData.get('invoice_date') as string,
       discount: Number(formData.get('discount')) || 0,
-      items: invoiceItems,
+      items: invoiceItems.filter((item) => item.item_id && item.quantity > 0),
     };
+
+    if (selectedSOId) data.sales_order_id = Number(selectedSOId);
+
+    const dueDate = formData.get('due_date') as string;
+    if (dueDate) data.due_date = dueDate;
 
     onSubmit?.(data);
   };
@@ -97,8 +131,8 @@ export default function SalesInvoiceForm({
                 Customer <span className="text-red-500">*</span>
               </label>
               <select
-                name="customerId"
-                defaultValue={defaultValues?.customerId}
+                name="customer_id"
+                defaultValue={defaultValues?.customer_id ? String(defaultValues.customer_id) : ''}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
@@ -113,14 +147,14 @@ export default function SalesInvoiceForm({
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Sales Order</label>
               <select
-                name="soId"
-                defaultValue={defaultValues?.soId || ''}
+                value={selectedSOId}
+                onChange={(e) => setSelectedSOId(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select sales order (optional)</option>
                 {salesOrders.map((salesOrder) => (
-                  <option key={salesOrder.id} value={salesOrder.id}>
-                    {salesOrder.id}
+                  <option key={salesOrder.so_id} value={salesOrder.so_id}>
+                    {salesOrder.so_number}
                   </option>
                 ))}
               </select>
@@ -130,10 +164,18 @@ export default function SalesInvoiceForm({
                 Invoice Date <span className="text-red-500">*</span>
               </label>
               <Input
-                name="invoiceDate"
+                name="invoice_date"
                 type="date"
-                defaultValue={defaultValues?.invoiceDate ? new Date(defaultValues.invoiceDate).toISOString().split('T')[0] : ''}
+                defaultValue={defaultValues?.invoice_date?.split('T')[0]}
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
+              <Input
+                name="due_date"
+                type="date"
+                defaultValue={defaultValues?.due_date?.split('T')[0]}
               />
             </div>
             <div>
@@ -156,12 +198,12 @@ export default function SalesInvoiceForm({
                 Add Item
               </Button>
             </div>
-            
+
             {invoiceItems.length > 0 ? (
               <div className="space-y-3">
                 {invoiceItems.map((item, index) => (
-                  <div key={index} className="border border-slate-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
+                  <div key={index} className="border border-slate-200 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-slate-700">Item #{index + 1}</span>
                       {invoiceItems.length > 1 && (
                         <Button
@@ -179,13 +221,13 @@ export default function SalesInvoiceForm({
                         <label className="block text-sm font-medium text-slate-700 mb-1">Item</label>
                         <select
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={item.itemId}
-                          onChange={(e) => handleItemChange(index, 'itemId', e.target.value)}
+                          value={item.item_id || ''}
+                          onChange={(e) => handleItemChange(index, 'item_id', Number(e.target.value))}
                         >
                           <option value="">Select item</option>
-                          {items.map((item) => (
-                            <option key={item.item_id} value={item.item_id}>
-                              {item.item_name}
+                          {items.map((itemOption) => (
+                            <option key={itemOption.item_id} value={itemOption.item_id}>
+                              {itemOption.item_name}
                             </option>
                           ))}
                         </select>
@@ -194,7 +236,7 @@ export default function SalesInvoiceForm({
                         <label className="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
                         <Input
                           type="number"
-                          value={item.quantity}
+                          value={item.quantity || ''}
                           onChange={(e) => handleItemChange(index, 'quantity', Number(e.target.value))}
                           placeholder="0"
                         />
@@ -204,8 +246,8 @@ export default function SalesInvoiceForm({
                         <Input
                           type="number"
                           step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) => handleItemChange(index, 'unitPrice', Number(e.target.value))}
+                          value={item.unit_price || ''}
+                          onChange={(e) => handleItemChange(index, 'unit_price', Number(e.target.value))}
                           placeholder="0.00"
                         />
                       </div>
@@ -213,8 +255,8 @@ export default function SalesInvoiceForm({
                         <label className="block text-sm font-medium text-slate-700 mb-1">Tax Code</label>
                         <select
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={item.taxCodeId}
-                          onChange={(e) => handleItemChange(index, 'taxCodeId', e.target.value)}
+                          value={item.tax_code_id || ''}
+                          onChange={(e) => handleItemChange(index, 'tax_code_id', Number(e.target.value))}
                         >
                           <option value="">Select tax code</option>
                           {taxCodes.map((taxCode) => (
@@ -223,6 +265,34 @@ export default function SalesInvoiceForm({
                             </option>
                           ))}
                         </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Link SO Line</label>
+                        <select
+                          value={item.so_item_id || ''}
+                          onChange={(e) => applySOItem(index, Number(e.target.value))}
+                          disabled={!selectedSO}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100"
+                        >
+                          <option value="">{selectedSO ? 'None' : 'Select a sales order above first'}</option>
+                          {selectedSO?.items?.map((soItem) => (
+                            <option key={soItem.so_item_id} value={soItem.so_item_id}>
+                              {soItem.item?.item_name || soItem.item_id} (qty {soItem.quantity})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Line Discount</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={item.line_discount || ''}
+                          onChange={(e) => handleItemChange(index, 'line_discount', Number(e.target.value))}
+                          placeholder="0.00"
+                        />
                       </div>
                     </div>
                   </div>

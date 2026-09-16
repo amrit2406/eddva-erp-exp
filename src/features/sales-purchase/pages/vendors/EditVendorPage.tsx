@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import VendorForm from '../../components/vendors/VendorForm';
 import { getVendor, updateVendor, getPaymentTerms } from '../../api/sales-purchase.api';
 import type { VendorFormData, PaymentTerm } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditVendorPage() {
   const { id } = useParams();
@@ -68,7 +69,7 @@ export default function EditVendorPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update vendor');
+      alert(getApiErrorMessage(error, 'Failed to update vendor'));
     } finally {
       setIsSubmitting(false);
     }

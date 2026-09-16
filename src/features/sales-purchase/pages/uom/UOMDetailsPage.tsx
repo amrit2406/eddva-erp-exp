@@ -5,6 +5,7 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import { getUOM } from '../../api/sales-purchase.api';
 import type { UOM } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function UOMDetailsPage() {
   const { id } = useParams();
@@ -27,7 +28,7 @@ export default function UOMDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load UOM');
+      setError(getApiErrorMessage(err, 'Failed to load UOM'));
     } finally {
       setLoading(false);
     }

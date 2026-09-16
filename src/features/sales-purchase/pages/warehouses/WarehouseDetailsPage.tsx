@@ -5,6 +5,7 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import { getWarehouse } from '../../api/sales-purchase.api';
 import type { Warehouse } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function WarehouseDetailsPage() {
   const { id } = useParams();
@@ -27,7 +28,7 @@ export default function WarehouseDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load warehouse');
+      setError(getApiErrorMessage(err, 'Failed to load warehouse'));
     } finally {
       setLoading(false);
     }

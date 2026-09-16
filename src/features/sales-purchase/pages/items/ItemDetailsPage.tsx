@@ -5,6 +5,7 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import { getItem } from '../../api/sales-purchase.api';
 import type { Item } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function ItemDetailsPage() {
   const { id } = useParams();
@@ -27,7 +28,7 @@ export default function ItemDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load item');
+      setError(getApiErrorMessage(err, 'Failed to load item'));
     } finally {
       setLoading(false);
     }

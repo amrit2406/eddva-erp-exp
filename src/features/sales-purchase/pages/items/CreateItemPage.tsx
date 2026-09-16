@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import ItemForm from '../../components/items/ItemForm';
 import { createItem, getItemCategories, getUOMs, getTaxCodes } from '../../api/sales-purchase.api';
 import type { ItemFormData, ItemCategory, UOM, TaxCode } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreateItemPage() {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export default function CreateItemPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to create item');
+      alert(getApiErrorMessage(error, 'Failed to create item'));
     } finally {
       setIsSubmitting(false);
     }

@@ -25,6 +25,10 @@ function formatValidationDetails(details: unknown): string | null {
 }
 
 export function getApiErrorMessage(error: any, defaultMessage: string): string {
+  if (error?.response?.status === 403) {
+    return "You don't have permission to do this. Please contact your administrator if you need access.";
+  }
+
   const apiError = error.response?.data?.error;
   const details = formatValidationDetails(apiError?.details ?? error.response?.data?.details);
 

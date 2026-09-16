@@ -26,7 +26,7 @@ export default function PaymentTermsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load payment terms');
+      setError(getApiErrorMessage(err, 'Failed to load payment terms'));
     } finally {
       setLoading(false);
     }

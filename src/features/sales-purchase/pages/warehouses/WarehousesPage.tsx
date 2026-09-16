@@ -26,7 +26,7 @@ export default function WarehousesPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load warehouses');
+      setError(getApiErrorMessage(err, 'Failed to load warehouses'));
     } finally {
       setLoading(false);
     }

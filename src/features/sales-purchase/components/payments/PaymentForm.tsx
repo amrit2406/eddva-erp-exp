@@ -43,14 +43,12 @@ export default function PaymentForm({
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     
-    const paymentDate = formData.get('paymentDate') as string;
-    
     const data: PaymentFormData = {
-      purchaseInvoiceId: formData.get('purchaseInvoiceId') as string,
-      paymentDate: paymentDate ? new Date(paymentDate).toISOString() : '',
-      amount: formData.get('paymentAmount') ? Number(formData.get('paymentAmount')) : 0,
+      pi_id: Number(formData.get('pi_id')),
+      payment_date: formData.get('payment_date') as string,
+      amount: formData.get('amount') ? Number(formData.get('amount')) : 0,
       mode: formData.get('mode') as string,
-      referenceNo: formData.get('referenceNo') as string || undefined,
+      reference_no: (formData.get('reference_no') as string) || undefined,
     };
 
     onSubmit?.(data);
@@ -68,15 +66,15 @@ export default function PaymentForm({
                 Purchase Invoice <span className="text-red-500">*</span>
               </label>
               <select
-                name="purchaseInvoiceId"
-                defaultValue={defaultValues?.purchaseInvoiceId}
+                name="pi_id"
+                defaultValue={defaultValues?.pi_id ? String(defaultValues.pi_id) : ''}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
                 <option value="">Select invoice</option>
                 {invoices.map((invoice) => (
-                  <option key={invoice.id} value={invoice.id}>
-                    {invoice.invoiceNumber || `INV-${invoice.id.slice(0, 8)}`}
+                  <option key={invoice.pi_id} value={invoice.pi_id}>
+                    {invoice.invoice_number}
                   </option>
                 ))}
               </select>
@@ -86,9 +84,9 @@ export default function PaymentForm({
             Payment Date <span className="text-red-500">*</span>
           </label>
           <Input
-            name="paymentDate"
+            name="payment_date"
             type="date"
-            defaultValue={defaultValues?.paymentDate?.split('T')[0]}
+            defaultValue={defaultValues?.payment_date?.split('T')[0]}
             required
           />
         </div>
@@ -97,7 +95,7 @@ export default function PaymentForm({
             Amount <span className="text-red-500">*</span>
           </label>
           <Input
-            name="paymentAmount"
+            name="amount"
             type="number"
             defaultValue={defaultValues?.amount || 0}
             min="0"
@@ -126,8 +124,8 @@ export default function PaymentForm({
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Reference Number</label>
           <Input
-            name="referenceNo"
-            defaultValue={defaultValues?.referenceNo}
+            name="reference_no"
+            defaultValue={defaultValues?.reference_no}
             placeholder="Transaction reference"
           />
         </div>

@@ -66,7 +66,7 @@ export default function VendorDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load vendor');
+      setError(getApiErrorMessage(err, 'Failed to load vendor'));
     } finally {
       setLoading(false);
     }

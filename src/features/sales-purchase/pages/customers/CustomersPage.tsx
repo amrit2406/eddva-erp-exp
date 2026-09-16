@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import CustomerTable from '../../components/customers/CustomerTable';
 import { getCustomers, deleteCustomer } from '../../api/sales-purchase.api';
 import type { Customer } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -25,7 +26,7 @@ export default function CustomersPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load customers');
+      setError(getApiErrorMessage(err, 'Failed to load customers'));
     } finally {
       setLoading(false);
     }
@@ -42,7 +43,7 @@ export default function CustomersPage() {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to delete customer');
+      alert(getApiErrorMessage(err, 'Failed to delete customer'));
     }
   };
 

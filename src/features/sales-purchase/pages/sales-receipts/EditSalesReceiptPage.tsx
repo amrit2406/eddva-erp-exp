@@ -5,6 +5,7 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import SalesReceiptForm from '../../components/sales-receipts/SalesReceiptForm';
 import { getSalesReceipt, updateSalesReceipt } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
 import type { SalesReceiptFormData } from '../../types/sales-purchase.types';
 
 export default function EditSalesReceiptPage() {
@@ -13,6 +14,7 @@ export default function EditSalesReceiptPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultValues, setDefaultValues] = useState<SalesReceiptFormData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -25,11 +27,11 @@ export default function EditSalesReceiptPage() {
       setLoading(true);
       const data = await getSalesReceipt(salesReceiptId);
       setDefaultValues({
-        salesInvoiceId: data.salesInvoiceId,
-        receiptDate: data.receiptDate,
-        amount: data.amount,
+        si_id: data.si_id,
+        receipt_date: data.receipt_date,
+        amount: Number(data.amount),
         mode: data.mode,
-        referenceNo: data.referenceNo,
+        reference_no: data.reference_no || undefined,
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);
@@ -45,6 +47,7 @@ export default function EditSalesReceiptPage() {
     if (!id) return;
     try {
       setIsSubmitting(true);
+      setError(null);
       await updateSalesReceipt(id, data);
       navigate('/sales-purchase/sales-receipts');
     } catch (error: any) {
@@ -52,7 +55,7 @@ export default function EditSalesReceiptPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error.response?.data?.error?.message || error.message || 'Failed to update sales receipt');
+      setError(getApiErrorMessage(error, 'Failed to update sales receipt'));
     } finally {
       setIsSubmitting(false);
     }
@@ -80,6 +83,11 @@ export default function EditSalesReceiptPage() {
       ) : (
         <Card className="border-slate-200">
           <div className="p-6">
+            {error && (
+              <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm whitespace-pre-line">
+                {error}
+              </div>
+            )}
             {defaultValues && (
               <SalesReceiptForm
                 defaultValues={defaultValues}

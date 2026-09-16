@@ -5,6 +5,7 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import SalesInvoiceForm from '../../components/sales-invoices/SalesInvoiceForm';
 import { getSalesInvoice, updateSalesInvoice } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
 import type { SalesInvoiceFormData } from '../../types/sales-purchase.types';
 
 export default function EditSalesInvoicePage() {
@@ -13,6 +14,7 @@ export default function EditSalesInvoicePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultValues, setDefaultValues] = useState<SalesInvoiceFormData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -25,11 +27,21 @@ export default function EditSalesInvoicePage() {
       setLoading(true);
       const data = await getSalesInvoice(salesInvoiceId);
       setDefaultValues({
-        customerId: data.customerId,
-        soId: data.soId,
-        invoiceDate: data.invoiceDate,
-        discount: data.discount,
-        items: data.items,
+        customer_id: data.customer_id,
+        sales_order_id: data.sales_order_id || undefined,
+        invoice_date: data.invoice_date,
+        due_date: data.due_date || undefined,
+        discount: Number(data.discount) || 0,
+        items: (data.items || []).map((item) => ({
+          item_id: item.item_id,
+          so_item_id: item.so_item_id || undefined,
+          quantity: Number(item.quantity),
+          unit_price: Number(item.unit_price),
+          // The API doesn't return the original tax_code_id on read (only the resulting
+          // cgst/sgst/igst rates), so the tax code must be re-selected when editing a line.
+          tax_code_id: 0,
+          line_discount: Number(item.line_discount) || 0,
+        })),
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);
@@ -45,6 +57,7 @@ export default function EditSalesInvoicePage() {
     if (!id) return;
     try {
       setIsSubmitting(true);
+      setError(null);
       await updateSalesInvoice(id, data);
       navigate('/sales-purchase/sales-invoices');
     } catch (error: any) {
@@ -52,7 +65,7 @@ export default function EditSalesInvoicePage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error.response?.data?.error?.message || error.message || 'Failed to update sales invoice');
+      setError(getApiErrorMessage(error, 'Failed to update sales invoice'));
     } finally {
       setIsSubmitting(false);
     }
@@ -80,6 +93,11 @@ export default function EditSalesInvoicePage() {
       ) : (
         <Card className="border-slate-200">
           <div className="p-6">
+            {error && (
+              <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm whitespace-pre-line">
+                {error}
+              </div>
+            )}
             {defaultValues && (
               <SalesInvoiceForm
                 defaultValues={defaultValues}

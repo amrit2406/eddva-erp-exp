@@ -1,22 +1,35 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Package, Calendar, ShoppingCart, Building2 } from 'lucide-react';
+import { ArrowLeft, Edit, Package, Calendar, ShoppingCart, Building2, CheckCircle, Ban, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getGRN, getItems } from '../../api/sales-purchase.api';
-import type { GRN, Item } from '../../types/sales-purchase.types';
+import { getGRN, getPurchaseOrder, postGRN, cancelGRN } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
+import { cn } from '../../../../utils/cn';
+import type { GRN, PurchaseOrderItem } from '../../types/sales-purchase.types';
+
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case 'POSTED':
+      return 'bg-green-100 text-green-800';
+    case 'CANCELLED':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-slate-100 text-slate-800';
+  }
+}
 
 export default function GRNDetailsPage() {
   const { id } = useParams();
   const [grn, setGRN] = useState<GRN | null>(null);
-  const [itemsMap, setItemsMap] = useState<Map<string, Item>>(new Map());
+  const [poItemsMap, setPoItemsMap] = useState<Map<number, PurchaseOrderItem>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadGRN(id);
-      loadItems();
     }
   }, [id]);
 
@@ -25,25 +38,39 @@ export default function GRNDetailsPage() {
       setLoading(true);
       const data = await getGRN(grnId);
       setGRN(data);
+      if (data.purchase_order_id) {
+        try {
+          const po = await getPurchaseOrder(data.purchase_order_id);
+          setPoItemsMap(new Map((po.items || []).map((item) => [item.po_item_id, item])));
+        } catch (err) {
+          console.error('Failed to load purchase order items:', err);
+        }
+      }
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load GRN');
+      setError(getApiErrorMessage(err, 'Failed to load GRN'));
     } finally {
       setLoading(false);
     }
   }
 
-  async function loadItems() {
+  const handleAction = async (action: () => Promise<unknown>) => {
+    if (!id) return;
     try {
-      const data = await getItems();
-      const map = new Map(data.map((item) => [String(item.item_id), item]));
-      setItemsMap(map);
-    } catch (err) {
-      console.error('Failed to load items:', err);
+      setActionLoading(true);
+      await action();
+      await loadGRN(id);
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        return;
+      }
+      alert(getApiErrorMessage(error, 'Action failed'));
+    } finally {
+      setActionLoading(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -58,12 +85,14 @@ export default function GRNDetailsPage() {
           <h1 className="text-2xl font-bold text-slate-900">GRN Details</h1>
           <p className="text-slate-600 mt-1">View goods received note information</p>
         </div>
-        <Link to={`/sales-purchase/grn/${id}/edit`}>
-          <Button variant="primary" size="sm">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        </Link>
+        {grn?.status === 'DRAFT' && (
+          <Link to={`/sales-purchase/grn/${id}/edit`}>
+            <Button variant="primary" size="sm">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          </Link>
+        )}
       </div>
 
       {loading ? (
@@ -83,7 +112,7 @@ export default function GRNDetailsPage() {
                   <Package className="h-4 w-4" />
                   <span className="text-sm font-medium">GRN Number</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{grn.grnNumber || `GRN-${grn.id.slice(0, 8)}`}</div>
+                <div className="text-lg font-bold text-slate-900">{grn.grn_number}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -92,7 +121,7 @@ export default function GRNDetailsPage() {
                   <ShoppingCart className="h-4 w-4" />
                   <span className="text-sm font-medium">Purchase Order</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{grn.po?.poNumber || `PO-${grn.poId?.slice(0, 8) || '-'}`}</div>
+                <div className="text-lg font-bold text-slate-900">{grn.purchase_order?.po_number || '-'}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -101,7 +130,7 @@ export default function GRNDetailsPage() {
                   <Calendar className="h-4 w-4" />
                   <span className="text-sm font-medium">GRN Date</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{grn.receivedDate ? new Date(grn.receivedDate).toLocaleDateString() : '-'}</div>
+                <div className="text-lg font-bold text-slate-900">{grn.received_date ? new Date(grn.received_date).toLocaleDateString() : '-'}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -117,6 +146,35 @@ export default function GRNDetailsPage() {
 
           <Card className="border-slate-200">
             <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-900">Actions</h3>
+                <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-semibold', statusBadgeClass(grn.status))}>
+                  {grn.status === 'DRAFT' && <Clock className="h-4 w-4" />}
+                  {grn.status === 'POSTED' && <CheckCircle className="h-4 w-4" />}
+                  {grn.status === 'CANCELLED' && <Ban className="h-4 w-4" />}
+                  {grn.status}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {grn.status === 'DRAFT' && (
+                  <>
+                    <Button variant="primary" size="sm" disabled={actionLoading} onClick={() => handleAction(() => postGRN(grn.grn_id))}>
+                      Post
+                    </Button>
+                    <Button variant="secondary" size="sm" disabled={actionLoading} onClick={() => handleAction(() => cancelGRN(grn.grn_id))}>
+                      Cancel
+                    </Button>
+                  </>
+                )}
+                {grn.status !== 'DRAFT' && (
+                  <p className="text-sm text-slate-500">No actions available for this status.</p>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          <Card className="border-slate-200">
+            <div className="p-6">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Items</h3>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -125,22 +183,20 @@ export default function GRNDetailsPage() {
                       <th className="text-left py-2 px-4 text-sm font-semibold text-slate-700">Item</th>
                       <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Ordered Qty</th>
                       <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Received Qty</th>
-                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Unit Price</th>
-                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Total</th>
+                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Accepted Qty</th>
+                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Rejected Qty</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {grn.items.map((item, index) => {
-                      const itemDetails = itemsMap.get(item.itemId);
-                      const unitPrice = Number(item.poItem?.unitPrice) || 0;
-                      const receivedQty = Number(item.receivedQty) || 0;
+                    {(grn.items || []).map((item) => {
+                      const poItem = poItemsMap.get(item.po_item_id);
                       return (
-                        <tr key={index} className="border-b border-slate-100">
-                          <td className="py-2 px-4 text-sm text-slate-900">{item.item?.itemName || itemDetails?.item_name || item.itemId}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.poItem?.quantity ?? '-'}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{receivedQty}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{unitPrice.toFixed(2)}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{(receivedQty * unitPrice).toFixed(2)}</td>
+                        <tr key={item.grn_item_id} className="border-b border-slate-100">
+                          <td className="py-2 px-4 text-sm text-slate-900">{item.item?.item_name || poItem?.item?.item_name || item.item_id}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{poItem?.quantity ?? '-'}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.received_qty}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.accepted_qty}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.rejected_qty}</td>
                         </tr>
                       );
                     })}

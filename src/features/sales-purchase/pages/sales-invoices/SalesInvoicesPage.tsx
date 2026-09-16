@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import SalesInvoiceTable from '../../components/sales-invoices/SalesInvoiceTable';
 import { getSalesInvoices, deleteSalesInvoice } from '../../api/sales-purchase.api';
 import type { SalesInvoice } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function SalesInvoicesPage() {
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
@@ -25,24 +26,24 @@ export default function SalesInvoicesPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load sales invoices');
+      setError(getApiErrorMessage(err, 'Failed to load sales invoices'));
     } finally {
       setLoading(false);
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this sales invoice?')) {
       return;
     }
     try {
       await deleteSalesInvoice(id);
-      setSalesInvoices(salesInvoices.filter((si) => si.id !== id));
+      setSalesInvoices(salesInvoices.filter((si) => si.si_id !== id));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to delete sales invoice');
+      alert(getApiErrorMessage(err, 'Failed to delete sales invoice'));
     }
   };
 

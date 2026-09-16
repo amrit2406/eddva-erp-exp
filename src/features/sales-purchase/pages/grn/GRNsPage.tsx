@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import GRNTable from '../../components/grn/GRNTable';
 import { getGRNs, deleteGRN } from '../../api/sales-purchase.api';
 import type { GRN } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function GRNsPage() {
   const [grns, setGRNs] = useState<GRN[]>([]);
@@ -25,24 +26,24 @@ export default function GRNsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load GRNs');
+      setError(getApiErrorMessage(err, 'Failed to load GRNs'));
     } finally {
       setLoading(false);
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this GRN?')) {
       return;
     }
     try {
       await deleteGRN(id);
-      setGRNs(grns.filter((g) => g.id !== id));
+      setGRNs(grns.filter((g) => g.grn_id !== id));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to delete GRN');
+      alert(getApiErrorMessage(err, 'Failed to delete GRN'));
     }
   };
 

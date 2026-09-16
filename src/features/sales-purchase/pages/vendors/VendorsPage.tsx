@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import VendorTable from '../../components/vendors/VendorTable';
 import { getVendors, deleteVendor } from '../../api/sales-purchase.api';
 import type { Vendor } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function VendorsPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -25,7 +26,7 @@ export default function VendorsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load vendors');
+      setError(getApiErrorMessage(err, 'Failed to load vendors'));
     } finally {
       setLoading(false);
     }
@@ -42,7 +43,7 @@ export default function VendorsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to delete vendor');
+      alert(getApiErrorMessage(err, 'Failed to delete vendor'));
     }
   };
 

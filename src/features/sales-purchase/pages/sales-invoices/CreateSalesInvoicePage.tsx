@@ -5,15 +5,18 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import SalesInvoiceForm from '../../components/sales-invoices/SalesInvoiceForm';
 import { createSalesInvoice } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
 import type { SalesInvoiceFormData } from '../../types/sales-purchase.types';
 
 export default function CreateSalesInvoicePage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (data: SalesInvoiceFormData) => {
     try {
       setIsSubmitting(true);
+      setError(null);
       await createSalesInvoice(data);
       navigate('/sales-purchase/sales-invoices');
     } catch (error: any) {
@@ -21,7 +24,7 @@ export default function CreateSalesInvoicePage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to create sales invoice');
+      setError(getApiErrorMessage(error, 'Failed to create sales invoice'));
     } finally {
       setIsSubmitting(false);
     }
@@ -44,6 +47,11 @@ export default function CreateSalesInvoicePage() {
 
       <Card className="border-slate-200">
         <div className="p-6">
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm whitespace-pre-line">
+              {error}
+            </div>
+          )}
           <SalesInvoiceForm
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}

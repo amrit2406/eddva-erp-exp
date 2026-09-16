@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import ItemTable from '../../components/items/ItemTable';
 import { getItems, deleteItem } from '../../api/sales-purchase.api';
 import type { Item } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
@@ -25,7 +26,7 @@ export default function ItemsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load items');
+      setError(getApiErrorMessage(err, 'Failed to load items'));
     } finally {
       setLoading(false);
     }
@@ -42,7 +43,7 @@ export default function ItemsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to delete item');
+      alert(getApiErrorMessage(err, 'Failed to delete item'));
     }
   };
 

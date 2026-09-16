@@ -4,7 +4,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '../../../../utils/cn';
 import { useState, useEffect } from 'react';
 import { getCustomers, getItems, getTaxCodes } from '../../api/sales-purchase.api';
-import type { SalesOrderFormData, SalesOrderItem, Customer, Item, TaxCode } from '../../types/sales-purchase.types';
+import type { SalesOrderFormData, SalesOrderItemFormData, Customer, Item, TaxCode } from '../../types/sales-purchase.types';
 
 interface SalesOrderFormProps {
   defaultValues?: SalesOrderFormData;
@@ -13,6 +13,8 @@ interface SalesOrderFormProps {
   isSubmitting?: boolean;
   className?: string;
 }
+
+const emptyLine: SalesOrderItemFormData = { item_id: 0, quantity: 0, unit_price: 0, tax_code_id: 0, line_discount: 0 };
 
 export default function SalesOrderForm({
   defaultValues,
@@ -25,8 +27,8 @@ export default function SalesOrderForm({
   const [items, setItems] = useState<Item[]>([]);
   const [taxCodes, setTaxCodes] = useState<TaxCode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [orderItems, setOrderItems] = useState<SalesOrderItem[]>(
-    defaultValues?.items || [{ id: '', itemId: '', quantity: 0, unitPrice: 0, taxCodeId: '' }]
+  const [orderItems, setOrderItems] = useState<SalesOrderItemFormData[]>(
+    defaultValues?.items && defaultValues.items.length > 0 ? defaultValues.items : [{ ...emptyLine }]
   );
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export default function SalesOrderForm({
   }
 
   const handleAddItem = () => {
-    setOrderItems([...orderItems, { id: '', itemId: '', quantity: 0, unitPrice: 0, taxCodeId: '' }]);
+    setOrderItems([...orderItems, { ...emptyLine }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -61,7 +63,7 @@ export default function SalesOrderForm({
     }
   };
 
-  const handleItemChange = (index: number, field: keyof SalesOrderItem, value: any) => {
+  const handleItemChange = (index: number, field: keyof SalesOrderItemFormData, value: number) => {
     const updatedItems = [...orderItems];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
     setOrderItems(updatedItems);
@@ -70,14 +72,16 @@ export default function SalesOrderForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
-    
+
     const data: SalesOrderFormData = {
-      customerId: formData.get('customerId') as string,
-      soDate: formData.get('soDate') as string,
-      deliveryDate: formData.get('deliveryDate') as string,
+      customer_id: Number(formData.get('customer_id')),
+      so_date: formData.get('so_date') as string,
       discount: Number(formData.get('discount')) || 0,
-      items: orderItems,
+      items: orderItems.filter((item) => item.item_id && item.quantity > 0),
     };
+
+    const deliveryDate = formData.get('delivery_date') as string;
+    if (deliveryDate) data.delivery_date = deliveryDate;
 
     onSubmit?.(data);
   };
@@ -94,8 +98,8 @@ export default function SalesOrderForm({
                 Customer <span className="text-red-500">*</span>
               </label>
               <select
-                name="customerId"
-                defaultValue={defaultValues?.customerId}
+                name="customer_id"
+                defaultValue={defaultValues?.customer_id ? String(defaultValues.customer_id) : ''}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
@@ -112,21 +116,20 @@ export default function SalesOrderForm({
                 SO Date <span className="text-red-500">*</span>
               </label>
               <Input
-                name="soDate"
+                name="so_date"
                 type="date"
-                defaultValue={defaultValues?.soDate ? new Date(defaultValues.soDate).toISOString().split('T')[0] : ''}
+                defaultValue={defaultValues?.so_date?.split('T')[0]}
                 required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Delivery Date <span className="text-red-500">*</span>
+                Delivery Date
               </label>
               <Input
-                name="deliveryDate"
+                name="delivery_date"
                 type="date"
-                defaultValue={defaultValues?.deliveryDate ? new Date(defaultValues.deliveryDate).toISOString().split('T')[0] : ''}
-                required
+                defaultValue={defaultValues?.delivery_date?.split('T')[0]}
               />
             </div>
             <div>
@@ -149,7 +152,7 @@ export default function SalesOrderForm({
                 Add Item
               </Button>
             </div>
-            
+
             {orderItems.length > 0 ? (
               <div className="space-y-3">
                 {orderItems.map((item, index) => (
@@ -167,18 +170,18 @@ export default function SalesOrderForm({
                         </Button>
                       )}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Item</label>
                         <select
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={item.itemId}
-                          onChange={(e) => handleItemChange(index, 'itemId', e.target.value)}
+                          value={item.item_id || ''}
+                          onChange={(e) => handleItemChange(index, 'item_id', Number(e.target.value))}
                         >
                           <option value="">Select item</option>
-                          {items.map((item) => (
-                            <option key={item.item_id} value={item.item_id}>
-                              {item.item_name}
+                          {items.map((itemOption) => (
+                            <option key={itemOption.item_id} value={itemOption.item_id}>
+                              {itemOption.item_name}
                             </option>
                           ))}
                         </select>
@@ -187,7 +190,7 @@ export default function SalesOrderForm({
                         <label className="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
                         <Input
                           type="number"
-                          value={item.quantity}
+                          value={item.quantity || ''}
                           onChange={(e) => handleItemChange(index, 'quantity', Number(e.target.value))}
                           placeholder="0"
                         />
@@ -197,8 +200,8 @@ export default function SalesOrderForm({
                         <Input
                           type="number"
                           step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) => handleItemChange(index, 'unitPrice', Number(e.target.value))}
+                          value={item.unit_price || ''}
+                          onChange={(e) => handleItemChange(index, 'unit_price', Number(e.target.value))}
                           placeholder="0.00"
                         />
                       </div>
@@ -206,8 +209,8 @@ export default function SalesOrderForm({
                         <label className="block text-sm font-medium text-slate-700 mb-1">Tax Code</label>
                         <select
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={item.taxCodeId}
-                          onChange={(e) => handleItemChange(index, 'taxCodeId', e.target.value)}
+                          value={item.tax_code_id || ''}
+                          onChange={(e) => handleItemChange(index, 'tax_code_id', Number(e.target.value))}
                         >
                           <option value="">Select tax code</option>
                           {taxCodes.map((taxCode) => (
@@ -216,6 +219,16 @@ export default function SalesOrderForm({
                             </option>
                           ))}
                         </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Line Discount</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={item.line_discount || ''}
+                          onChange={(e) => handleItemChange(index, 'line_discount', Number(e.target.value))}
+                          placeholder="0.00"
+                        />
                       </div>
                     </div>
                   </div>

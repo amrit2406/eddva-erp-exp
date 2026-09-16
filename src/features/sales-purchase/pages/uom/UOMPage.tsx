@@ -26,7 +26,7 @@ export default function UOMPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load UOMs');
+      setError(getApiErrorMessage(err, 'Failed to load UOMs'));
     } finally {
       setLoading(false);
     }

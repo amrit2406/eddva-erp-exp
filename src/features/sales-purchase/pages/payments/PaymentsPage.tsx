@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import PaymentTable from '../../components/payments/PaymentTable';
-import { getPayments } from '../../api/sales-purchase.api';
+import { getPayments, deletePayment } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
 import type { Payment } from '../../types/sales-purchase.types';
 
 export default function PaymentsPage() {
@@ -25,11 +26,26 @@ export default function PaymentsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load payments');
+      setError(getApiErrorMessage(err, 'Failed to load payments'));
     } finally {
       setLoading(false);
     }
   }
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this payment?')) {
+      return;
+    }
+    try {
+      await deletePayment(id);
+      setPayments(payments.filter((p) => p.payment_id !== id));
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      alert(getApiErrorMessage(err, 'Failed to delete payment'));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -56,7 +72,7 @@ export default function PaymentsPage() {
         </Card>
       ) : (
         <Card className="border-slate-200">
-          <PaymentTable payments={payments} />
+          <PaymentTable payments={payments} onDelete={handleDelete} />
         </Card>
       )}
     </div>

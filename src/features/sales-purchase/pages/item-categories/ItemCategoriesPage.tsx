@@ -27,7 +27,7 @@ export default function ItemCategoriesPage() {
         // Let the axios interceptor handle 401
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load categories');
+      setError(getApiErrorMessage(err, 'Failed to load categories'));
     } finally {
       setLoading(false);
     }

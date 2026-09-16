@@ -26,11 +26,15 @@ export default function EditGRNPage() {
       setLoading(true);
       const data = await getGRN(grnId);
       setDefaultValues({
-        poId: data.poId,
-        vendorId: data.vendorId,
-        receivedDate: data.receivedDate,
-        warehouseId: data.warehouseId,
-        items: data.items,
+        purchase_order_id: data.purchase_order_id,
+        received_date: data.received_date,
+        warehouse_id: data.warehouse_id,
+        items: (data.items || []).map((item) => ({
+          po_item_id: item.po_item_id,
+          received_qty: Number(item.received_qty),
+          accepted_qty: Number(item.accepted_qty),
+          rejected_qty: Number(item.rejected_qty),
+        })),
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);

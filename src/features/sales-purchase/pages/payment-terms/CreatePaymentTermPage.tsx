@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import PaymentTermForm from '../../components/payment-terms/PaymentTermForm';
 import { createPaymentTerm } from '../../api/sales-purchase.api';
 import type { PaymentTermFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreatePaymentTermPage() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function CreatePaymentTermPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to create payment term');
+      alert(getApiErrorMessage(error, 'Failed to create payment term'));
     } finally {
       setIsSubmitting(false);
     }

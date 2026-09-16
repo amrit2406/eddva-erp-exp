@@ -44,11 +44,11 @@ export default function SalesReceiptForm({
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     
     const data: SalesReceiptFormData = {
-      salesInvoiceId: formData.get('salesInvoiceId') as string,
-      receiptDate: formData.get('receiptDate') as string,
+      si_id: Number(formData.get('si_id')),
+      receipt_date: formData.get('receipt_date') as string,
       amount: Number(formData.get('amount')),
       mode: formData.get('mode') as string,
-      referenceNo: formData.get('referenceNo') as string || undefined,
+      reference_no: (formData.get('reference_no') as string) || undefined,
     };
 
     onSubmit?.(data);
@@ -66,20 +66,20 @@ export default function SalesReceiptForm({
                 Sales Invoice <span className="text-red-500">*</span>
               </label>
               <select
-                name="salesInvoiceId"
-                defaultValue={defaultValues?.salesInvoiceId}
+                name="si_id"
+                defaultValue={defaultValues?.si_id ? String(defaultValues.si_id) : ''}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
                 <option value="">Select sales invoice</option>
                 {salesInvoices
                   .filter((invoice) =>
-                    invoice.id === defaultValues?.salesInvoiceId ||
-                    (invoice.status === 'POSTED' && invoice.paymentStatus !== 'PAID')
+                    invoice.si_id === defaultValues?.si_id ||
+                    (invoice.status === 'POSTED' && invoice.payment_status !== 'PAID')
                   )
                   .map((invoice) => (
-                    <option key={invoice.id} value={invoice.id}>
-                      {invoice.invoiceNumber || invoice.id} (Total: {(Number(invoice.grandTotal) || 0).toFixed(2)}, {invoice.paymentStatus})
+                    <option key={invoice.si_id} value={invoice.si_id}>
+                      {invoice.invoice_number} (Total: {Number(invoice.grand_total || 0).toFixed(2)}, {invoice.payment_status})
                     </option>
                   ))}
               </select>
@@ -89,9 +89,9 @@ export default function SalesReceiptForm({
                 Receipt Date <span className="text-red-500">*</span>
               </label>
               <Input
-                name="receiptDate"
+                name="receipt_date"
                 type="date"
-                defaultValue={defaultValues?.receiptDate ? new Date(defaultValues.receiptDate).toISOString().split('T')[0] : ''}
+                defaultValue={defaultValues?.receipt_date ? new Date(defaultValues.receipt_date).toISOString().split('T')[0] : ''}
                 required
               />
             </div>
@@ -128,8 +128,8 @@ export default function SalesReceiptForm({
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-1">Reference No</label>
               <Input
-                name="referenceNo"
-                defaultValue={defaultValues?.referenceNo || ''}
+                name="reference_no"
+                defaultValue={defaultValues?.reference_no || ''}
                 placeholder="Enter reference number"
               />
             </div>

@@ -5,6 +5,7 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import SalesReceiptTable from '../../components/sales-receipts/SalesReceiptTable';
 import { getSalesReceipts, deleteSalesReceipt } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
 import type { SalesReceipt } from '../../types/sales-purchase.types';
 
 export default function SalesReceiptsPage() {
@@ -25,24 +26,24 @@ export default function SalesReceiptsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load sales receipts');
+      setError(getApiErrorMessage(err, 'Failed to load sales receipts'));
     } finally {
       setLoading(false);
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this sales receipt?')) {
       return;
     }
     try {
       await deleteSalesReceipt(id);
-      setSalesReceipts(salesReceipts.filter((sr) => sr.id !== id));
+      setSalesReceipts(salesReceipts.filter((sr) => sr.receipt_id !== id));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to delete sales receipt');
+      alert(getApiErrorMessage(err, 'Failed to delete sales receipt'));
     }
   };
 

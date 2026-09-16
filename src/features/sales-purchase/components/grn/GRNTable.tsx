@@ -6,7 +6,18 @@ import { cn } from '../../../../utils/cn';
 interface GRNTableProps {
   grns: GRN[];
   className?: string;
-  onDelete?: (id: string) => void;
+  onDelete?: (id: number) => void;
+}
+
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case 'POSTED':
+      return 'bg-green-100 text-green-800';
+    case 'CANCELLED':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-slate-100 text-slate-800';
+  }
 }
 
 export default function GRNTable({ grns, className, onDelete }: GRNTableProps) {
@@ -32,55 +43,49 @@ export default function GRNTable({ grns, className, onDelete }: GRNTableProps) {
             </tr>
           ) : (
             grns.map((grn) => (
-              <tr key={grn.id} className="border-b border-slate-100 hover:bg-slate-50">
+              <tr key={grn.grn_id} className="border-b border-slate-100 hover:bg-slate-50">
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <Package className="h-4 w-4 text-slate-400" />
-                    <div className="font-medium text-slate-900">{grn.grnNumber || `GRN-${grn.id.slice(0, 8)}`}</div>
+                    <div className="font-medium text-slate-900">{grn.grn_number}</div>
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600">
                   <div className="flex items-center gap-1">
                     <ShoppingCart className="h-3 w-3 text-slate-400" />
-                    {grn.po?.poNumber || `PO-${grn.poId?.slice(0, 8) || '-'}`}
+                    {grn.purchase_order?.po_number || '-'}
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3 text-slate-400" />
-                    {grn.receivedDate ? new Date(grn.receivedDate).toLocaleDateString() : '-'}
+                    {grn.received_date ? new Date(grn.received_date).toLocaleDateString() : '-'}
                   </div>
                 </td>
                 <td className="py-3 px-4 text-sm text-slate-600 hidden lg:table-cell">
                   {grn.warehouse?.name || '-'}
                 </td>
                 <td className="py-3 px-4">
-                  <span className={cn(
-                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                    grn.status === 'DRAFT' ? 'bg-slate-100 text-slate-800' :
-                    grn.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                    grn.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                    'bg-slate-100 text-slate-800'
-                  )}>
+                  <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', statusBadgeClass(grn.status))}>
                     {grn.status}
                   </span>
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <Link to={`/sales-purchase/grn/${grn.id}`}>
+                    <Link to={`/sales-purchase/grn/${grn.grn_id}`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="View">
                         <Eye className="h-4 w-4" />
                       </button>
                     </Link>
-                    <Link to={`/sales-purchase/grn/${grn.id}/edit`}>
+                    <Link to={`/sales-purchase/grn/${grn.grn_id}/edit`}>
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="Edit">
                         <Edit className="h-4 w-4" />
                       </button>
                     </Link>
-                    <button 
-                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600" 
+                    <button
+                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600"
                       title="Delete"
-                      onClick={() => onDelete?.(grn.id)}
+                      onClick={() => onDelete?.(grn.grn_id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

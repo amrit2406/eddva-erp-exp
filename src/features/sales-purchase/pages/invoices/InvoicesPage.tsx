@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import InvoiceTable from '../../components/invoices/InvoiceTable';
 import { getInvoices, deleteInvoice } from '../../api/sales-purchase.api';
 import type { Invoice } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -25,24 +26,24 @@ export default function InvoicesPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load invoices');
+      setError(getApiErrorMessage(err, 'Failed to load invoices'));
     } finally {
       setLoading(false);
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this invoice?')) {
       return;
     }
     try {
       await deleteInvoice(id);
-      setInvoices(invoices.filter((inv) => inv.id !== id));
+      setInvoices(invoices.filter((inv) => inv.pi_id !== id));
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to delete invoice');
+      alert(getApiErrorMessage(err, 'Failed to delete invoice'));
     }
   };
 

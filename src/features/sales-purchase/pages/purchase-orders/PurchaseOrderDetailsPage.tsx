@@ -13,7 +13,7 @@ function statusBadgeClass(status: string): string {
     case 'APPROVED':
     case 'CLOSED':
       return 'bg-green-100 text-green-800';
-    case 'SUBMITTED':
+    case 'PENDING_APPROVAL':
       return 'bg-yellow-100 text-yellow-800';
     case 'REJECTED':
     case 'CANCELLED':
@@ -45,7 +45,7 @@ export default function PurchaseOrderDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load purchase order');
+      setError(getApiErrorMessage(err, 'Failed to load purchase order'));
     } finally {
       setLoading(false);
     }
@@ -142,7 +142,7 @@ export default function PurchaseOrderDetailsPage() {
                   <span className="text-sm font-medium">Status</span>
                 </div>
                 <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-semibold', statusBadgeClass(purchaseOrder.status))}>
-                  {purchaseOrder.status === 'DRAFT' && <Clock className="h-4 w-4" />}
+                  {(purchaseOrder.status === 'DRAFT' || purchaseOrder.status === 'PENDING_APPROVAL') && <Clock className="h-4 w-4" />}
                   {(purchaseOrder.status === 'APPROVED' || purchaseOrder.status === 'CLOSED') && <CheckCircle className="h-4 w-4" />}
                   {purchaseOrder.status === 'REJECTED' && <XCircle className="h-4 w-4" />}
                   {purchaseOrder.status === 'CANCELLED' && <Ban className="h-4 w-4" />}
@@ -164,7 +164,7 @@ export default function PurchaseOrderDetailsPage() {
                     Submit
                   </Button>
                 )}
-                {purchaseOrder.status === 'SUBMITTED' && (
+                {purchaseOrder.status === 'PENDING_APPROVAL' && (
                   <>
                     <Button variant="primary" size="sm" disabled={actionLoading} onClick={() => handleAction(() => approvePurchaseOrder(purchaseOrder.po_id))}>
                       Approve
@@ -174,12 +174,12 @@ export default function PurchaseOrderDetailsPage() {
                     </Button>
                   </>
                 )}
-                {(purchaseOrder.status === 'DRAFT' || purchaseOrder.status === 'SUBMITTED') && (
+                {(purchaseOrder.status === 'DRAFT' || purchaseOrder.status === 'PENDING_APPROVAL') && (
                   <Button variant="secondary" size="sm" disabled={actionLoading} onClick={() => handleAction(() => cancelPurchaseOrder(purchaseOrder.po_id))}>
                     Cancel
                   </Button>
                 )}
-                {!['DRAFT', 'SUBMITTED'].includes(purchaseOrder.status) && (
+                {!['DRAFT', 'PENDING_APPROVAL'].includes(purchaseOrder.status) && (
                   <p className="text-sm text-slate-500">No actions available for this status.</p>
                 )}
               </div>

@@ -1,10 +1,11 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Building2, Calendar, IndianRupee, XCircle } from 'lucide-react';
+import { ArrowLeft, Edit, Building2, Calendar, IndianRupee } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getSalesReceipt, voidSalesReceipt } from '../../api/sales-purchase.api';
+import { getSalesReceipt } from '../../api/sales-purchase.api';
 import type { SalesReceipt } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function SalesReceiptDetailsPage() {
   const { id } = useParams();
@@ -27,27 +28,11 @@ export default function SalesReceiptDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load sales receipt');
+      setError(getApiErrorMessage(err, 'Failed to load sales receipt'));
     } finally {
       setLoading(false);
     }
   }
-
-  const handleVoid = async () => {
-    if (!id) return;
-    if (!window.confirm('Are you sure you want to void this sales receipt?')) {
-      return;
-    }
-    try {
-      await voidSalesReceipt(id);
-      loadSalesReceipt(id);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      alert(err instanceof Error ? err.message : 'Failed to void sales receipt');
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -62,20 +47,12 @@ export default function SalesReceiptDetailsPage() {
           <h1 className="text-2xl font-bold text-slate-900">Sales Receipt Details</h1>
           <p className="text-slate-600 mt-1">View sales receipt information</p>
         </div>
-        <div className="flex gap-2">
-          {salesReceipt?.status !== 'VOID' && (
-            <Button variant="danger" size="sm" onClick={handleVoid}>
-              <XCircle className="h-4 w-4 mr-2" />
-              Void
-            </Button>
-          )}
-          <Link to={`/sales-purchase/sales-receipts/${id}/edit`}>
-            <Button variant="primary" size="sm">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          </Link>
-        </div>
+        <Link to={`/sales-purchase/sales-receipts/${id}/edit`}>
+          <Button variant="primary" size="sm">
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
+        </Link>
       </div>
 
       {loading ? (
@@ -96,18 +73,18 @@ export default function SalesReceiptDetailsPage() {
                   <label className="text-sm font-medium text-slate-500">Sales Invoice</label>
                   <div className="mt-1 flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-slate-400" />
-                    <p className="text-lg font-medium text-slate-900">{salesReceipt.salesInvoice?.id || '-'}</p>
+                    <p className="text-lg font-medium text-slate-900">{salesReceipt.invoice?.invoice_number || `Invoice #${salesReceipt.si_id}`}</p>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-500">Status</label>
-                  <p className="mt-1 text-slate-900">{salesReceipt.status}</p>
+                  <label className="text-sm font-medium text-slate-500">Customer</label>
+                  <p className="mt-1 text-slate-900">{salesReceipt.invoice?.customer?.customer_name || '-'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-500">Receipt Date</label>
                   <div className="mt-1 flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{new Date(salesReceipt.receiptDate).toLocaleDateString()}</p>
+                    <p className="text-slate-900">{salesReceipt.receipt_date ? new Date(salesReceipt.receipt_date).toLocaleDateString() : '-'}</p>
                   </div>
                 </div>
                 <div>
@@ -123,7 +100,7 @@ export default function SalesReceiptDetailsPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-500">Reference No</label>
-                  <p className="mt-1 text-slate-900">{salesReceipt.referenceNo || '-'}</p>
+                  <p className="mt-1 text-slate-900">{salesReceipt.reference_no || '-'}</p>
                 </div>
               </div>
             </div>
@@ -135,13 +112,13 @@ export default function SalesReceiptDetailsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-slate-500">Sales Receipt ID</label>
-                  <p className="mt-1 text-slate-900">{salesReceipt.id}</p>
+                  <p className="mt-1 text-slate-900">{salesReceipt.receipt_id}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-500">Created At</label>
                   <div className="mt-1 flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{salesReceipt.createdAt ? new Date(salesReceipt.createdAt).toLocaleString() : '-'}</p>
+                    <p className="text-slate-900">{salesReceipt.created_at ? new Date(salesReceipt.created_at).toLocaleString() : '-'}</p>
                   </div>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import { getPaymentTerm } from '../../api/sales-purchase.api';
 import type { PaymentTerm } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function PaymentTermDetailsPage() {
   const { id } = useParams();
@@ -27,7 +28,7 @@ export default function PaymentTermDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load payment term');
+      setError(getApiErrorMessage(err, 'Failed to load payment term'));
     } finally {
       setLoading(false);
     }

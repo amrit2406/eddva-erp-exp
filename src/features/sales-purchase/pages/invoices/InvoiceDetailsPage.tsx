@@ -1,30 +1,45 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, FileText, Calendar, Building2, IndianRupee, Check, Download, X, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Edit, FileText, Calendar, Building2, IndianRupee, Check, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getInvoice, getItems, postInvoice, cancelInvoice, validateInvoice, getInvoicePDF } from '../../api/sales-purchase.api';
-import type { Invoice, Item, MatchMismatch } from '../../types/sales-purchase.types';
+import { getInvoice, postInvoice, cancelInvoice } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
+import { cn } from '../../../../utils/cn';
+import type { Invoice } from '../../types/sales-purchase.types';
 
-function getErrorMessage(error: any, fallback: string): string {
-  return error?.response?.data?.error?.message || error?.message || fallback;
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case 'POSTED':
+      return 'bg-green-100 text-green-800';
+    case 'CANCELLED':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-slate-100 text-slate-800';
+  }
 }
 
-function formatMismatches(mismatches: MatchMismatch[]): string {
-  return mismatches.map((m) => `- ${m.message}`).join('\n');
+function paymentStatusBadgeClass(status: string): string {
+  switch (status) {
+    case 'PAID':
+      return 'bg-green-100 text-green-800';
+    case 'PARTIAL':
+      return 'bg-yellow-100 text-yellow-800';
+    default:
+      return 'bg-slate-100 text-slate-600';
+  }
 }
 
 export default function InvoiceDetailsPage() {
   const { id } = useParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [itemsMap, setItemsMap] = useState<Map<string, Item>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadInvoice(id);
-      loadItems();
     }
   }, [id]);
 
@@ -37,89 +52,32 @@ export default function InvoiceDetailsPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load invoice');
+      setError(getApiErrorMessage(err, 'Failed to load invoice'));
     } finally {
       setLoading(false);
     }
   }
 
-  async function loadItems() {
-    try {
-      const data = await getItems();
-      const map = new Map(data.map((item) => [String(item.item_id), item]));
-      setItemsMap(map);
-    } catch (err) {
-      console.error('Failed to load items:', err);
-    }
-  }
-
-  const handlePost = async () => {
+  const handleAction = async (action: () => Promise<unknown>) => {
     if (!id) return;
     try {
-      await postInvoice(id);
-      alert('Invoice posted successfully');
-      loadInvoice(id);
+      setActionLoading(true);
+      await action();
+      await loadInvoice(id);
     } catch (error: any) {
-      console.error('Failed to post invoice:', error);
-      const details: MatchMismatch[] | undefined = error?.response?.data?.error?.details;
-      const message = getErrorMessage(error, 'Failed to post invoice');
-      alert(details?.length ? `${message}\n\n${formatMismatches(details)}` : message);
-    }
-  };
-
-  const handleCancel = async () => {
-    if (!id) return;
-    if (!confirm('Are you sure you want to cancel this invoice?')) return;
-    try {
-      await cancelInvoice(id);
-      if (id) loadInvoice(id);
-    } catch (error: any) {
-      console.error('Failed to cancel invoice:', error);
-      alert(getErrorMessage(error, 'Failed to cancel invoice'));
-    }
-  };
-
-  const handleValidate = async () => {
-    if (!id) return;
-    try {
-      const result = await validateInvoice(id);
-      if (result.matched) {
-        alert('3-way match passed: PO, GRN and Invoice quantities/prices are consistent.');
-      } else {
-        alert(`3-way match failed:\n\n${formatMismatches(result.mismatches)}`);
+      if (error.response?.status === 401) {
+        return;
       }
-      loadInvoice(id);
-    } catch (error: any) {
-      console.error('Failed to validate invoice:', error);
-      alert(getErrorMessage(error, 'Failed to validate invoice'));
+      alert(getApiErrorMessage(error, 'Action failed'));
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleDownloadPDF = async () => {
-    if (!id) return;
-    try {
-      const blob = await getInvoicePDF(id);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${invoice?.invoiceNumber || id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error: any) {
-      console.error('Failed to download PDF:', error);
-      let message = 'Failed to download PDF';
-      if (error?.response?.data instanceof Blob && error.response.data.type === 'application/json') {
-        try {
-          const parsed = JSON.parse(await error.response.data.text());
-          message = parsed?.error?.message || message;
-        } catch {
-          // response body wasn't valid JSON; fall back to the generic message
-        }
-      }
-      alert(message);
-    }
+  const handleCancel = () => {
+    if (!invoice) return;
+    if (!window.confirm('Are you sure you want to cancel this invoice?')) return;
+    handleAction(() => cancelInvoice(invoice.pi_id));
   };
 
   return (
@@ -136,35 +94,25 @@ export default function InvoiceDetailsPage() {
           <p className="text-slate-600 mt-1">View invoice information</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="secondary" size="sm" onClick={handleDownloadPDF}>
-            <Download className="h-4 w-4 mr-2" />
-            PDF
-          </Button>
-          {invoice?.status !== 'POSTED' && (
-            <Button variant="secondary" size="sm" onClick={handleValidate}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Validate
-            </Button>
-          )}
-          {invoice?.status !== 'POSTED' && (
-            <Button variant="secondary" size="sm" onClick={handlePost}>
-              <Check className="h-4 w-4 mr-2" />
-              Post
-            </Button>
+          {invoice?.status === 'DRAFT' && (
+            <>
+              <Link to={`/sales-purchase/invoices/${id}/edit`}>
+                <Button variant="secondary" size="sm">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </Link>
+              <Button variant="primary" size="sm" disabled={actionLoading} onClick={() => handleAction(() => postInvoice(invoice.pi_id))}>
+                <Check className="h-4 w-4 mr-2" />
+                Post
+              </Button>
+            </>
           )}
           {invoice?.status === 'POSTED' && (
-            <Button variant="secondary" size="sm" onClick={handleCancel}>
+            <Button variant="secondary" size="sm" disabled={actionLoading} onClick={handleCancel}>
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-          )}
-          {invoice?.status === 'DRAFT' && (
-            <Link to={`/sales-purchase/invoices/${id}/edit`}>
-              <Button variant="primary" size="sm">
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            </Link>
           )}
         </div>
       </div>
@@ -186,7 +134,8 @@ export default function InvoiceDetailsPage() {
                   <FileText className="h-4 w-4" />
                   <span className="text-sm font-medium">Invoice Number</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{invoice.invoiceNumber || `INV-${invoice.id.slice(0, 8)}`}</div>
+                <div className="text-lg font-bold text-slate-900">{invoice.invoice_number}</div>
+                <div className="text-xs text-slate-500 mt-1">Vendor ref: {invoice.vendor_invoice_number}</div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -202,9 +151,12 @@ export default function InvoiceDetailsPage() {
               <div className="p-4">
                 <div className="flex items-center gap-2 text-slate-600 mb-2">
                   <Calendar className="h-4 w-4" />
-                  <span className="text-sm font-medium">Invoice Date</span>
+                  <span className="text-sm font-medium">Invoice / Due Date</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{invoice.invoiceDate ? new Date(invoice.invoiceDate).toLocaleDateString() : '-'}</div>
+                <div className="text-lg font-bold text-slate-900">{invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString() : '-'}</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  Due: {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : '-'}
+                </div>
               </div>
             </Card>
             <Card className="border-slate-200">
@@ -213,10 +165,29 @@ export default function InvoiceDetailsPage() {
                   <IndianRupee className="h-4 w-4" />
                   <span className="text-sm font-medium">Total</span>
                 </div>
-                <div className="text-lg font-bold text-slate-900">{(Number(invoice.grandTotal) || 0).toFixed(2)}</div>
+                <div className="text-lg font-bold text-slate-900">{Number(invoice.grand_total || 0).toFixed(2)}</div>
               </div>
             </Card>
           </div>
+
+          <Card className="border-slate-200">
+            <div className="p-6">
+              <div className="flex items-center gap-3">
+                <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-sm font-semibold', statusBadgeClass(invoice.status))}>
+                  {invoice.status}
+                </span>
+                <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-sm font-semibold', paymentStatusBadgeClass(invoice.payment_status))}>
+                  {invoice.payment_status} ({Number(invoice.paid_amount || 0).toFixed(2)} paid)
+                </span>
+                {invoice.purchase_order?.po_number && (
+                  <span className="text-sm text-slate-500">PO: {invoice.purchase_order.po_number}</span>
+                )}
+                {invoice.grn?.grn_number && (
+                  <span className="text-sm text-slate-500">GRN: {invoice.grn.grn_number}</span>
+                )}
+              </div>
+            </div>
+          </Card>
 
           <Card className="border-slate-200">
             <div className="p-6">
@@ -228,19 +199,22 @@ export default function InvoiceDetailsPage() {
                       <th className="text-left py-2 px-4 text-sm font-semibold text-slate-700">Item</th>
                       <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Quantity</th>
                       <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Unit Price</th>
+                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Line Discount</th>
+                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Tax</th>
                       <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Total</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {invoice.items.map((item, index) => {
-                      const itemDetails = itemsMap.get(item.itemId);
-                      const unitPrice = Number(item.unitPrice) || 0;
+                    {(invoice.items || []).map((item) => {
+                      const taxAmount = Number(item.cgst_amount || 0) + Number(item.sgst_amount || 0) + Number(item.igst_amount || 0);
                       return (
-                        <tr key={index} className="border-b border-slate-100">
-                          <td className="py-2 px-4 text-sm text-slate-900">{itemDetails?.item_name || item.itemId}</td>
+                        <tr key={item.pi_item_id} className="border-b border-slate-100">
+                          <td className="py-2 px-4 text-sm text-slate-900">{item.item?.item_name || item.item_id}</td>
                           <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.quantity}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{unitPrice.toFixed(2)}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{(item.quantity * unitPrice).toFixed(2)}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{Number(item.unit_price).toFixed(2)}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{Number(item.line_discount || 0).toFixed(2)}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{taxAmount.toFixed(2)}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{Number(item.line_total).toFixed(2)}</td>
                         </tr>
                       );
                     })}
@@ -256,23 +230,57 @@ export default function InvoiceDetailsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Subtotal</span>
-                  <span className="text-slate-900">{(Number(invoice.subtotal) || 0).toFixed(2)}</span>
+                  <span className="text-slate-900">{Number(invoice.subtotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Tax (GST)</span>
-                  <span className="text-slate-900">{(Number(invoice.taxAmount) || 0).toFixed(2)}</span>
+                  <span className="text-slate-900">{Number(invoice.tax_amount || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Discount</span>
-                  <span className="text-slate-900">{(Number(invoice.discount) || 0).toFixed(2)}</span>
+                  <span className="text-slate-900">{Number(invoice.discount || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold border-t border-slate-200 pt-2">
-                  <span className="text-slate-900">Total</span>
-                  <span className="text-slate-900">{(Number(invoice.grandTotal) || 0).toFixed(2)}</span>
+                  <span className="text-slate-900">Grand Total</span>
+                  <span className="text-slate-900">{Number(invoice.grand_total || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Paid</span>
+                  <span className="text-slate-900">{Number(invoice.paid_amount || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
           </Card>
+
+          {invoice.payments && invoice.payments.length > 0 && (
+            <Card className="border-slate-200">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">Payments</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200">
+                        <th className="text-left py-2 px-4 text-sm font-semibold text-slate-700">Date</th>
+                        <th className="text-left py-2 px-4 text-sm font-semibold text-slate-700">Mode</th>
+                        <th className="text-left py-2 px-4 text-sm font-semibold text-slate-700">Reference</th>
+                        <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoice.payments.map((payment) => (
+                        <tr key={payment.payment_id} className="border-b border-slate-100">
+                          <td className="py-2 px-4 text-sm text-slate-900">{new Date(payment.payment_date).toLocaleDateString()}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900">{payment.mode}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900">{payment.reference_no || '-'}</td>
+                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{Number(payment.amount).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
       ) : null}
     </div>

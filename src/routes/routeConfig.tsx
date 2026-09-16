@@ -44,6 +44,7 @@ import FrontOfficeVisitorLogDetailPage from '../features/front-office/pages/visi
 import FrontOfficeKioskLandingPage from '../features/front-office/pages/kiosk/KioskLandingPage';
 import FrontOfficeKioskCheckInPage from '../features/front-office/pages/kiosk/KioskCheckInPage';
 // Sales & Purchase Routes
+import SalesPurchaseDashboardPage from '../features/sales-purchase/pages/dashboard/SalesPurchaseDashboardPage';
 import ItemCategoriesPage from '../features/sales-purchase/pages/item-categories/ItemCategoriesPage';
 import CreateItemCategoryPage from '../features/sales-purchase/pages/item-categories/CreateItemCategoryPage';
 import ItemCategoryDetailsPage from '../features/sales-purchase/pages/item-categories/ItemCategoryDetailsPage';
@@ -599,6 +600,11 @@ export const routeConfig = [
   },
 
   // Sales & Purchase Routes
+  {
+    path: '/sales-purchase/dashboard',
+    element: SalesPurchaseDashboardPage,
+    isProtected: true,
+  },
   {
     path: '/sales-purchase/item-categories',
     element: ItemCategoriesPage,

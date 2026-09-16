@@ -5,15 +5,18 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import SalesReceiptForm from '../../components/sales-receipts/SalesReceiptForm';
 import { createSalesReceipt } from '../../api/sales-purchase.api';
+import { getApiErrorMessage } from '../../utils/errors';
 import type { SalesReceiptFormData } from '../../types/sales-purchase.types';
 
 export default function CreateSalesReceiptPage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (data: SalesReceiptFormData) => {
     try {
       setIsSubmitting(true);
+      setError(null);
       await createSalesReceipt(data);
       navigate('/sales-purchase/sales-receipts');
     } catch (error: any) {
@@ -21,7 +24,7 @@ export default function CreateSalesReceiptPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error.response?.data?.error?.message || error.message || 'Failed to create sales receipt');
+      setError(getApiErrorMessage(error, 'Failed to create sales receipt'));
     } finally {
       setIsSubmitting(false);
     }
@@ -44,6 +47,11 @@ export default function CreateSalesReceiptPage() {
 
       <Card className="border-slate-200">
         <div className="p-6">
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm whitespace-pre-line">
+              {error}
+            </div>
+          )}
           <SalesReceiptForm
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}

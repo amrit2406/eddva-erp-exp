@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import SalesOrderForm from '../../components/sales-orders/SalesOrderForm';
 import { getSalesOrder, updateSalesOrder } from '../../api/sales-purchase.api';
 import type { SalesOrderFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditSalesOrderPage() {
   const { id } = useParams();
@@ -25,11 +26,17 @@ export default function EditSalesOrderPage() {
       setLoading(true);
       const data = await getSalesOrder(salesOrderId);
       setDefaultValues({
-        customerId: data.customerId,
-        soDate: data.soDate,
-        deliveryDate: data.deliveryDate,
-        discount: data.discount,
-        items: data.items,
+        customer_id: data.customer_id,
+        so_date: data.so_date,
+        delivery_date: data.delivery_date || undefined,
+        discount: Number(data.discount) || 0,
+        items: (data.items || []).map((item) => ({
+          item_id: item.item_id,
+          quantity: Number(item.quantity),
+          unit_price: Number(item.unit_price),
+          tax_code_id: item.tax_code_id,
+          line_discount: Number(item.line_discount) || 0,
+        })),
       });
     } catch (error: any) {
       console.error('Failed to load data:', error);
@@ -52,7 +59,7 @@ export default function EditSalesOrderPage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to update sales order');
+      alert(getApiErrorMessage(error, 'Failed to update sales order'));
     } finally {
       setIsSubmitting(false);
     }

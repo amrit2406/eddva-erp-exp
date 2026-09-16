@@ -6,6 +6,7 @@ import Card from '../../../../components/ui/Card';
 import WarehouseForm from '../../components/warehouses/WarehouseForm';
 import { createWarehouse } from '../../api/sales-purchase.api';
 import type { WarehouseFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreateWarehousePage() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function CreateWarehousePage() {
       if (error.response?.status === 401) {
         return;
       }
-      alert(error instanceof Error ? error.message : 'Failed to create warehouse');
+      alert(getApiErrorMessage(error, 'Failed to create warehouse'));
     } finally {
       setIsSubmitting(false);
     }
