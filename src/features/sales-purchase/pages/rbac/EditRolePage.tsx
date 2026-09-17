@@ -3,19 +3,18 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import ResourcePermissionsToggle from '../../components/rbac/ResourcePermissionsToggle';
-import { config } from '../../../../config/env';
-import { isInstituteAdminToken } from '../../../../utils/jwt';
+import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
 import { getPermissionsCatalog, getMyPermissions, getRole, updateRole } from '../../api/roles.api';
 import { getApiErrorMessage } from '../../utils/errors';
-import { filterGrantablePermissions, sanitizeRolePermissions } from '../../utils/rbac.utils';
+import { filterGrantablePermissions, sanitizeRolePermissions, isCurrentUserInstituteAdmin } from '../../utils/rbac.utils';
 import type { PermissionResource, RolePermission } from '../../types/sales-purchase.types';
 
 export default function EditRolePage() {
+  const isInstituteAdmin = isCurrentUserInstituteAdmin();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [resources, setResources] = useState<PermissionResource[]>([]);
   const [myPermissions, setMyPermissions] = useState<RolePermission[]>([]);
-  const [isInstituteAdmin, setIsInstituteAdmin] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<RolePermission[]>([]);
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [loading, setLoading] = useState(true);
@@ -23,15 +22,17 @@ export default function EditRolePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, [id]);
+    if (isInstituteAdmin) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
+  }, [id, isInstituteAdmin]);
 
   async function loadData() {
     if (!id) return;
     try {
       setLoading(true);
-      const authToken = config.apiToken?.trim() || localStorage.getItem('accessToken') || '';
-      setIsInstituteAdmin(isInstituteAdminToken(authToken));
 
       const [catalog, roleData, currentPermissions] = await Promise.all([
         getPermissionsCatalog(),
@@ -94,6 +95,18 @@ export default function EditRolePage() {
       setSubmitting(false);
     }
   };
+
+  if (!isInstituteAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Edit Role</h1>
+          <p className="text-slate-600 mt-1">Update sales & purchase role and permissions</p>
+        </div>
+        <InstituteAdminGuard section="Roles" />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

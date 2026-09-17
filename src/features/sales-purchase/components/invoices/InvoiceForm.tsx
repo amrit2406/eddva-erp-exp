@@ -16,6 +16,8 @@ interface InvoiceFormProps {
 
 const emptyLine: InvoiceItemFormData = { item_id: 0, quantity: 0, unit_price: 0, tax_code_id: 0, line_discount: 0 };
 
+const INVOICEABLE_PO_STATUSES = ['APPROVED', 'PARTIALLY_RECEIVED', 'CLOSED'];
+
 export default function InvoiceForm({
   defaultValues,
   onSubmit,
@@ -88,6 +90,10 @@ export default function InvoiceForm({
       setLoading(false);
     }
   }
+
+  const eligiblePurchaseOrders = purchaseOrders.filter(
+    (po) => INVOICEABLE_PO_STATUSES.includes(po.status) || String(po.po_id) === selectedPOId
+  );
 
   const addItem = () => {
     setItems([...items, { ...emptyLine }]);
@@ -184,12 +190,15 @@ export default function InvoiceForm({
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select purchase order</option>
-                {purchaseOrders.map((po) => (
+                {eligiblePurchaseOrders.map((po) => (
                   <option key={po.po_id} value={po.po_id}>
                     {po.po_number}
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-xs text-slate-500">
+                Only approved, partially received, or closed purchase orders can be invoiced against.
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">

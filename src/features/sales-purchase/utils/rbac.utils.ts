@@ -1,4 +1,11 @@
+import { config } from '../../../config/env';
+import { isInstituteAdminToken } from '../../../utils/jwt';
 import type { RolePermission } from '../types/sales-purchase.types';
+
+export function isCurrentUserInstituteAdmin(): boolean {
+  const authToken = config.apiToken?.trim() || localStorage.getItem('accessToken') || '';
+  return isInstituteAdminToken(authToken);
+}
 
 export function sanitizeRolePermissions(permissions: RolePermission[]): RolePermission[] {
   // Remove duplicate resources and merge actions

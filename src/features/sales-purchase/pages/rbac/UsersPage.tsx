@@ -4,15 +4,18 @@ import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Modal from '../../../../components/ui/Modal';
+import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
 import {
   getUserAssignments,
   revokeUserAssignment,
   resetUserAssignmentPassword,
 } from '../../api/roles.api';
 import { getApiErrorMessage } from '../../utils/errors';
+import { isCurrentUserInstituteAdmin } from '../../utils/rbac.utils';
 import type { UserAssignment } from '../../types/sales-purchase.types';
 
 export default function UsersPage() {
+  const isAdmin = isCurrentUserInstituteAdmin();
   const [assignments, setAssignments] = useState<UserAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,8 +27,10 @@ export default function UsersPage() {
   const [resetSuccess, setResetSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    loadAssignments();
-  }, []);
+    if (isAdmin) {
+      loadAssignments();
+    }
+  }, [isAdmin]);
 
   async function loadAssignments() {
     try {
@@ -110,14 +115,19 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-slate-900">Users</h1>
           <p className="text-slate-600 mt-1">Manage sales & purchase user role assignments</p>
         </div>
-        <Link to="/sales-purchase/users/new">
-          <Button variant="primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Assign User
-          </Button>
-        </Link>
+        {isAdmin && (
+          <Link to="/sales-purchase/users/new">
+            <Button variant="primary">
+              <Plus className="h-4 w-4 mr-2" />
+              Assign User
+            </Button>
+          </Link>
+        )}
       </div>
 
+      {!isAdmin ? (
+        <InstituteAdminGuard section="Users" />
+      ) : (
       <Card className="border-slate-200">
         <div className="p-4 border-b border-slate-200">
           <input
@@ -206,6 +216,7 @@ export default function UsersPage() {
           </div>
         )}
       </Card>
+      )}
 
       <Modal
         isOpen={!!resetTarget}

@@ -3,8 +3,10 @@ import { Plus, Shield, Lock, Trash2, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
+import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
 import { getRoles, deleteRole } from '../../api/roles.api';
 import { getApiErrorMessage } from '../../utils/errors';
+import { isCurrentUserInstituteAdmin } from '../../utils/rbac.utils';
 import type { Role } from '../../types/sales-purchase.types';
 
 function countPermissions(role: Role): number {
@@ -12,13 +14,16 @@ function countPermissions(role: Role): number {
 }
 
 export default function RolesPage() {
+  const isAdmin = isCurrentUserInstituteAdmin();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadRoles();
-  }, []);
+    if (isAdmin) {
+      loadRoles();
+    }
+  }, [isAdmin]);
 
   async function loadRoles() {
     try {
@@ -57,15 +62,19 @@ export default function RolesPage() {
           <h1 className="text-2xl font-bold text-slate-900">Roles</h1>
           <p className="text-slate-600 mt-1">Manage sales & purchase roles and permissions</p>
         </div>
-        <Link to="/sales-purchase/roles/new">
-          <Button variant="primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Role
-          </Button>
-        </Link>
+        {isAdmin && (
+          <Link to="/sales-purchase/roles/new">
+            <Button variant="primary">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Role
+            </Button>
+          </Link>
+        )}
       </div>
 
-      {loading ? (
+      {!isAdmin ? (
+        <InstituteAdminGuard section="Roles" />
+      ) : loading ? (
         <Card className="border-slate-200">
           <div className="p-8 text-center text-slate-500">Loading...</div>
         </Card>

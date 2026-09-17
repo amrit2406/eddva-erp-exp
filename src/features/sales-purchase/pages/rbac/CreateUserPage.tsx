@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
+import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
 import { getRoles, createUserAssignment } from '../../api/roles.api';
 import { getApiErrorMessage } from '../../utils/errors';
+import { isCurrentUserInstituteAdmin } from '../../utils/rbac.utils';
 import type { Role, UserAssignmentFormData } from '../../types/sales-purchase.types';
 
 export default function CreateUserPage() {
+  const isAdmin = isCurrentUserInstituteAdmin();
   const navigate = useNavigate();
   const [roles, setRoles] = useState<Role[]>([]);
   const [formData, setFormData] = useState<UserAssignmentFormData>({
@@ -22,8 +25,12 @@ export default function CreateUserPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadRoles();
-  }, []);
+    if (isAdmin) {
+      loadRoles();
+    } else {
+      setLoading(false);
+    }
+  }, [isAdmin]);
 
   async function loadRoles() {
     try {
@@ -59,6 +66,18 @@ export default function CreateUserPage() {
       setSubmitting(false);
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Assign User</h1>
+          <p className="text-slate-600 mt-1">Assign a user to a sales & purchase role</p>
+        </div>
+        <InstituteAdminGuard section="User assignment" />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

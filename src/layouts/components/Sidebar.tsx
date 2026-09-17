@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes, Tag, MapPin, Truck, Package, ClipboardList, Tags, ClipboardCheck, Wrench, Contact, BellRing, Bus, Route } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
+import { isCurrentUserInstituteAdmin } from '../../features/sales-purchase/utils/rbac.utils';
 
 interface NavItem {
   path: string;
@@ -185,6 +186,19 @@ export default function Sidebar() {
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
+  const isSalesPurchaseAdmin = isCurrentUserInstituteAdmin();
+  const visibleNavItems = navItems.map((item) => {
+    if (item.path === '/sales-purchase' && item.children && !isSalesPurchaseAdmin) {
+      return {
+        ...item,
+        children: item.children.filter(
+          (child) => child.path !== '/sales-purchase/roles' && child.path !== '/sales-purchase/users'
+        ),
+      };
+    }
+    return item;
+  });
+
   const toggleMenu = (path: string) => {
     setExpandedMenus((prev) => {
       const newSet = new Set(prev);
@@ -289,7 +303,7 @@ export default function Sidebar() {
 
           <nav className="flex-1 overflow-y-auto p-4">
             <ul className="space-y-1">
-              {navItems.map((item) => renderNavItem(item))}
+              {visibleNavItems.map((item) => renderNavItem(item))}
             </ul>
           </nav>
         </div>
