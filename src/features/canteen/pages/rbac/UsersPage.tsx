@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Plus, Users, Edit, Trash2, Shield, Check, X } from 'lucide-react';
+import { Plus, Users, Edit, Shield, Check, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getUsers, deleteUser, activateUser, deactivateUser } from '../../api/canteen.api';
+import { getUsers } from '../../api/canteen.api';
 import type { CanteenUser } from '../../types/canteen.types';
 
 export default function UsersPage() {
@@ -34,39 +34,6 @@ export default function UsersPage() {
       setLoading(false);
     }
   }
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) {
-      return;
-    }
-    try {
-      await deleteUser(id);
-      setUsers(users.filter((u) => u.id !== id));
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      alert(err instanceof Error ? err.message : 'Failed to delete user');
-    }
-  };
-
-  const handleToggleStatus = async (id: string, isActive: boolean) => {
-    try {
-      if (isActive) {
-        await deactivateUser(id);
-      } else {
-        await activateUser(id);
-      }
-      setUsers(users.map((u) => 
-        u.id === id ? { ...u, isActive: !isActive } : u
-      ));
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      alert(err instanceof Error ? err.message : 'Failed to update user status');
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -135,13 +102,13 @@ export default function UsersPage() {
                       <td className="py-3 px-4 text-slate-600">{user.email}</td>
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-1">
-                          {user.roles && user.roles.length > 0 ? user.roles.map((role) => (
+                          {user.user_roles && user.user_roles.length > 0 ? user.user_roles.map((userRole) => (
                             <span
-                              key={role}
+                              key={userRole.id}
                               className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700"
                             >
                               <Shield className="h-3 w-3" />
-                              {role}
+                              {userRole.role.name}
                             </span>
                           )) : (
                             <span className="text-slate-400 text-sm">No roles</span>
@@ -149,8 +116,10 @@ export default function UsersPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                          {user.status === 'ACTIVE' ? (
+                        {/* Read-only: the backend's PATCH /canteen/users/:id has no
+                            status field, so activation state can't be changed here. */}
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {user.is_active ? (
                             <>
                               <Check className="h-3 w-3" />
                               Active
@@ -170,16 +139,6 @@ export default function UsersPage() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleToggleStatus(user.id, user.status === 'ACTIVE')}
-                          >
-                            {user.status === 'ACTIVE' ? <X className="h-4 w-4 text-orange-600" /> : <Check className="h-4 w-4 text-green-600" />}
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(user.id)}>
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
                         </div>
                       </td>
                     </tr>

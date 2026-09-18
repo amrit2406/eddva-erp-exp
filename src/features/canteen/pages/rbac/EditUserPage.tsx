@@ -10,13 +10,11 @@ export default function EditUserPage() {
   const { id } = useParams<{ id: string }>();
   const [roles, setRoles] = useState<any[]>([]);
   const [formData, setFormData] = useState<CanteenUserFormData>({
-    firstName: '',
-    lastName: '',
-    phone: ''
+    name: '',
+    email: '',
+    roleId: ''
   });
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [roleId, setRoleId] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,12 +33,10 @@ export default function EditUserPage() {
       ]);
       setRoles(rolesData);
       setFormData({
-        firstName: userData.name || '',
-        lastName: '',
-        phone: ''
+        name: userData.name || '',
+        email: userData.email || '',
+        roleId: userData.user_roles?.[0]?.roleId || ''
       });
-      setEmail(userData.email || '');
-      setRoleId(userData.roleId || '');
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
@@ -57,10 +53,10 @@ export default function EditUserPage() {
     try {
       setSubmitting(true);
       setError(null);
-      const updateData: any = {
-        name: formData.firstName,
-        email,
-        roleId
+      const updateData: Partial<CanteenUserFormData> = {
+        name: formData.name,
+        email: formData.email,
+        roleId: formData.roleId
       };
       if (password) {
         updateData.password = password;
@@ -114,8 +110,8 @@ export default function EditUserPage() {
               <input
                 type="text"
                 id="firstName"
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
                 required
               />
@@ -128,8 +124,8 @@ export default function EditUserPage() {
               <input
                 type="email"
                 id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
                 required
               />
@@ -155,8 +151,8 @@ export default function EditUserPage() {
               </label>
               <select
                 id="roleId"
-                value={roleId}
-                onChange={(e) => setRoleId(e.target.value)}
+                value={formData.roleId}
+                onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
                 required
               >

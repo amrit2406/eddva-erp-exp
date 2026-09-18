@@ -19,10 +19,10 @@ export default function RolesPage() {
     try {
       setLoading(true);
       const data = await getRoles();
-      console.log('Loaded roles:', data);
-      data.forEach(role => {
-        console.log('Role details:', JSON.stringify(role, null, 2));
-      });
+      // console.log('Loaded roles:', data);
+      // data.forEach(role => {
+      //   console.log('Role details:', JSON.stringify(role, null, 2));
+      // });
       setRoles(data);
     } catch (err: any) {
       if (err.response?.status === 401) {

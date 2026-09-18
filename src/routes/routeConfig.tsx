@@ -122,6 +122,8 @@ import CreatePermissionPage from '../features/sales-purchase/pages/rbac/CreatePe
 import EditPermissionPage from '../features/sales-purchase/pages/rbac/EditPermissionPage';
 import UsersPage from '../features/sales-purchase/pages/rbac/UsersPage';
 import CreateUserPage from '../features/sales-purchase/pages/rbac/CreateUserPage';
+// Canteen Auth
+import CanteenLoginPage from '../features/canteen/pages/auth/CanteenLoginPage';
 // Canteen RBAC
 import CanteenRolesPage from '../features/canteen/pages/rbac/RolesPage';
 import CanteenCreateRolePage from '../features/canteen/pages/rbac/CreateRolePage';
@@ -974,6 +976,13 @@ export const routeConfig = [
     path: '/sales-purchase/users/new',
     element: CreateUserPage,
     isProtected: true,
+  },
+
+  // Canteen Auth Routes
+  {
+    path: '/canteen/login',
+    element: CanteenLoginPage,
+    isPublic: true,
   },
 
   // Canteen RBAC Routes

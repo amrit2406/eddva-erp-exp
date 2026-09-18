@@ -1,3 +1,18 @@
+// Canteen Platform Auth (independent auth island, decoupled from the core User table)
+export interface CanteenPlatformUser {
+  id: string;
+  institute_id: string;
+  user_name: string;
+  user_email?: string;
+  user_role: string;
+  is_institute_admin: boolean;
+}
+
+export interface CanteenLoginCredentials {
+  username: string;
+  password: string;
+}
+
 // RBAC Types
 export interface Permission {
   id: string;
@@ -44,35 +59,31 @@ export interface RoleFormData {
   permissionIds: string[];
 }
 
+export interface CanteenUserRole {
+  id: string;
+  userId: string;
+  roleId: string;
+  assignedBy?: string;
+  createdAt: string;
+  role: Pick<Role, 'id' | 'name' | 'description' | 'isSystem' | 'createdAt' | 'updatedAt'>;
+}
+
 export interface CanteenUser {
   id: string;
   name: string;
   email: string;
-  roleId: string;
-  roles: string[];
-  permissions: string[];
-  status: 'ACTIVE' | 'INACTIVE';
-  createdAt: string;
-  updatedAt?: string;
+  username?: string;
+  is_active: boolean;
+  created_at: string;
+  user_roles: CanteenUserRole[];
 }
 
-export interface CanteenUserWithRoles {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  roles: Role[];
-  permissions: string[];
-  isActive: boolean;
-  createdAt: string;
-  updatedAt?: string;
-}
-
+// Matches UpdateCanteenUserDto exactly — the backend has no status field here.
 export interface CanteenUserFormData {
-  firstName: string;
-  lastName: string;
-  phone?: string;
+  name: string;
+  email: string;
+  password?: string;
+  roleId: string;
 }
 
 export interface CreateUserFormData {

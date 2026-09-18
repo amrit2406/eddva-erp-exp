@@ -4,8 +4,10 @@ import type {
   PermissionFormData,
   Role,
   RoleFormData,
+  RolePermission,
   CanteenUser,
   CanteenUserFormData,
+  CanteenUserRole,
   CreateUserFormData,
   UsersResponse,
   MenuCategory,
@@ -86,7 +88,7 @@ export async function getPermission(id: string): Promise<Permission> {
 }
 
 export async function updatePermission(id: string, data: Partial<PermissionFormData>): Promise<Permission> {
-  const response = await axiosInstance.put(`/canteen/permissions/${id}`, data);
+  const response = await axiosInstance.patch(`/canteen/permissions/${id}`, data);
   return response.data.data;
 }
 
@@ -111,29 +113,49 @@ export async function createUser(data: CreateUserFormData): Promise<CanteenUser>
 }
 
 export async function updateUser(id: string, data: Partial<CanteenUserFormData>): Promise<CanteenUser> {
-  const response = await axiosInstance.put(`/canteen/users/${id}`, data);
+  const response = await axiosInstance.patch(`/canteen/users/${id}`, data);
   return response.data.data;
 }
 
-export async function assignRolesToUser(userId: string, roleIds: string[]): Promise<void> {
-  await axiosInstance.post(`/canteen/users/${userId}/roles`, { roleIds });
+// There is currently no backend endpoint that can change a canteen user's
+// active status: UpdateCanteenUserDto only accepts name/email/password/roleId
+// (verified live — is_active/isActive are silently dropped, 200 with no effect).
+
+export async function getUserRoles(userId: string): Promise<CanteenUserRole[]> {
+  const response = await axiosInstance.get(`/canteen/users/${userId}/roles`);
+  return response.data.data;
+}
+
+export async function assignRoleToUser(userId: string, roleId: string): Promise<CanteenUserRole> {
+  const response = await axiosInstance.post(`/canteen/users/${userId}/roles`, { roleId });
+  return response.data.data;
 }
 
 export async function removeRoleFromUser(userId: string, roleId: string): Promise<void> {
   await axiosInstance.delete(`/canteen/users/${userId}/roles/${roleId}`);
 }
 
-export async function activateUser(id: string): Promise<void> {
-  await axiosInstance.put(`/canteen/users/${id}/activate`);
+// Role <-> Permission management (granular alternative to passing
+// permissionIds inline on createRole/updateRole)
+export async function getRolePermissions(roleId: string): Promise<RolePermission[]> {
+  const response = await axiosInstance.get(`/canteen/roles/${roleId}/permissions`);
+  return response.data.data;
 }
 
-export async function deactivateUser(id: string): Promise<void> {
-  await axiosInstance.put(`/canteen/users/${id}/deactivate`);
+export async function setRolePermissions(roleId: string, permissionIds: string[]): Promise<Role> {
+  const response = await axiosInstance.patch(`/canteen/roles/${roleId}/permissions`, { permissionIds });
+  return response.data.data;
 }
 
-export async function deleteUser(id: string): Promise<void> {
-  await axiosInstance.delete(`/canteen/users/${id}`);
+export async function addPermissionToRole(roleId: string, permissionId: string): Promise<void> {
+  await axiosInstance.post(`/canteen/roles/${roleId}/permissions/${permissionId}`);
 }
+
+export async function removePermissionFromRole(roleId: string, permissionId: string): Promise<void> {
+  await axiosInstance.delete(`/canteen/roles/${roleId}/permissions/${permissionId}`);
+}
+
+// There is no backend route to hard-delete a canteen user.
 
 // Menu Category Endpoints
 export async function getMenuCategories(params?: { page?: number; limit?: number }): Promise<MenuCategory[]> {

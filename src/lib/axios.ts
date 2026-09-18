@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { config } from '../config/env';
 import { getSalesPurchaseToken, clearSalesPurchaseToken } from '../features/sales-purchase/utils/ssoSession';
+import { getCanteenToken, clearCanteenSession } from '../features/canteen/utils/ssoSession';
 
 const axiosInstance = axios.create({
   baseURL: config.apiUrl,
@@ -13,6 +14,15 @@ function isSalesPurchaseUrl(url: string | undefined): boolean {
   return !!url && url.includes('/sales-purchase') && !url.includes('/sales-purchase/auth/sso');
 }
 
+function isCanteenUrl(url: string | undefined): boolean {
+  return (
+    !!url &&
+    url.includes('/canteen') &&
+    !url.includes('/canteen/auth/sso') &&
+    !url.includes('/canteen/auth/login')
+  );
+}
+
 // Request interceptor to add auth token
 axiosInstance.interceptors.request.use(
   async (axiosConfig) => {
@@ -20,6 +30,17 @@ axiosInstance.interceptors.request.use(
       try {
         const spToken = await getSalesPurchaseToken();
         axiosConfig.headers.Authorization = `Bearer ${spToken}`;
+        return axiosConfig;
+      } catch {
+        // Fall through to the default token so the request still goes out
+        // and surfaces a normal error response instead of silently hanging.
+      }
+    }
+
+    if (isCanteenUrl(axiosConfig.url)) {
+      try {
+        const canteenToken = await getCanteenToken();
+        axiosConfig.headers.Authorization = `Bearer ${canteenToken}`;
         return axiosConfig;
       } catch {
         // Fall through to the default token so the request still goes out
@@ -57,6 +78,23 @@ axiosInstance.interceptors.response.use(
       try {
         const spToken = await getSalesPurchaseToken();
         originalRequest.headers.Authorization = `Bearer ${spToken}`;
+        return axiosInstance(originalRequest);
+      } catch {
+        // fall through and reject with the original error
+      }
+    }
+
+    // Same recovery for a Canteen session token expiring mid-session.
+    if (
+      error.response?.status === 401 &&
+      isCanteenUrl(originalRequest?.url) &&
+      !originalRequest._canteenRetried
+    ) {
+      originalRequest._canteenRetried = true;
+      clearCanteenSession();
+      try {
+        const canteenToken = await getCanteenToken();
+        originalRequest.headers.Authorization = `Bearer ${canteenToken}`;
         return axiosInstance(originalRequest);
       } catch {
         // fall through and reject with the original error

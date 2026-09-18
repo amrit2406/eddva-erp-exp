@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
+import CanteenProtectedRoute from './CanteenProtectedRoute';
+import CanteenPublicRoute from './CanteenPublicRoute';
 import { routeConfig } from './routeConfig';
 
 export default function AppRoutes() {
@@ -8,19 +10,32 @@ export default function AppRoutes() {
     <Routes>
       {routeConfig.map((route) => {
         const Element = route.element;
+        const isCanteenRoute = route.path.startsWith('/canteen');
         return (
           <Route
             key={route.path}
             path={route.path}
             element={
               route.isProtected ? (
-                <ProtectedRoute>
-                  <Element />
-                </ProtectedRoute>
+                isCanteenRoute ? (
+                  <CanteenProtectedRoute>
+                    <Element />
+                  </CanteenProtectedRoute>
+                ) : (
+                  <ProtectedRoute>
+                    <Element />
+                  </ProtectedRoute>
+                )
               ) : route.isPublic ? (
-                <PublicRoute>
-                  <Element />
-                </PublicRoute>
+                isCanteenRoute ? (
+                  <CanteenPublicRoute>
+                    <Element />
+                  </CanteenPublicRoute>
+                ) : (
+                  <PublicRoute>
+                    <Element />
+                  </PublicRoute>
+                )
               ) : (
                 <Element />
               )

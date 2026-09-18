@@ -7,7 +7,7 @@ import { useLocation } from 'react-router-dom';
 
 function AppContent() {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/login';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/canteen/login';
   const isKioskPage = location.pathname.startsWith('/kiosk');
   const isGpsIngestPage = location.pathname.startsWith('/gps-ingest');
 
