@@ -6,7 +6,7 @@ import Card from '../../../../components/ui/Card';
 import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
 import { getRoles, deleteRole } from '../../api/roles.api';
 import { getApiErrorMessage } from '../../utils/errors';
-import { isCurrentUserInstituteAdmin } from '../../utils/rbac.utils';
+import { useIsInstituteAdmin } from '../../utils/rbac.utils';
 import type { Role } from '../../types/sales-purchase.types';
 
 function countPermissions(role: Role): number {
@@ -14,7 +14,7 @@ function countPermissions(role: Role): number {
 }
 
 export default function RolesPage() {
-  const isAdmin = isCurrentUserInstituteAdmin();
+  const isAdmin = useIsInstituteAdmin();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

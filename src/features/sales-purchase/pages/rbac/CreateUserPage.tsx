@@ -5,11 +5,11 @@ import Card from '../../../../components/ui/Card';
 import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
 import { getRoles, createUserAssignment } from '../../api/roles.api';
 import { getApiErrorMessage } from '../../utils/errors';
-import { isCurrentUserInstituteAdmin } from '../../utils/rbac.utils';
+import { useIsInstituteAdmin } from '../../utils/rbac.utils';
 import type { Role, UserAssignmentFormData } from '../../types/sales-purchase.types';
 
 export default function CreateUserPage() {
-  const isAdmin = isCurrentUserInstituteAdmin();
+  const isAdmin = useIsInstituteAdmin();
   const navigate = useNavigate();
   const [roles, setRoles] = useState<Role[]>([]);
   const [formData, setFormData] = useState<UserAssignmentFormData>({

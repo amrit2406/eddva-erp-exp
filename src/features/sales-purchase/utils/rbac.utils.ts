@@ -1,10 +1,33 @@
-import { config } from '../../../config/env';
-import { isInstituteAdminToken } from '../../../utils/jwt';
+import { useEffect, useState } from 'react';
+import { getSalesPurchaseToken, getCachedIsInstituteAdmin } from './ssoSession';
 import type { RolePermission } from '../types/sales-purchase.types';
 
 export function isCurrentUserInstituteAdmin(): boolean {
-  const authToken = config.apiToken?.trim() || localStorage.getItem('accessToken') || '';
-  return isInstituteAdminToken(authToken);
+  return getCachedIsInstituteAdmin();
+}
+
+// Reactive version: the Sales & Purchase session token is exchanged
+// asynchronously (see ssoSession.ts), so on a cold load the cached admin
+// flag may not be known yet. This hook kicks off/reuses that exchange and
+// re-renders once it resolves, instead of freezing on a stale "false".
+export function useIsInstituteAdmin(): boolean {
+  const [isAdmin, setIsAdmin] = useState(getCachedIsInstituteAdmin());
+
+  useEffect(() => {
+    let cancelled = false;
+    getSalesPurchaseToken()
+      .then(() => {
+        if (!cancelled) setIsAdmin(getCachedIsInstituteAdmin());
+      })
+      .catch(() => {
+        if (!cancelled) setIsAdmin(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return isAdmin;
 }
 
 export function sanitizeRolePermissions(permissions: RolePermission[]): RolePermission[] {

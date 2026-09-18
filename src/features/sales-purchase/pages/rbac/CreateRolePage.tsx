@@ -3,18 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import ResourcePermissionsToggle from '../../components/rbac/ResourcePermissionsToggle';
-import { config } from '../../../../config/env';
-import { isInstituteAdminToken } from '../../../../utils/jwt';
 import { getPermissionsCatalog, getMyPermissions, createRole } from '../../api/roles.api';
 import { getApiErrorMessage } from '../../utils/errors';
-import { filterGrantablePermissions, sanitizeRolePermissions } from '../../utils/rbac.utils';
+import { filterGrantablePermissions, sanitizeRolePermissions, useIsInstituteAdmin } from '../../utils/rbac.utils';
 import type { PermissionResource, RolePermission } from '../../types/sales-purchase.types';
 
 export default function CreateRolePage() {
+  const isInstituteAdmin = useIsInstituteAdmin();
   const navigate = useNavigate();
   const [resources, setResources] = useState<PermissionResource[]>([]);
   const [myPermissions, setMyPermissions] = useState<RolePermission[]>([]);
-  const [isInstituteAdmin, setIsInstituteAdmin] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<RolePermission[]>([]);
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [loading, setLoading] = useState(true);
@@ -28,8 +26,6 @@ export default function CreateRolePage() {
   async function loadCatalog() {
     try {
       setLoading(true);
-      const authToken = config.apiToken?.trim() || localStorage.getItem('accessToken') || '';
-      setIsInstituteAdmin(isInstituteAdminToken(authToken));
 
       const [catalog, currentPermissions] = await Promise.all([
         getPermissionsCatalog(),

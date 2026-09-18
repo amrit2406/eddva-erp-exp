@@ -6,11 +6,11 @@ import ResourcePermissionsToggle from '../../components/rbac/ResourcePermissions
 import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
 import { getPermissionsCatalog, getMyPermissions, getRole, updateRole } from '../../api/roles.api';
 import { getApiErrorMessage } from '../../utils/errors';
-import { filterGrantablePermissions, sanitizeRolePermissions, isCurrentUserInstituteAdmin } from '../../utils/rbac.utils';
+import { filterGrantablePermissions, sanitizeRolePermissions, useIsInstituteAdmin } from '../../utils/rbac.utils';
 import type { PermissionResource, RolePermission } from '../../types/sales-purchase.types';
 
 export default function EditRolePage() {
-  const isInstituteAdmin = isCurrentUserInstituteAdmin();
+  const isInstituteAdmin = useIsInstituteAdmin();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [resources, setResources] = useState<PermissionResource[]>([]);

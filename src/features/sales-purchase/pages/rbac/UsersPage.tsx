@@ -11,11 +11,11 @@ import {
   resetUserAssignmentPassword,
 } from '../../api/roles.api';
 import { getApiErrorMessage } from '../../utils/errors';
-import { isCurrentUserInstituteAdmin } from '../../utils/rbac.utils';
+import { useIsInstituteAdmin } from '../../utils/rbac.utils';
 import type { UserAssignment } from '../../types/sales-purchase.types';
 
 export default function UsersPage() {
-  const isAdmin = isCurrentUserInstituteAdmin();
+  const isAdmin = useIsInstituteAdmin();
   const [assignments, setAssignments] = useState<UserAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
