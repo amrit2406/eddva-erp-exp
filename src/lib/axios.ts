@@ -2,6 +2,7 @@ import axios from 'axios';
 import { config } from '../config/env';
 import { getSalesPurchaseToken, clearSalesPurchaseToken } from '../features/sales-purchase/utils/ssoSession';
 import { getCanteenToken, clearCanteenSession } from '../features/canteen/utils/ssoSession';
+import { notifyAuthError } from './apiAuthEvents';
 
 const axiosInstance = axios.create({
   baseURL: config.apiUrl,
@@ -101,6 +102,7 @@ axiosInstance.interceptors.response.use(
       }
     }
 
+    notifyAuthError(error);
     return Promise.reject(error);
   }
 );

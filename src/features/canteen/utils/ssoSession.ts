@@ -52,6 +52,9 @@ function readCachedToken(): string | null {
 
   const baseToken = getBaseToken();
   const isDirectStaffSession = cachedSource === cachedToken;
+  // VITE_API_TOKEN is a deliberate override, so it must win over a leftover
+  // staff login — otherwise the UI keeps acting as that (non-admin) staff user.
+  if (isDirectStaffSession && config.apiToken?.trim()) return null;
   if (!isDirectStaffSession && cachedSource !== baseToken) return null;
 
   if (isExpired(decodeToken(cachedToken))) return null;
