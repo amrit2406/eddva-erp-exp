@@ -2,6 +2,7 @@ import axios from 'axios';
 import { config } from '../config/env';
 import { getSalesPurchaseToken, clearSalesPurchaseToken } from '../features/sales-purchase/utils/ssoSession';
 import { getCanteenToken, clearCanteenSession } from '../features/canteen/utils/ssoSession';
+import { getAdmissionToken, clearAdmissionSession } from '../features/admission/utils/ssoSession';
 import { notifyAuthError } from './apiAuthEvents';
 
 const axiosInstance = axios.create({
@@ -11,37 +12,50 @@ const axiosInstance = axios.create({
   },
 });
 
-function isSalesPurchaseUrl(url: string | undefined): boolean {
-  return !!url && url.includes('/sales-purchase') && !url.includes('/sales-purchase/auth/sso');
+// Modules with their own auth island: their API calls carry a module-specific
+// token (exchanged from the core login, or issued by the module's own login)
+// instead of the core accessToken.
+interface TokenIsland {
+  matches: (url: string | undefined) => boolean;
+  getToken: () => Promise<string>;
+  clear: () => void;
+  retryFlag: string;
 }
 
-function isCanteenUrl(url: string | undefined): boolean {
-  return (
-    !!url &&
-    url.includes('/canteen') &&
-    !url.includes('/canteen/auth/sso') &&
-    !url.includes('/canteen/auth/login')
-  );
+function islandUrl(prefix: string, excluded: string[]) {
+  return (url: string | undefined) =>
+    !!url && url.includes(prefix) && !excluded.some((path) => url.includes(path));
 }
+
+const tokenIslands: TokenIsland[] = [
+  {
+    matches: islandUrl('/sales-purchase', ['/sales-purchase/auth/sso']),
+    getToken: getSalesPurchaseToken,
+    clear: clearSalesPurchaseToken,
+    retryFlag: '_spRetried',
+  },
+  {
+    matches: islandUrl('/canteen', ['/canteen/auth/sso', '/canteen/auth/login']),
+    getToken: getCanteenToken,
+    clear: clearCanteenSession,
+    retryFlag: '_canteenRetried',
+  },
+  {
+    matches: islandUrl('/admission', ['/admission/auth/sso', '/admission/auth/login']),
+    getToken: getAdmissionToken,
+    clear: clearAdmissionSession,
+    retryFlag: '_admissionRetried',
+  },
+];
 
 // Request interceptor to add auth token
 axiosInstance.interceptors.request.use(
   async (axiosConfig) => {
-    if (isSalesPurchaseUrl(axiosConfig.url)) {
+    const island = tokenIslands.find((i) => i.matches(axiosConfig.url));
+    if (island) {
       try {
-        const spToken = await getSalesPurchaseToken();
-        axiosConfig.headers.Authorization = `Bearer ${spToken}`;
-        return axiosConfig;
-      } catch {
-        // Fall through to the default token so the request still goes out
-        // and surfaces a normal error response instead of silently hanging.
-      }
-    }
-
-    if (isCanteenUrl(axiosConfig.url)) {
-      try {
-        const canteenToken = await getCanteenToken();
-        axiosConfig.headers.Authorization = `Bearer ${canteenToken}`;
+        const token = await island.getToken();
+        axiosConfig.headers.Authorization = `Bearer ${token}`;
         return axiosConfig;
       } catch {
         // Fall through to the default token so the request still goes out
@@ -67,38 +81,20 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // A Sales & Purchase session token can expire mid-session; on a 401 from
-    // that module, drop the cached token, re-exchange it once, and retry.
-    if (
-      error.response?.status === 401 &&
-      isSalesPurchaseUrl(originalRequest?.url) &&
-      !originalRequest._spRetried
-    ) {
-      originalRequest._spRetried = true;
-      clearSalesPurchaseToken();
-      try {
-        const spToken = await getSalesPurchaseToken();
-        originalRequest.headers.Authorization = `Bearer ${spToken}`;
-        return axiosInstance(originalRequest);
-      } catch {
-        // fall through and reject with the original error
-      }
-    }
-
-    // Same recovery for a Canteen session token expiring mid-session.
-    if (
-      error.response?.status === 401 &&
-      isCanteenUrl(originalRequest?.url) &&
-      !originalRequest._canteenRetried
-    ) {
-      originalRequest._canteenRetried = true;
-      clearCanteenSession();
-      try {
-        const canteenToken = await getCanteenToken();
-        originalRequest.headers.Authorization = `Bearer ${canteenToken}`;
-        return axiosInstance(originalRequest);
-      } catch {
-        // fall through and reject with the original error
+    // A module session token can expire mid-session; on a 401 from that
+    // module, drop the cached token, re-exchange it once, and retry.
+    if (error.response?.status === 401) {
+      const island = tokenIslands.find((i) => i.matches(originalRequest?.url));
+      if (island && !originalRequest[island.retryFlag]) {
+        originalRequest[island.retryFlag] = true;
+        island.clear();
+        try {
+          const token = await island.getToken();
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return axiosInstance(originalRequest);
+        } catch {
+          // fall through and reject with the original error
+        }
       }
     }
 

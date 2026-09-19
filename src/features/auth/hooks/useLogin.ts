@@ -5,6 +5,7 @@ import { loginApi } from '../api/auth.api';
 import type { LoginCredentials } from '../types/auth.types';
 import { ROUTES } from '../../../constants/routes';
 import { clearCanteenSession } from '../../canteen/utils/ssoSession';
+import { clearAdmissionSession } from '../../admission/utils/ssoSession';
 
 export function useLogin() {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,8 +24,9 @@ export function useLogin() {
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
 
-      // A fresh core login replaces any leftover canteen staff session
+      // A fresh core login replaces any leftover module staff sessions
       clearCanteenSession();
+      clearAdmissionSession();
 
       // Update auth state
       setAuth(response.user);

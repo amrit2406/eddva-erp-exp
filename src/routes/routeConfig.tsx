@@ -169,6 +169,22 @@ import WalletTransactionsPage from '../features/canteen/pages/wallet/WalletTrans
 import WalletsPage from '../features/canteen/pages/wallet/WalletsPage';
 // Canteen Reports
 import CanteenReportsPage from '../features/canteen/pages/reports/CanteenReportsPage';
+// Admission Auth & RBAC
+import AdmissionLoginPage from '../features/admission/pages/auth/AdmissionLoginPage';
+import AdmissionSessionsPage from '../features/admission/pages/sessions/SessionsPage';
+import AdmissionCreateSessionPage from '../features/admission/pages/sessions/CreateSessionPage';
+import AdmissionEditSessionPage from '../features/admission/pages/sessions/EditSessionPage';
+import AdmissionProgramsPage from '../features/admission/pages/programs/ProgramsPage';
+import AdmissionCreateProgramPage from '../features/admission/pages/programs/CreateProgramPage';
+import AdmissionEditProgramPage from '../features/admission/pages/programs/EditProgramPage';
+import AdmissionRolesPage from '../features/admission/pages/rbac/RolesPage';
+import AdmissionCreateRolePage from '../features/admission/pages/rbac/CreateRolePage';
+import AdmissionEditRolePage from '../features/admission/pages/rbac/EditRolePage';
+import AdmissionPermissionsPage from '../features/admission/pages/rbac/PermissionsPage';
+import AdmissionCreatePermissionPage from '../features/admission/pages/rbac/CreatePermissionPage';
+import AdmissionEditPermissionPage from '../features/admission/pages/rbac/EditPermissionPage';
+import AdmissionUsersPage from '../features/admission/pages/rbac/UsersPage';
+import AdmissionCreateUserPage from '../features/admission/pages/rbac/CreateUserPage';
 // Library RBAC
 import LibraryRolesPage from '../features/library/pages/rbac/RolesPage';
 import LibraryCreateRolePage from '../features/library/pages/rbac/CreateRolePage';
@@ -1181,6 +1197,85 @@ export const routeConfig = [
   {
     path: '/canteen/menu/schedules/:id/edit',
     element: EditMenuSchedulePage,
+    isProtected: true,
+  },
+
+  // Admission Setup Routes
+  {
+    path: '/admission/sessions',
+    element: AdmissionSessionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/sessions/new',
+    element: AdmissionCreateSessionPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/sessions/:id/edit',
+    element: AdmissionEditSessionPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/programs',
+    element: AdmissionProgramsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/programs/new',
+    element: AdmissionCreateProgramPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/programs/:id/edit',
+    element: AdmissionEditProgramPage,
+    isProtected: true,
+  },
+
+  // Admission Auth & RBAC Routes
+  {
+    path: '/admission/login',
+    element: AdmissionLoginPage,
+    isPublic: true,
+  },
+  {
+    path: '/admission/roles',
+    element: AdmissionRolesPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/roles/new',
+    element: AdmissionCreateRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/roles/:id/edit',
+    element: AdmissionEditRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/permissions',
+    element: AdmissionPermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/permissions/new',
+    element: AdmissionCreatePermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/permissions/:id/edit',
+    element: AdmissionEditPermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/users',
+    element: AdmissionUsersPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/users/new',
+    element: AdmissionCreateUserPage,
     isProtected: true,
   },
 

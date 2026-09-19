@@ -5,6 +5,7 @@ import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 import { useIsInstituteAdmin } from '../../features/sales-purchase/utils/rbac.utils';
 import { useIsInstituteAdmin as useIsCanteenInstituteAdmin } from '../../features/canteen/utils/rbac.utils';
+import { useIsInstituteAdmin as useIsAdmissionInstituteAdmin } from '../../features/admission/utils/rbac.utils';
 
 interface NavItem {
   path: string;
@@ -63,6 +64,18 @@ const navItems: NavItem[] = [
       { path: '/canteen/orders', label: 'Orders', icon: Receipt },
       { path: '/canteen/wallets', label: 'Wallets & Ledger', icon: Wallet },
       { path: '/canteen/reports', label: 'Reports & Analytics', icon: BarChart2 },
+    ]
+  },
+  {
+    path: '/admission',
+    label: 'Admission',
+    icon: GraduationCap,
+    children: [
+      { path: '/admission/sessions', label: 'Academic Sessions', icon: Calendar },
+      { path: '/admission/programs', label: 'Programs', icon: BookOpen },
+      { path: '/admission/permissions', label: 'Permissions', icon: Key },
+      { path: '/admission/roles', label: 'Roles', icon: Shield },
+      { path: '/admission/users', label: 'Users', icon: Users },
     ]
   },
   {
@@ -189,6 +202,7 @@ export default function Sidebar() {
 
   const isSalesPurchaseAdmin = useIsInstituteAdmin();
   const isCanteenAdmin = useIsCanteenInstituteAdmin();
+  const isAdmissionAdmin = useIsAdmissionInstituteAdmin();
   const visibleNavItems = navItems.map((item) => {
     if (item.path === '/sales-purchase' && item.children && !isSalesPurchaseAdmin) {
       return {
@@ -203,6 +217,14 @@ export default function Sidebar() {
         ...item,
         children: item.children.filter(
           (child) => child.path !== '/canteen/roles' && child.path !== '/canteen/users'
+        ),
+      };
+    }
+    if (item.path === '/admission' && item.children && !isAdmissionAdmin) {
+      return {
+        ...item,
+        children: item.children.filter(
+          (child) => child.path !== '/admission/roles' && child.path !== '/admission/users'
         ),
       };
     }
