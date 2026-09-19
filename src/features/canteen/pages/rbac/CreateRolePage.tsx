@@ -2,32 +2,43 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getPermissions, createRole } from '../../api/canteen.api';
-import type { Permission } from '../../types/canteen.types';
+import ResourcePermissionsToggle from '../../components/rbac/ResourcePermissionsToggle';
+import { getPermissionsCatalog, getMyPermissions, createRole } from '../../api/roles.api';
+import { getApiErrorMessage } from '../../utils/errors';
+import { filterGrantablePermissions, sanitizeRolePermissions, useIsInstituteAdmin } from '../../utils/rbac.utils';
+import type { PermissionResource, RolePermission } from '../../types/canteen.types';
 
 export default function CreateRolePage() {
+  const isInstituteAdmin = useIsInstituteAdmin();
   const navigate = useNavigate();
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [resources, setResources] = useState<PermissionResource[]>([]);
+  const [myPermissions, setMyPermissions] = useState<RolePermission[]>([]);
+  const [selectedPermissions, setSelectedPermissions] = useState<RolePermission[]>([]);
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadPermissions();
+    loadCatalog();
   }, []);
 
-  async function loadPermissions() {
+  async function loadCatalog() {
     try {
       setLoading(true);
-      const data = await getPermissions();
-      setPermissions(data);
+
+      const [catalog, currentPermissions] = await Promise.all([
+        getPermissionsCatalog(),
+        getMyPermissions().catch(() => [] as RolePermission[]),
+      ]);
+
+      setResources(catalog.resources);
+      setMyPermissions(currentPermissions);
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load permissions');
+      setError(getApiErrorMessage(err, 'Failed to load permissions catalog'));
     } finally {
       setLoading(false);
     }
@@ -35,37 +46,41 @@ export default function CreateRolePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const permissions = sanitizeRolePermissions(selectedPermissions);
+    if (permissions.length === 0) {
+      setError('Select at least one permission for this role.');
+      return;
+    }
+
+    const grantablePermissions = filterGrantablePermissions(
+      permissions,
+      myPermissions,
+      isInstituteAdmin
+    );
+
+    if (grantablePermissions.length === 0) {
+      setError('You can only assign permissions that your account already has in the canteen module.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
-      const payload = {
-        name: formData.name,
-        description: formData.description,
-        permissionIds: selectedPermissions
-      };
-      console.log('Creating role with payload:', payload);
-      const result = await createRole(payload);
-      console.log('Role created successfully:', result);
+      await createRole({
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        permissions: grantablePermissions,
+      });
       navigate('/canteen/roles');
     } catch (err: any) {
-      console.error('Failed to create role:', err);
       if (err.response?.status === 401) {
         return;
       }
-      setError(err.response?.data?.message || 'Failed to create role');
+      setError(getApiErrorMessage(err, 'Failed to create role'));
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const togglePermission = (permissionId: string) => {
-    setSelectedPermissions(prev => {
-      const newPermissions = prev.includes(permissionId)
-        ? prev.filter(p => p !== permissionId)
-        : [...prev, permissionId];
-      console.log('Toggled permission ID:', permissionId, 'Selected:', newPermissions);
-      return newPermissions;
-    });
   };
 
   if (loading) {
@@ -73,7 +88,7 @@ export default function CreateRolePage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Create Role</h1>
-          <p className="text-slate-600 mt-1">Create a new role with permissions</p>
+          <p className="text-slate-600 mt-1">Create a new canteen role with permissions</p>
         </div>
         <Card className="border-slate-200">
           <div className="p-8 text-center text-slate-500">Loading permissions...</div>
@@ -86,7 +101,7 @@ export default function CreateRolePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Create Role</h1>
-        <p className="text-slate-600 mt-1">Create a new role with permissions</p>
+        <p className="text-slate-600 mt-1">Create a new canteen role with permissions</p>
       </div>
 
       <Card className="border-slate-200">
@@ -108,7 +123,8 @@ export default function CreateRolePage() {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g. Counter Staff"
                   required
                 />
               </div>
@@ -122,7 +138,8 @@ export default function CreateRolePage() {
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g. Runs a POS terminal: opens shifts, takes orders and payments"
                   required
                 />
               </div>
@@ -130,25 +147,13 @@ export default function CreateRolePage() {
 
             <div>
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Permissions</h3>
-              <div className="border border-slate-200 rounded-lg p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {permissions.map((perm) => (
-                    <label key={perm.id} className="flex items-start gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedPermissions.includes(perm.id)}
-                        onChange={() => togglePermission(perm.id)}
-                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#008BE9] focus:ring-[#008BE9]"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-slate-700">{perm.name}</div>
-                        <div className="text-xs text-slate-500">{perm.key}</div>
-                        <div className="text-xs text-slate-500">{perm.description}</div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <ResourcePermissionsToggle
+                resources={resources}
+                selectedPermissions={selectedPermissions}
+                onChange={setSelectedPermissions}
+                myPermissions={myPermissions}
+                isInstituteAdmin={isInstituteAdmin}
+              />
             </div>
 
             <div className="flex gap-3 pt-4">

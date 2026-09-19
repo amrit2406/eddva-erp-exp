@@ -2,17 +2,20 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getPermission, updatePermission } from '../../api/canteen.api';
+import { getPermission, updatePermission } from '../../api/roles.api';
+import { getApiErrorMessage } from '../../utils/errors';
 import type { PermissionFormData } from '../../types/canteen.types';
 
 export default function EditPermissionPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [formData, setFormData] = useState<PermissionFormData>({
-    key: '',
+    resource: '',
+    action: '',
     name: '',
+    category: '',
     description: '',
-    module: ''
+    is_active: true,
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -28,16 +31,18 @@ export default function EditPermissionPage() {
       setLoading(true);
       const data = await getPermission(id);
       setFormData({
-        key: data.key,
+        resource: data.resource,
+        action: data.action,
         name: data.name,
+        category: data.category,
         description: data.description,
-        module: data.module
+        is_active: data.is_active,
       });
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load permission');
+      setError(getApiErrorMessage(err, 'Failed to load permission'));
     } finally {
       setLoading(false);
     }
@@ -55,7 +60,7 @@ export default function EditPermissionPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err.response?.data?.message || 'Failed to update permission');
+      setError(getApiErrorMessage(err, 'Failed to update permission'));
     } finally {
       setSubmitting(false);
     }
@@ -92,16 +97,31 @@ export default function EditPermissionPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="key" className="block text-sm font-medium text-slate-700 mb-1">
-                Key *
+              <label htmlFor="resource" className="block text-sm font-medium text-slate-700 mb-1">
+                Resource *
               </label>
               <input
                 type="text"
-                id="key"
-                value={formData.key}
-                onChange={(e) => setFormData({ ...formData, key: e.target.value })}
-                placeholder="e.g., canteen.category.view"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                id="resource"
+                value={formData.resource}
+                onChange={(e) => setFormData({ ...formData, resource: e.target.value })}
+                placeholder="e.g., orders"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="action" className="block text-sm font-medium text-slate-700 mb-1">
+                Action *
+              </label>
+              <input
+                type="text"
+                id="action"
+                value={formData.action}
+                onChange={(e) => setFormData({ ...formData, action: e.target.value })}
+                placeholder="e.g., export"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
@@ -115,23 +135,23 @@ export default function EditPermissionPage() {
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., View Categories"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                placeholder="e.g., Export Orders"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="module" className="block text-sm font-medium text-slate-700 mb-1">
-                Module *
+              <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-1">
+                Category *
               </label>
               <input
                 type="text"
-                id="module"
-                value={formData.module}
-                onChange={(e) => setFormData({ ...formData, module: e.target.value })}
-                placeholder="e.g., canteen"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                id="category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                placeholder="e.g., Orders"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
@@ -145,10 +165,20 @@ export default function EditPermissionPage() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
+
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={formData.is_active ?? true}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              Active
+            </label>
 
             <div className="flex gap-3 pt-4">
               <Button

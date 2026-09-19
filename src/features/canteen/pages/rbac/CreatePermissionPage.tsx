@@ -2,16 +2,18 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { createPermission } from '../../api/canteen.api';
+import { createPermission } from '../../api/roles.api';
+import { getApiErrorMessage } from '../../utils/errors';
 import type { PermissionFormData } from '../../types/canteen.types';
 
 export default function CreatePermissionPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<PermissionFormData>({
-    key: '',
+    resource: '',
+    action: '',
     name: '',
+    category: '',
     description: '',
-    module: ''
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export default function CreatePermissionPage() {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err.response?.data?.message || 'Failed to create permission');
+      setError(getApiErrorMessage(err, 'Failed to create permission'));
     } finally {
       setSubmitting(false);
     }
@@ -37,7 +39,7 @@ export default function CreatePermissionPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Add Permission</h1>
-        <p className="text-slate-600 mt-1">Create a new permission</p>
+        <p className="text-slate-600 mt-1">Create a new canteen permission</p>
       </div>
 
       <Card className="border-slate-200">
@@ -50,16 +52,31 @@ export default function CreatePermissionPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="key" className="block text-sm font-medium text-slate-700 mb-1">
-                Key *
+              <label htmlFor="resource" className="block text-sm font-medium text-slate-700 mb-1">
+                Resource *
               </label>
               <input
                 type="text"
-                id="key"
-                value={formData.key}
-                onChange={(e) => setFormData({ ...formData, key: e.target.value })}
-                placeholder="e.g., canteen.category.view"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                id="resource"
+                value={formData.resource}
+                onChange={(e) => setFormData({ ...formData, resource: e.target.value })}
+                placeholder="e.g., orders"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="action" className="block text-sm font-medium text-slate-700 mb-1">
+                Action *
+              </label>
+              <input
+                type="text"
+                id="action"
+                value={formData.action}
+                onChange={(e) => setFormData({ ...formData, action: e.target.value })}
+                placeholder="e.g., export"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
@@ -73,23 +90,23 @@ export default function CreatePermissionPage() {
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., View Categories"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                placeholder="e.g., Export Orders"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="module" className="block text-sm font-medium text-slate-700 mb-1">
-                Module *
+              <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-1">
+                Category *
               </label>
               <input
                 type="text"
-                id="module"
-                value={formData.module}
-                onChange={(e) => setFormData({ ...formData, module: e.target.value })}
-                placeholder="e.g., canteen"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                id="category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                placeholder="e.g., Orders"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
@@ -103,7 +120,8 @@ export default function CreatePermissionPage() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                placeholder="e.g., Allows exporting orders to CSV"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>

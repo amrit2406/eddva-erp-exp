@@ -15,92 +15,93 @@ export interface CanteenLoginCredentials {
 
 // RBAC Types
 export interface Permission {
-  id: string;
+  permission_id: number;
   key: string;
+  resource: string;
+  action: string;
   name: string;
+  category: string;
   description: string;
-  module: string;
-  resource: string | null;
-  action: string | null;
-  isSystem: boolean;
-  createdAt: string;
-  updatedAt?: string;
+  is_system: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PermissionFormData {
-  key: string;
+  resource: string;
+  action: string;
   name: string;
+  category: string;
   description: string;
-  module: string;
+  is_active?: boolean;
 }
 
-export interface Role {
-  id: string;
+export interface PermissionResource {
+  resource: string;
   name: string;
-  description: string;
-  isSystem: boolean;
-  createdAt: string;
-  updatedAt?: string;
-  rolePermissions: RolePermission[];
-  userRoles?: any[];
+  available_actions: string[];
+  permissions: Permission[];
+}
+
+export interface PermissionsCatalog {
+  total: number;
+  resources: PermissionResource[];
+  all_permissions: Permission[];
 }
 
 export interface RolePermission {
-  id: string;
-  roleId: string;
-  permissionId: string;
-  createdAt: string;
-  permission: Permission;
+  resource: string;
+  actions: string[];
+}
+
+export interface Role {
+  role_id: number;
+  institute_id: string;
+  name: string;
+  description: string;
+  permissions: RolePermission[];
+  created_at: string;
+  updated_at: string;
+  _count?: {
+    user_roles: number;
+  };
 }
 
 export interface RoleFormData {
   name: string;
   description: string;
-  permissionIds: string[];
+  permissions: RolePermission[];
 }
 
-export interface CanteenUserRole {
-  id: string;
-  userId: string;
-  roleId: string;
-  assignedBy?: string;
-  createdAt: string;
-  role: Pick<Role, 'id' | 'name' | 'description' | 'isSystem' | 'createdAt' | 'updatedAt'>;
+export interface UserAssignment {
+  id: number;
+  eddva_user_id: string;
+  user_name: string;
+  user_email: string;
+  username: string;
+  role_id: number;
+  is_active?: boolean;
+  role?: Pick<Role, 'role_id' | 'name'>;
+  assigned_at?: string;
 }
 
-export interface CanteenUser {
-  id: string;
-  name: string;
-  email: string;
-  username?: string;
-  is_active: boolean;
-  created_at: string;
-  user_roles: CanteenUserRole[];
-}
-
-// Matches UpdateCanteenUserDto exactly — the backend has no status field here.
-export interface CanteenUserFormData {
-  name: string;
-  email: string;
-  password?: string;
-  roleId: string;
-}
-
-export interface CreateUserFormData {
-  name: string;
-  email: string;
+export interface UserAssignmentFormData {
+  eddva_user_id: string;
+  user_name: string;
+  user_email: string;
+  username: string;
   password: string;
-  roleId: string;
+  role_id: number;
 }
 
-export interface UsersResponse {
-  users: CanteenUser[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+export interface ResetPasswordFormData {
+  new_password: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
 }
 
 // Reports Types

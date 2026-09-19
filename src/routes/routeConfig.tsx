@@ -133,7 +133,6 @@ import CanteenCreatePermissionPage from '../features/canteen/pages/rbac/CreatePe
 import CanteenEditPermissionPage from '../features/canteen/pages/rbac/EditPermissionPage';
 import CanteenUsersPage from '../features/canteen/pages/rbac/UsersPage';
 import CanteenCreateUserPage from '../features/canteen/pages/rbac/CreateUserPage';
-import CanteenEditUserPage from '../features/canteen/pages/rbac/EditUserPage';
 // Canteen Menu
 import MenuCategoriesPage from '../features/canteen/pages/menu/MenuCategoriesPage';
 import CreateMenuCategoryPage from '../features/canteen/pages/menu/CreateMenuCategoryPage';
@@ -1024,11 +1023,6 @@ export const routeConfig = [
   {
     path: '/canteen/users/new',
     element: CanteenCreateUserPage,
-    isProtected: true,
-  },
-  {
-    path: '/canteen/users/:id/edit',
-    element: CanteenEditUserPage,
     isProtected: true,
   },
   

@@ -4,6 +4,7 @@ import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, Che
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 import { useIsInstituteAdmin } from '../../features/sales-purchase/utils/rbac.utils';
+import { useIsInstituteAdmin as useIsCanteenInstituteAdmin } from '../../features/canteen/utils/rbac.utils';
 
 interface NavItem {
   path: string;
@@ -187,12 +188,21 @@ export default function Sidebar() {
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
   const isSalesPurchaseAdmin = useIsInstituteAdmin();
+  const isCanteenAdmin = useIsCanteenInstituteAdmin();
   const visibleNavItems = navItems.map((item) => {
     if (item.path === '/sales-purchase' && item.children && !isSalesPurchaseAdmin) {
       return {
         ...item,
         children: item.children.filter(
           (child) => child.path !== '/sales-purchase/roles' && child.path !== '/sales-purchase/users'
+        ),
+      };
+    }
+    if (item.path === '/canteen' && item.children && !isCanteenAdmin) {
+      return {
+        ...item,
+        children: item.children.filter(
+          (child) => child.path !== '/canteen/roles' && child.path !== '/canteen/users'
         ),
       };
     }

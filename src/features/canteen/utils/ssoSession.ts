@@ -29,12 +29,11 @@ function isExpired(payload: DecodedTokenPayload | null): boolean {
   return Date.now() >= payload.exp * 1000 - EXPIRY_SKEW_MS;
 }
 
-// A Canteen Platform session token (whether minted by the SSO exchange,
-// returned directly by canteen staff login, or handed to us via
-// VITE_API_TOKEN for testing) carries id/institute_id. A raw ERP login
-// token doesn't.
+// A Canteen Platform session token (SSO exchange, staff login, or a test token
+// in VITE_API_TOKEN) carries institute_id + user_name. A raw ERP login token
+// uses instituteId/email instead, so it can't be mistaken for one.
 function isCanteenSessionPayload(payload: DecodedTokenPayload | null): boolean {
-  return !!payload && typeof payload.id === 'string' && typeof payload.institute_id === 'string';
+  return !!payload && typeof payload.institute_id === 'string' && typeof payload.user_name === 'string';
 }
 
 function getBaseToken(): string {

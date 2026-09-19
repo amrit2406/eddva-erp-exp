@@ -1,63 +1,141 @@
 import { Link } from 'react-router-dom';
-import { Plus, Users, Edit, Shield, Check, X } from 'lucide-react';
+import { Plus, Users, Shield, Trash2, KeyRound } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getUsers } from '../../api/canteen.api';
-import type { CanteenUser } from '../../types/canteen.types';
+import Modal from '../../../../components/ui/Modal';
+import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
+import {
+  getUserAssignments,
+  revokeUserAssignment,
+  resetUserAssignmentPassword,
+} from '../../api/roles.api';
+import { getApiErrorMessage } from '../../utils/errors';
+import { useIsInstituteAdmin } from '../../utils/rbac.utils';
+import type { UserAssignment } from '../../types/canteen.types';
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<CanteenUser[]>([]);
+  const isAdmin = useIsInstituteAdmin();
+  const [assignments, setAssignments] = useState<UserAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [resetTarget, setResetTarget] = useState<UserAssignment | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    if (isAdmin) {
+      loadAssignments();
+    }
+  }, [isAdmin]);
 
-  async function loadUsers() {
+  async function loadAssignments() {
     try {
       setLoading(true);
-      const data = await getUsers({ limit: 10, search });
-      // console.log('Loaded users data:', data);
-      // Handle both array and object with users property
-      const usersArray = Array.isArray(data) ? data : (data.users || []);
-      // console.log('Users array:', usersArray);
-      setUsers(usersArray);
+      const data = await getUserAssignments();
+      setAssignments(data);
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load users');
+      setError(getApiErrorMessage(err, 'Failed to load user assignments'));
     } finally {
       setLoading(false);
     }
   }
+
+  const filteredAssignments = assignments.filter((assignment) => {
+    const query = search.toLowerCase();
+    return (
+      assignment.user_name.toLowerCase().includes(query) ||
+      assignment.user_email.toLowerCase().includes(query) ||
+      assignment.username.toLowerCase().includes(query) ||
+      (assignment.role?.name ?? '').toLowerCase().includes(query)
+    );
+  });
+
+  const handleRevoke = async (id: number, userName: string) => {
+    if (!window.confirm(`Revoke canteen access for "${userName}"?`)) {
+      return;
+    }
+    try {
+      await revokeUserAssignment(id);
+      setAssignments(assignments.filter((a) => a.id !== id));
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      alert(getApiErrorMessage(err, 'Failed to revoke assignment'));
+    }
+  };
+
+  const openResetModal = (assignment: UserAssignment) => {
+    setResetTarget(assignment);
+    setNewPassword('');
+    setResetError(null);
+    setResetSuccess(null);
+  };
+
+  const closeResetModal = () => {
+    setResetTarget(null);
+    setNewPassword('');
+    setResetError(null);
+    setResetSuccess(null);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetTarget) return;
+
+    try {
+      setResetting(true);
+      setResetError(null);
+      const result = await resetUserAssignmentPassword(resetTarget.id, {
+        new_password: newPassword,
+      });
+      setResetSuccess(result.message);
+      setNewPassword('');
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        return;
+      }
+      setResetError(getApiErrorMessage(err, 'Failed to reset password'));
+    } finally {
+      setResetting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Users</h1>
-          <p className="text-slate-600 mt-1">Manage canteen system users</p>
+          <p className="text-slate-600 mt-1">Manage canteen user role assignments</p>
         </div>
-        <Link to="/canteen/users/new">
-          <Button variant="primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Add User
-          </Button>
-        </Link>
+        {isAdmin && (
+          <Link to="/canteen/users/new">
+            <Button variant="primary">
+              <Plus className="h-4 w-4 mr-2" />
+              Assign User
+            </Button>
+          </Link>
+        )}
       </div>
 
+      {!isAdmin ? (
+        <InstituteAdminGuard section="Users" />
+      ) : (
       <Card className="border-slate-200">
         <div className="p-4 border-b border-slate-200">
           <input
             type="text"
-            placeholder="Search users..."
+            placeholder="Search by name, email, username, or role..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
@@ -72,73 +150,62 @@ export default function UsersPage() {
                 <tr className="border-b border-slate-200">
                   <th className="text-left py-3 px-4 font-semibold text-slate-700">User</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-700">Email</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Roles</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Username</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Role</th>
                   <th className="text-right py-3 px-4 font-semibold text-slate-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {users.length === 0 ? (
+                {filteredAssignments.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="text-center py-8 text-slate-500">
-                      No users found
+                      No user assignments found
                     </td>
                   </tr>
                 ) : (
-                  users.map((user) => (
-                    <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  filteredAssignments.map((assignment) => (
+                    <tr key={assignment.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
                             <Users className="h-4 w-4 text-slate-600" />
                           </div>
                           <div>
-                            <div className="font-medium text-slate-900">
-                              {user.name}
-                            </div>
+                            <div className="font-medium text-slate-900">{assignment.user_name}</div>
+                            <div className="text-xs text-slate-500">{assignment.eddva_user_id}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-slate-600">{user.email}</td>
+                      <td className="py-3 px-4 text-slate-600">{assignment.user_email}</td>
                       <td className="py-3 px-4">
-                        <div className="flex flex-wrap gap-1">
-                          {user.user_roles && user.user_roles.length > 0 ? user.user_roles.map((userRole) => (
-                            <span
-                              key={userRole.id}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700"
-                            >
-                              <Shield className="h-3 w-3" />
-                              {userRole.role.name}
-                            </span>
-                          )) : (
-                            <span className="text-slate-400 text-sm">No roles</span>
-                          )}
-                        </div>
+                        <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
+                          {assignment.username}
+                        </code>
                       </td>
                       <td className="py-3 px-4">
-                        {/* Read-only: the backend's PATCH /canteen/users/:id has no
-                            status field, so activation state can't be changed here. */}
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                          {user.is_active ? (
-                            <>
-                              <Check className="h-3 w-3" />
-                              Active
-                            </>
-                          ) : (
-                            <>
-                              <X className="h-3 w-3" />
-                              Inactive
-                            </>
-                          )}
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                          <Shield className="h-3 w-3" />
+                          {assignment.role?.name ?? `Role #${assignment.role_id}`}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Link to={`/canteen/users/${user.id}/edit`}>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openResetModal(assignment)}
+                            title="Reset password"
+                          >
+                            <KeyRound className="h-4 w-4 text-blue-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRevoke(assignment.id, assignment.user_name)}
+                            title="Revoke assignment"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -149,6 +216,58 @@ export default function UsersPage() {
           </div>
         )}
       </Card>
+      )}
+
+      <Modal
+        isOpen={!!resetTarget}
+        onClose={closeResetModal}
+        title={`Reset Password — ${resetTarget?.username ?? ''}`}
+        size="sm"
+      >
+        {resetSuccess ? (
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+              {resetSuccess}
+            </div>
+            <div className="flex justify-end">
+              <Button variant="primary" onClick={closeResetModal}>
+                Done
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            {resetError && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                {resetError}
+              </div>
+            )}
+            <div>
+              <label htmlFor="new_password" className="block text-sm font-medium text-slate-700 mb-1">
+                New Password *
+              </label>
+              <input
+                type="password"
+                id="new_password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="NewSecretPass#2026"
+                required
+                minLength={8}
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="ghost" onClick={closeResetModal} disabled={resetting}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={resetting}>
+                {resetting ? 'Resetting...' : 'Reset Password'}
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }

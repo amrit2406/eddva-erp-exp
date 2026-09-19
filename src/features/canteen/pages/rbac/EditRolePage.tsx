@@ -2,42 +2,55 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
-import { getPermissions, getRole, updateRole } from '../../api/canteen.api';
-import type { Permission } from '../../types/canteen.types';
+import ResourcePermissionsToggle from '../../components/rbac/ResourcePermissionsToggle';
+import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
+import { getPermissionsCatalog, getMyPermissions, getRole, updateRole } from '../../api/roles.api';
+import { getApiErrorMessage } from '../../utils/errors';
+import { filterGrantablePermissions, sanitizeRolePermissions, useIsInstituteAdmin } from '../../utils/rbac.utils';
+import type { PermissionResource, RolePermission } from '../../types/canteen.types';
 
 export default function EditRolePage() {
+  const isInstituteAdmin = useIsInstituteAdmin();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [resources, setResources] = useState<PermissionResource[]>([]);
+  const [myPermissions, setMyPermissions] = useState<RolePermission[]>([]);
+  const [selectedPermissions, setSelectedPermissions] = useState<RolePermission[]>([]);
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, [id]);
+    if (isInstituteAdmin) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
+  }, [id, isInstituteAdmin]);
 
   async function loadData() {
     if (!id) return;
     try {
       setLoading(true);
-      const [permsData, roleData] = await Promise.all([
-        getPermissions(),
-        getRole(id)
+
+      const [catalog, roleData, currentPermissions] = await Promise.all([
+        getPermissionsCatalog(),
+        getRole(id),
+        getMyPermissions().catch(() => [] as RolePermission[]),
       ]);
-      setPermissions(permsData);
+      setResources(catalog.resources);
+      setMyPermissions(currentPermissions);
       setFormData({
         name: roleData.name,
-        description: roleData.description
+        description: roleData.description,
       });
-      setSelectedPermissions(roleData.rolePermissions.map(rp => rp.permissionId));
+      setSelectedPermissions(roleData.permissions);
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      setError(getApiErrorMessage(err, 'Failed to load data'));
     } finally {
       setLoading(false);
     }
@@ -46,38 +59,61 @@ export default function EditRolePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
+
+    const permissions = sanitizeRolePermissions(selectedPermissions);
+    if (permissions.length === 0) {
+      setError('Select at least one permission for this role.');
+      return;
+    }
+
+    const grantablePermissions = filterGrantablePermissions(
+      permissions,
+      myPermissions,
+      isInstituteAdmin
+    );
+
+    if (grantablePermissions.length === 0) {
+      setError('You can only assign permissions that your account already has in the canteen module.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
       await updateRole(id, {
-        ...formData,
-        permissionIds: selectedPermissions
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        permissions: grantablePermissions,
       });
       navigate('/canteen/roles');
     } catch (err: any) {
       if (err.response?.status === 401) {
         return;
       }
-      setError(err.response?.data?.message || 'Failed to update role');
+      setError(getApiErrorMessage(err, 'Failed to update role'));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const togglePermission = (permissionId: string) => {
-    setSelectedPermissions(prev =>
-      prev.includes(permissionId)
-        ? prev.filter(p => p !== permissionId)
-        : [...prev, permissionId]
+  if (!isInstituteAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Edit Role</h1>
+          <p className="text-slate-600 mt-1">Update canteen role and permissions</p>
+        </div>
+        <InstituteAdminGuard section="Roles" />
+      </div>
     );
-  };
+  }
 
   if (loading) {
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Edit Role</h1>
-          <p className="text-slate-600 mt-1">Update role and permissions</p>
+          <p className="text-slate-600 mt-1">Update canteen role and permissions</p>
         </div>
         <Card className="border-slate-200">
           <div className="p-8 text-center text-slate-500">Loading...</div>
@@ -90,7 +126,7 @@ export default function EditRolePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Edit Role</h1>
-        <p className="text-slate-600 mt-1">Update role and permissions</p>
+        <p className="text-slate-600 mt-1">Update canteen role and permissions</p>
       </div>
 
       <Card className="border-slate-200">
@@ -112,7 +148,7 @@ export default function EditRolePage() {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -126,7 +162,7 @@ export default function EditRolePage() {
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -134,25 +170,13 @@ export default function EditRolePage() {
 
             <div>
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Permissions</h3>
-              <div className="border border-slate-200 rounded-lg p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {permissions.map((perm) => (
-                    <label key={perm.id} className="flex items-start gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedPermissions.includes(perm.id)}
-                        onChange={() => togglePermission(perm.id)}
-                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#008BE9] focus:ring-[#008BE9]"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-slate-700">{perm.name}</div>
-                        <div className="text-xs text-slate-500">{perm.key}</div>
-                        <div className="text-xs text-slate-500">{perm.description}</div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <ResourcePermissionsToggle
+                resources={resources}
+                selectedPermissions={selectedPermissions}
+                onChange={setSelectedPermissions}
+                myPermissions={myPermissions}
+                isInstituteAdmin={isInstituteAdmin}
+              />
             </div>
 
             <div className="flex gap-3 pt-4">
