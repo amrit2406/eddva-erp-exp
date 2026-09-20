@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes, Tag, MapPin, Truck, Package, ClipboardList, Tags, ClipboardCheck, Wrench, Contact, BellRing, Bus, Route } from 'lucide-react';
+import { BadgeCheck, LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes, Tag, MapPin, Truck, Package, ClipboardList, Tags, ClipboardCheck, Wrench, Contact, BellRing, Bus, Route } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 import { useIsInstituteAdmin } from '../../features/sales-purchase/utils/rbac.utils';
@@ -71,8 +71,21 @@ const navItems: NavItem[] = [
     label: 'Admission',
     icon: GraduationCap,
     children: [
+      { path: '/admission/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/admission/sessions', label: 'Academic Sessions', icon: Calendar },
       { path: '/admission/programs', label: 'Programs', icon: BookOpen },
+      { path: '/admission/enquiries', label: 'Enquiries & Leads', icon: MessageSquare },
+      { path: '/admission/applicants', label: 'Applicants', icon: UserPlus },
+      { path: '/admission/applications', label: 'Applications', icon: ClipboardList },
+      { path: '/admission/tests', label: 'Entrance Tests', icon: ClipboardCheck },
+      { path: '/admission/interviews', label: 'Interviews', icon: UserCheck },
+      { path: '/admission/merit-lists', label: 'Merit Lists', icon: Medal },
+      { path: '/admission/offers', label: 'Offers', icon: Award },
+      { path: '/admission/payments', label: 'Admission Payments', icon: CreditCard },
+      { path: '/admission/confirmations', label: 'Confirmations', icon: BadgeCheck },
+      { path: '/admission/reports', label: 'Reports', icon: BarChart2 },
+      { path: '/admission/notifications', label: 'Notification Log', icon: Bell },
+      { path: '/admission/fee-structures', label: 'Fee Structures', icon: Wallet },
       { path: '/admission/permissions', label: 'Permissions', icon: Key },
       { path: '/admission/roles', label: 'Roles', icon: Shield },
       { path: '/admission/users', label: 'Users', icon: Users },

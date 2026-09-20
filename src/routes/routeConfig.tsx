@@ -177,6 +177,42 @@ import AdmissionEditSessionPage from '../features/admission/pages/sessions/EditS
 import AdmissionProgramsPage from '../features/admission/pages/programs/ProgramsPage';
 import AdmissionCreateProgramPage from '../features/admission/pages/programs/CreateProgramPage';
 import AdmissionEditProgramPage from '../features/admission/pages/programs/EditProgramPage';
+import AdmissionApplicantsPage from '../features/admission/pages/applicants/ApplicantsPage';
+import AdmissionCreateApplicantPage from '../features/admission/pages/applicants/CreateApplicantPage';
+import AdmissionEditApplicantPage from '../features/admission/pages/applicants/EditApplicantPage';
+import AdmissionEnquiriesPage from '../features/admission/pages/enquiries/EnquiriesPage';
+import AdmissionCreateEnquiryPage from '../features/admission/pages/enquiries/CreateEnquiryPage';
+import AdmissionEditEnquiryPage from '../features/admission/pages/enquiries/EditEnquiryPage';
+import AdmissionEnquiryDetailPage from '../features/admission/pages/enquiries/EnquiryDetailPage';
+import AdmissionConvertEnquiryPage from '../features/admission/pages/enquiries/ConvertEnquiryPage';
+import AdmissionApplicationsPage from '../features/admission/pages/applications/ApplicationsPage';
+import AdmissionCreateApplicationPage from '../features/admission/pages/applications/CreateApplicationPage';
+import AdmissionEditApplicationPage from '../features/admission/pages/applications/EditApplicationPage';
+import AdmissionApplicationDetailPage from '../features/admission/pages/applications/ApplicationDetailPage';
+import AdmissionTestsPage from '../features/admission/pages/tests/TestsPage';
+import AdmissionCreateTestPage from '../features/admission/pages/tests/CreateTestPage';
+import AdmissionEditTestPage from '../features/admission/pages/tests/EditTestPage';
+import AdmissionTestDetailPage from '../features/admission/pages/tests/TestDetailPage';
+import AdmissionInterviewsPage from '../features/admission/pages/interviews/InterviewsPage';
+import AdmissionCreateInterviewPage from '../features/admission/pages/interviews/CreateInterviewPage';
+import AdmissionEditInterviewPage from '../features/admission/pages/interviews/EditInterviewPage';
+import AdmissionInterviewDetailPage from '../features/admission/pages/interviews/InterviewDetailPage';
+import AdmissionMeritListsPage from '../features/admission/pages/meritLists/MeritListsPage';
+import AdmissionCreateMeritListPage from '../features/admission/pages/meritLists/CreateMeritListPage';
+import AdmissionEditMeritListPage from '../features/admission/pages/meritLists/EditMeritListPage';
+import AdmissionMeritListDetailPage from '../features/admission/pages/meritLists/MeritListDetailPage';
+import AdmissionDashboardPage from '../features/admission/pages/dashboard/DashboardPage';
+import AdmissionNotificationsPage from '../features/admission/pages/notifications/NotificationsPage';
+import AdmissionReportsPage from '../features/admission/pages/reports/ReportsPage';
+import AdmissionConfirmationsPage from '../features/admission/pages/confirmations/ConfirmationsPage';
+import AdmissionConfirmationDetailPage from '../features/admission/pages/confirmations/ConfirmationDetailPage';
+import AdmissionPaymentsPage from '../features/admission/pages/payments/PaymentsPage';
+import AdmissionPaymentDetailPage from '../features/admission/pages/payments/PaymentDetailPage';
+import AdmissionOffersPage from '../features/admission/pages/offers/OffersPage';
+import AdmissionOfferDetailPage from '../features/admission/pages/offers/OfferDetailPage';
+import AdmissionFeeStructuresPage from '../features/admission/pages/feeStructures/FeeStructuresPage';
+import AdmissionCreateFeeStructurePage from '../features/admission/pages/feeStructures/CreateFeeStructurePage';
+import AdmissionEditFeeStructurePage from '../features/admission/pages/feeStructures/EditFeeStructurePage';
 import AdmissionRolesPage from '../features/admission/pages/rbac/RolesPage';
 import AdmissionCreateRolePage from '../features/admission/pages/rbac/CreateRolePage';
 import AdmissionEditRolePage from '../features/admission/pages/rbac/EditRolePage';
@@ -1229,6 +1265,186 @@ export const routeConfig = [
   {
     path: '/admission/programs/:id/edit',
     element: AdmissionEditProgramPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/applicants',
+    element: AdmissionApplicantsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/applicants/new',
+    element: AdmissionCreateApplicantPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/applicants/:id/edit',
+    element: AdmissionEditApplicantPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/enquiries',
+    element: AdmissionEnquiriesPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/enquiries/new',
+    element: AdmissionCreateEnquiryPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/enquiries/:id',
+    element: AdmissionEnquiryDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/enquiries/:id/edit',
+    element: AdmissionEditEnquiryPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/enquiries/:id/convert',
+    element: AdmissionConvertEnquiryPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/applications',
+    element: AdmissionApplicationsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/applications/new',
+    element: AdmissionCreateApplicationPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/applications/:id',
+    element: AdmissionApplicationDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/applications/:id/edit',
+    element: AdmissionEditApplicationPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/tests',
+    element: AdmissionTestsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/tests/new',
+    element: AdmissionCreateTestPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/tests/:id',
+    element: AdmissionTestDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/tests/:id/edit',
+    element: AdmissionEditTestPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/interviews',
+    element: AdmissionInterviewsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/interviews/new',
+    element: AdmissionCreateInterviewPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/interviews/:id',
+    element: AdmissionInterviewDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/interviews/:id/edit',
+    element: AdmissionEditInterviewPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/merit-lists',
+    element: AdmissionMeritListsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/merit-lists/new',
+    element: AdmissionCreateMeritListPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/merit-lists/:id',
+    element: AdmissionMeritListDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/merit-lists/:id/edit',
+    element: AdmissionEditMeritListPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/dashboard',
+    element: AdmissionDashboardPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/notifications',
+    element: AdmissionNotificationsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/reports',
+    element: AdmissionReportsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/confirmations',
+    element: AdmissionConfirmationsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/confirmations/:id',
+    element: AdmissionConfirmationDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/payments',
+    element: AdmissionPaymentsPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/payments/:id',
+    element: AdmissionPaymentDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/offers',
+    element: AdmissionOffersPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/offers/:id',
+    element: AdmissionOfferDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/fee-structures',
+    element: AdmissionFeeStructuresPage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/fee-structures/new',
+    element: AdmissionCreateFeeStructurePage,
+    isProtected: true,
+  },
+  {
+    path: '/admission/fee-structures/:id/edit',
+    element: AdmissionEditFeeStructurePage,
     isProtected: true,
   },
 
