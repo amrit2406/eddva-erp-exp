@@ -221,6 +221,42 @@ import AdmissionCreatePermissionPage from '../features/admission/pages/rbac/Crea
 import AdmissionEditPermissionPage from '../features/admission/pages/rbac/EditPermissionPage';
 import AdmissionUsersPage from '../features/admission/pages/rbac/UsersPage';
 import AdmissionCreateUserPage from '../features/admission/pages/rbac/CreateUserPage';
+// Hostel RBAC
+import HostelPermissionsPage from '../features/hostel/pages/rbac/PermissionsPage';
+import HostelCreatePermissionPage from '../features/hostel/pages/rbac/CreatePermissionPage';
+import HostelEditPermissionPage from '../features/hostel/pages/rbac/EditPermissionPage';
+import HostelBlocksPage from '../features/hostel/pages/blocks/BlocksPage';
+import HostelCreateBlockPage from '../features/hostel/pages/blocks/CreateBlockPage';
+import HostelEditBlockPage from '../features/hostel/pages/blocks/EditBlockPage';
+import HostelBlockDetailPage from '../features/hostel/pages/blocks/BlockDetailPage';
+import HostelRoomsPage from '../features/hostel/pages/rooms/RoomsPage';
+import HostelCreateRoomPage from '../features/hostel/pages/rooms/CreateRoomPage';
+import HostelEditRoomPage from '../features/hostel/pages/rooms/EditRoomPage';
+import HostelRoomDetailPage from '../features/hostel/pages/rooms/RoomDetailPage';
+import HostelBedsPage from '../features/hostel/pages/beds/BedsPage';
+import HostelCreateBedPage from '../features/hostel/pages/beds/CreateBedPage';
+import HostelBedDetailPage from '../features/hostel/pages/beds/BedDetailPage';
+import HostelResidentsPage from '../features/hostel/pages/residents/ResidentsPage';
+import HostelCreateResidentPage from '../features/hostel/pages/residents/CreateResidentPage';
+import HostelEditResidentPage from '../features/hostel/pages/residents/EditResidentPage';
+import HostelResidentDetailPage from '../features/hostel/pages/residents/ResidentDetailPage';
+import HostelAllotmentsPage from '../features/hostel/pages/allotments/AllotmentsPage';
+import HostelAllotmentDetailPage from '../features/hostel/pages/allotments/AllotmentDetailPage';
+import HostelTransferRequestsPage from '../features/hostel/pages/transfer-requests/TransferRequestsPage';
+import HostelTransferRequestDetailPage from '../features/hostel/pages/transfer-requests/TransferRequestDetailPage';
+import HostelGatePassesPage from '../features/hostel/pages/gate-passes/GatePassesPage';
+import HostelCreateGatePassPage from '../features/hostel/pages/gate-passes/CreateGatePassPage';
+import HostelGateScanPage from '../features/hostel/pages/gate-passes/GateScanPage';
+import HostelGatePassDetailPage from '../features/hostel/pages/gate-passes/GatePassDetailPage';
+import HostelAttendancePage from '../features/hostel/pages/attendance/AttendancePage';
+import HostelMarkAttendancePage from '../features/hostel/pages/attendance/MarkAttendancePage';
+import HostelRollCallPage from '../features/hostel/pages/attendance/RollCallPage';
+import HostelAttendanceDetailPage from '../features/hostel/pages/attendance/AttendanceDetailPage';
+import HostelRolesPage from '../features/hostel/pages/rbac/RolesPage';
+import HostelCreateRolePage from '../features/hostel/pages/rbac/CreateRolePage';
+import HostelEditRolePage from '../features/hostel/pages/rbac/EditRolePage';
+import HostelUsersPage from '../features/hostel/pages/rbac/UsersPage';
+import HostelCreateUserPage from '../features/hostel/pages/rbac/CreateUserPage';
 // Library RBAC
 import LibraryRolesPage from '../features/library/pages/rbac/RolesPage';
 import LibraryCreateRolePage from '../features/library/pages/rbac/CreateRolePage';
@@ -1492,6 +1528,191 @@ export const routeConfig = [
   {
     path: '/admission/users/new',
     element: AdmissionCreateUserPage,
+    isProtected: true,
+  },
+
+  // Hostel Routes
+  {
+    path: '/hostel/blocks',
+    element: HostelBlocksPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/blocks/new',
+    element: HostelCreateBlockPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/blocks/:id',
+    element: HostelBlockDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/blocks/:id/edit',
+    element: HostelEditBlockPage,
+    isProtected: true,
+  },
+
+  {
+    path: '/hostel/rooms',
+    element: HostelRoomsPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/rooms/new',
+    element: HostelCreateRoomPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/rooms/:id',
+    element: HostelRoomDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/rooms/:id/edit',
+    element: HostelEditRoomPage,
+    isProtected: true,
+  },
+
+  {
+    path: '/hostel/beds',
+    element: HostelBedsPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/beds/new',
+    element: HostelCreateBedPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/beds/:id',
+    element: HostelBedDetailPage,
+    isProtected: true,
+  },
+
+  {
+    path: '/hostel/residents',
+    element: HostelResidentsPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/residents/new',
+    element: HostelCreateResidentPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/residents/:id',
+    element: HostelResidentDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/residents/:id/edit',
+    element: HostelEditResidentPage,
+    isProtected: true,
+  },
+
+  {
+    path: '/hostel/allotments',
+    element: HostelAllotmentsPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/allotments/:id',
+    element: HostelAllotmentDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/transfer-requests',
+    element: HostelTransferRequestsPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/transfer-requests/:id',
+    element: HostelTransferRequestDetailPage,
+    isProtected: true,
+  },
+
+  {
+    path: '/hostel/gate-passes',
+    element: HostelGatePassesPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/gate-passes/new',
+    element: HostelCreateGatePassPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/gate-passes/scan',
+    element: HostelGateScanPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/gate-passes/:id',
+    element: HostelGatePassDetailPage,
+    isProtected: true,
+  },
+
+  {
+    path: '/hostel/attendance',
+    element: HostelAttendancePage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/attendance/new',
+    element: HostelMarkAttendancePage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/attendance/roll-call',
+    element: HostelRollCallPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/attendance/:id',
+    element: HostelAttendanceDetailPage,
+    isProtected: true,
+  },
+
+  // Hostel RBAC Routes
+  {
+    path: '/hostel/permissions',
+    element: HostelPermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/permissions/new',
+    element: HostelCreatePermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/permissions/:id/edit',
+    element: HostelEditPermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/roles',
+    element: HostelRolesPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/roles/new',
+    element: HostelCreateRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/roles/:id/edit',
+    element: HostelEditRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/users',
+    element: HostelUsersPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/users/new',
+    element: HostelCreateUserPage,
     isProtected: true,
   },
 

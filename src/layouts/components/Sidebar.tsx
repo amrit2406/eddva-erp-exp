@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { BadgeCheck, LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes, Tag, MapPin, Truck, Package, ClipboardList, Tags, ClipboardCheck, Wrench, Contact, BellRing, Bus, Route } from 'lucide-react';
+import { ArrowRightLeft, BedDouble, DoorOpen, BadgeCheck, LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes, Tag, MapPin, Truck, Package, ClipboardList, Tags, ClipboardCheck, Wrench, Contact, BellRing, Bus, Route } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 import { useIsInstituteAdmin } from '../../features/sales-purchase/utils/rbac.utils';
 import { useIsInstituteAdmin as useIsCanteenInstituteAdmin } from '../../features/canteen/utils/rbac.utils';
 import { useIsInstituteAdmin as useIsAdmissionInstituteAdmin } from '../../features/admission/utils/rbac.utils';
+import { useIsInstituteAdmin as useIsHostelInstituteAdmin } from '../../features/hostel/utils/rbac.utils';
 
 interface NavItem {
   path: string;
@@ -89,6 +90,25 @@ const navItems: NavItem[] = [
       { path: '/admission/reports', label: 'Reports', icon: BarChart2 },
       { path: '/admission/notifications', label: 'Notification Log', icon: Bell },
       { path: '/admission/fee-structures', label: 'Fee Structures', icon: Wallet },
+    ]
+  },
+  {
+    path: '/hostel',
+    label: 'Hostel',
+    icon: Home,
+    children: [
+      { path: '/hostel/permissions', label: 'Permissions', icon: Key },
+      { path: '/hostel/roles', label: 'Roles', icon: Shield },
+      { path: '/hostel/users', label: 'Users', icon: Users },
+      { path: '/hostel/residents', label: 'Residents', icon: UserCheck },
+      { path: '/hostel/allotments', label: 'Allotments', icon: ClipboardList },
+      { path: '/hostel/transfer-requests', label: 'Transfer Requests', icon: ArrowRightLeft },
+      { path: '/hostel/gate-passes', label: 'Gate Passes', icon: LogIn },
+      { path: '/hostel/gate-passes/scan', label: 'Gate Scan', icon: ClipboardCheck },
+      { path: '/hostel/attendance', label: 'Attendance', icon: Calendar },
+      { path: '/hostel/blocks', label: 'Blocks', icon: Building2 },
+      { path: '/hostel/rooms', label: 'Rooms', icon: DoorOpen },
+      { path: '/hostel/beds', label: 'Beds', icon: BedDouble },
     ]
   },
   {
@@ -216,6 +236,7 @@ export default function Sidebar() {
   const isSalesPurchaseAdmin = useIsInstituteAdmin();
   const isCanteenAdmin = useIsCanteenInstituteAdmin();
   const isAdmissionAdmin = useIsAdmissionInstituteAdmin();
+  const isHostelAdmin = useIsHostelInstituteAdmin();
   const visibleNavItems = navItems.map((item) => {
     if (item.path === '/sales-purchase' && item.children && !isSalesPurchaseAdmin) {
       return {
@@ -238,6 +259,14 @@ export default function Sidebar() {
         ...item,
         children: item.children.filter(
           (child) => child.path !== '/admission/roles' && child.path !== '/admission/users'
+        ),
+      };
+    }
+    if (item.path === '/hostel' && item.children && !isHostelAdmin) {
+      return {
+        ...item,
+        children: item.children.filter(
+          (child) => child.path !== '/hostel/roles' && child.path !== '/hostel/users'
         ),
       };
     }
