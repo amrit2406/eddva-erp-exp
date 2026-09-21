@@ -7,12 +7,16 @@ interface GenericDataViewProps {
   emptyMessage: string;
   // Links the first column of list rows to a detail page.
   rowHref?: (row: GenericRecord) => string | undefined;
+  // Adds an actions column to list rows.
+  rowActions?: (row: GenericRecord) => React.ReactNode;
 }
 
 // Shows a response of unknown shape: a list becomes a table, an object becomes
 // stat tiles for its scalar fields plus a table for each list it contains.
-export default function GenericDataView({ data, emptyMessage, rowHref }: GenericDataViewProps) {
-  if (Array.isArray(data)) return <ObjectTable rows={data} emptyMessage={emptyMessage} rowHref={rowHref} />;
+export default function GenericDataView({ data, emptyMessage, rowHref, rowActions }: GenericDataViewProps) {
+  if (Array.isArray(data)) {
+    return <ObjectTable rows={data} emptyMessage={emptyMessage} rowHref={rowHref} rowActions={rowActions} />;
+  }
 
   const tiles = Object.entries(flattenRecord(data)).filter(([, value]) => isPrimitive(value) && value !== null);
   const tables = Object.entries(data).filter(

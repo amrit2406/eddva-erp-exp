@@ -5,35 +5,21 @@ import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import AccessNotice from '../../components/common/AccessNotice';
 import BlockSelect from '../../components/blocks/BlockSelect';
-import { bulkMarkAttendance, getBlockResidents, getResidents } from '../../api/hostel.api';
+import { bulkMarkAttendance } from '../../api/hostel.api';
 import { useBlockOptions } from '../../hooks/useBlockOptions';
 import { useResourceAccess } from '../../hooks/useResourceAccess';
 import { useToast } from '../../../../hooks/useToast';
 import { cn } from '../../../../utils/cn';
 import { ATTENDANCE_SESSIONS, ATTENDANCE_STATUSES, defaultSession, statusLabel } from '../../utils/attendance';
 import { getApiErrorMessage, isAuthError } from '../../utils/errors';
-import { flattenRecord } from '../../utils/format';
-import { relatedId } from '../../utils/records';
 import { todayISO } from '../../utils/residents';
-import type { GenericRecord } from '../../types/hostel.types';
-
-interface RollCallRow {
-  id: number;
-  name: string;
-  admissionNo: string;
-}
+import { PAGE_LIMIT, fetchRows, type RowsResult } from '../../utils/rollCall';
 
 interface Entry {
   status: string;
   remarks: string;
 }
 
-interface RowsResult {
-  rows: RollCallRow[];
-  truncated: boolean;
-}
-
-const PAGE_LIMIT = 200;
 const DEFAULT_STATUS = 'present';
 
 const inputClass =
@@ -45,40 +31,6 @@ const STATUS_STYLES: Record<string, string> = {
   late: 'bg-amber-500 text-white border-amber-500',
   on_leave: 'bg-blue-600 text-white border-blue-600',
 };
-
-// A block's residents come back in a shape that isn't fixed yet, so pull out
-// whatever identifies the resident from each row.
-function toRows(data: GenericRecord | GenericRecord[]): RollCallRow[] {
-  const records = Array.isArray(data) ? data : ((Object.values(data).find(Array.isArray) as GenericRecord[]) ?? []);
-  return records.flatMap((record) => {
-    const id = Number(relatedId(record, 'resident', 'resident_id'));
-    if (!id) return [];
-    const flat = flattenRecord(record);
-    return [
-      {
-        id,
-        name: String(flat.student_name ?? flat.resident_student_name ?? flat.name ?? `Resident #${id}`),
-        admissionNo: String(flat.admission_no ?? flat.resident_admission_no ?? ''),
-      },
-    ];
-  });
-}
-
-async function fetchRows(blockId: string): Promise<RowsResult> {
-  if (!blockId) {
-    const result = await getResidents({ limit: PAGE_LIMIT });
-    return {
-      rows: result.data.map((resident) => ({
-        id: resident.resident_id,
-        name: resident.student_name,
-        admissionNo: resident.admission_no,
-      })),
-      truncated: (result.pagination?.total ?? 0) > result.data.length,
-    };
-  }
-  const result = await getBlockResidents(blockId, { limit: PAGE_LIMIT });
-  return { rows: toRows(result.data), truncated: (result.pagination?.total ?? 0) > PAGE_LIMIT };
-}
 
 export default function RollCallPage() {
   const navigate = useNavigate();

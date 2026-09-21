@@ -7,6 +7,9 @@ interface WardenSelectProps {
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
+  // Wording for other uses, e.g. picking who a complaint is assigned to.
+  noun?: string;
+  fallbackPlaceholder?: string;
 }
 
 const inputClass =
@@ -15,7 +18,14 @@ const inputClass =
 // Picks a warden from the hostel user assignments. Listing assignments can be
 // restricted to Institute Admins, so when it fails this falls back to typing
 // the ERP user id directly.
-export default function WardenSelect({ id, value, onChange, required }: WardenSelectProps) {
+export default function WardenSelect({
+  id,
+  value,
+  onChange,
+  required,
+  noun = 'warden',
+  fallbackPlaceholder = 'e.g. usr_warden_001',
+}: WardenSelectProps) {
   const [assignments, setAssignments] = useState<HostelUserAssignment[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -40,7 +50,7 @@ export default function WardenSelect({ id, value, onChange, required }: WardenSe
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="e.g. usr_warden_001"
+        placeholder={fallbackPlaceholder}
         className={inputClass}
         required={required}
       />
@@ -58,7 +68,7 @@ export default function WardenSelect({ id, value, onChange, required }: WardenSe
       className={inputClass}
       required={required}
     >
-      <option value="">{assignments ? 'Select a warden' : 'Loading...'}</option>
+      <option value="">{assignments ? `Select a ${noun}` : 'Loading...'}</option>
       {!knownValue && <option value={value}>{value}</option>}
       {assignments?.map((assignment) => (
         <option key={assignment.id} value={assignment.eddva_user_id}>

@@ -18,6 +18,21 @@ import type {
   VacatePayload,
   HostelRoom,
   ListParams,
+  ComplaintEditData,
+  ComplaintFormData,
+  ComplaintParams,
+  DisciplineFormData,
+  FeePlan,
+  FeePlanFormData,
+  FeePlanParams,
+  InvoiceFormData,
+  InvoicePaymentFormData,
+  MessAttendanceFormData,
+  MessAttendanceParams,
+  MessBulkPayload,
+  MessMenuEntry,
+  MessMenuFormData,
+  VisitorFormData,
   ListResult,
   Pagination,
   RecordResult,
@@ -533,4 +548,445 @@ export async function updateAttendance(id: string | number, status: string, rema
     ...(trimmed ? { remarks: trimmed } : {}),
   });
   return unwrapItem<GenericRecord>(response.data);
+}
+
+// Mess menu
+function normalizeMenuEntry(raw: GenericRecord): MessMenuEntry {
+  return {
+    ...raw,
+    menu_id: Number(raw.menu_id ?? raw.mess_menu_id ?? raw.id),
+    items: Array.isArray(raw.items) ? raw.items.map(String) : [],
+  } as unknown as MessMenuEntry;
+}
+
+// A menu entry has its own `items` field (the dishes), so unlike unwrapRecord this
+// never mistakes it for a wrapped row list.
+function unwrapMenuView(body: unknown): RecordResult {
+  if (!isRecord(body)) return { data: [] };
+  const payload = body.data ?? body;
+  if (Array.isArray(payload) || isRecord(payload)) {
+    return { data: payload as GenericRecord | GenericRecord[], pagination: body.pagination as Pagination | undefined };
+  }
+  return { data: [] };
+}
+
+function toMenuPayload(data: MessMenuFormData) {
+  return {
+    day_of_week: data.day_of_week.trim().toLowerCase(),
+    meal_type: data.meal_type.trim().toLowerCase(),
+    items: data.items.map((item) => item.trim()).filter(Boolean),
+    effective_from: data.effective_from,
+    is_active: data.is_active,
+  };
+}
+
+export async function getMessMenu(params: ListParams = {}): Promise<ListResult<MessMenuEntry>> {
+  const response = await axiosInstance.get('/hostel/mess/menu', { params: cleanParams(params) });
+  const result = unwrapList<GenericRecord>(response.data);
+  return { data: result.data.map(normalizeMenuEntry), pagination: result.pagination };
+}
+
+export async function getWeeklyMessMenu(): Promise<RecordResult> {
+  const response = await axiosInstance.get('/hostel/mess/menu/weekly');
+  return unwrapMenuView(response.data);
+}
+
+export async function getDayMessMenu(day: string): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/mess/menu/day/${encodeURIComponent(day.toLowerCase())}`);
+  return unwrapMenuView(response.data);
+}
+
+export async function getMessMenuEntry(id: string | number): Promise<MessMenuEntry> {
+  const response = await axiosInstance.get(`/hostel/mess/menu/${id}`);
+  return normalizeMenuEntry(unwrapItem<GenericRecord>(response.data));
+}
+
+export async function createMessMenuEntry(data: MessMenuFormData): Promise<MessMenuEntry> {
+  const response = await axiosInstance.post('/hostel/mess/menu', toMenuPayload(data));
+  return normalizeMenuEntry(unwrapItem<GenericRecord>(response.data));
+}
+
+export async function updateMessMenuEntry(id: string | number, data: MessMenuFormData): Promise<MessMenuEntry> {
+  const response = await axiosInstance.patch(`/hostel/mess/menu/${id}`, toMenuPayload(data));
+  return normalizeMenuEntry(unwrapItem<GenericRecord>(response.data));
+}
+
+export async function deleteMessMenuEntry(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/hostel/mess/menu/${id}`);
+}
+
+// Visitors
+export type VisitorView = 'active' | 'today';
+
+export async function getVisitors(params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get('/hostel/visitors', { params });
+  return unwrapRecord(response.data);
+}
+
+export async function getVisitorView(view: VisitorView, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/visitors/${view}`, { params });
+  return unwrapRecord(response.data);
+}
+
+export async function getResidentVisitors(residentId: string | number, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/visitors/resident/${residentId}`, { params });
+  return unwrapRecord(response.data);
+}
+
+export async function getVisitor(id: string | number): Promise<GenericRecord> {
+  const response = await axiosInstance.get(`/hostel/visitors/${id}`);
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function createVisitor(data: VisitorFormData): Promise<GenericRecord> {
+  const optional = (value: string) => (value.trim() ? value.trim() : undefined);
+  const payload = {
+    resident_id: Number(data.resident_id),
+    visitor_name: data.visitor_name.trim(),
+    relation: data.relation.trim(),
+    id_proof_type: optional(data.id_proof_type),
+    id_proof_number: optional(data.id_proof_number),
+    purpose: data.purpose.trim(),
+    // Left out when blank so the server stamps the arrival time itself.
+    in_time: data.in_time ? new Date(data.in_time).toISOString() : undefined,
+  };
+  const response = await axiosInstance.post(
+    '/hostel/visitors',
+    Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined))
+  );
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function checkoutVisitor(id: string | number): Promise<void> {
+  await axiosInstance.post(`/hostel/visitors/${id}/checkout`);
+}
+
+// Mess attendance
+// The list and summary filters are sent under both the body's field name and the
+// plain `date` the hostel attendance list uses, since either may be what's read.
+function messFilters(params: MessAttendanceParams) {
+  const { date, ...rest } = params;
+  return cleanParams({ ...rest, ...(date ? { date, meal_date: date } : {}) });
+}
+
+export async function getMessAttendance(params: MessAttendanceParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get('/hostel/mess/attendance', { params: messFilters(params) });
+  return unwrapRecord(response.data);
+}
+
+export async function getMessAttendanceSummary(params: MessAttendanceParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get('/hostel/mess/attendance/summary', { params: messFilters(params) });
+  return unwrapRecord(response.data);
+}
+
+export async function getResidentMessAttendance(residentId: string | number, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/mess/attendance/resident/${residentId}`, { params });
+  return unwrapRecord(response.data);
+}
+
+export async function markMessAttendance(data: MessAttendanceFormData): Promise<GenericRecord> {
+  const response = await axiosInstance.post('/hostel/mess/attendance', {
+    resident_id: Number(data.resident_id),
+    meal_date: data.meal_date,
+    meal_type: data.meal_type.trim().toLowerCase(),
+    status: data.status,
+  });
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function bulkMarkMessAttendance(data: MessBulkPayload): Promise<GenericRecord> {
+  const response = await axiosInstance.post('/hostel/mess/attendance/bulk', {
+    meal_date: data.meal_date,
+    meal_type: data.meal_type.trim().toLowerCase(),
+    entries: data.entries,
+  });
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function updateMessAttendance(id: string | number, status: string): Promise<GenericRecord> {
+  const response = await axiosInstance.patch(`/hostel/mess/attendance/${id}`, { status });
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+// Complaints & maintenance
+function notesBody(key: string, value: string) {
+  const trimmed = value.trim();
+  return trimmed ? { [key]: trimmed } : {};
+}
+
+export async function getComplaints(params: ComplaintParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get('/hostel/complaints', { params: cleanParams(params) });
+  return unwrapRecord(response.data);
+}
+
+export async function getComplaint(id: string | number): Promise<GenericRecord> {
+  const response = await axiosInstance.get(`/hostel/complaints/${id}`);
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function createComplaint(data: ComplaintFormData): Promise<GenericRecord> {
+  const response = await axiosInstance.post('/hostel/complaints', {
+    resident_id: Number(data.resident_id),
+    // A complaint about a common area has no room.
+    ...(data.room_id ? { room_id: Number(data.room_id) } : {}),
+    category: data.category.trim().toLowerCase(),
+    description: data.description.trim(),
+    priority: data.priority,
+  });
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function updateComplaint(id: string | number, data: ComplaintEditData): Promise<GenericRecord> {
+  const response = await axiosInstance.patch(`/hostel/complaints/${id}`, {
+    category: data.category.trim().toLowerCase(),
+    description: data.description.trim(),
+    priority: data.priority,
+  });
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function assignComplaint(id: string | number, assignedTo: string, notes: string): Promise<void> {
+  await axiosInstance.post(`/hostel/complaints/${id}/assign`, {
+    assigned_to: assignedTo.trim(),
+    ...notesBody('notes', notes),
+  });
+}
+
+export async function changeComplaintStatus(id: string | number, status: string, notes: string): Promise<void> {
+  await axiosInstance.post(`/hostel/complaints/${id}/status`, { status, ...notesBody('notes', notes) });
+}
+
+export async function resolveComplaint(id: string | number, resolutionNotes: string): Promise<void> {
+  await axiosInstance.post(`/hostel/complaints/${id}/resolve`, { resolution_notes: resolutionNotes.trim() });
+}
+
+export async function closeComplaint(id: string | number, notes: string): Promise<void> {
+  await axiosInstance.post(`/hostel/complaints/${id}/close`, notesBody('notes', notes));
+}
+
+export async function getComplaintUpdates(id: string | number, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/complaints/${id}/updates`, { params });
+  return unwrapRecord(response.data);
+}
+
+export async function addComplaintUpdate(id: string | number, notes: string): Promise<void> {
+  await axiosInstance.post(`/hostel/complaints/${id}/updates`, { notes: notes.trim() });
+}
+
+export async function getComplaintHistory(id: string | number, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/complaints/${id}/history`, { params });
+  return unwrapRecord(response.data);
+}
+
+// Fee plans
+function normalizeFeePlan(raw: GenericRecord): FeePlan {
+  return { ...raw, fee_plan_id: Number(raw.fee_plan_id ?? raw.plan_id ?? raw.id) } as unknown as FeePlan;
+}
+
+function toFeePlanPayload(data: FeePlanFormData) {
+  return {
+    name: data.name.trim(),
+    room_type: data.room_type.trim().toLowerCase(),
+    includes_mess: data.includes_mess,
+    amount: Number(data.amount),
+    billing_cycle: data.billing_cycle.trim().toLowerCase(),
+    description: data.description.trim(),
+    is_active: data.is_active,
+  };
+}
+
+export async function getFeePlans(params: FeePlanParams = {}): Promise<ListResult<FeePlan>> {
+  const response = await axiosInstance.get('/hostel/fee-plans', { params: cleanParams(params) });
+  const result = unwrapList<GenericRecord>(response.data);
+  return { data: result.data.map(normalizeFeePlan), pagination: result.pagination };
+}
+
+export async function getFeePlan(id: string | number): Promise<FeePlan> {
+  const response = await axiosInstance.get(`/hostel/fee-plans/${id}`);
+  return normalizeFeePlan(unwrapItem<GenericRecord>(response.data));
+}
+
+export async function createFeePlan(data: FeePlanFormData): Promise<FeePlan> {
+  const response = await axiosInstance.post('/hostel/fee-plans', toFeePlanPayload(data));
+  return normalizeFeePlan(unwrapItem<GenericRecord>(response.data));
+}
+
+export async function updateFeePlan(id: string | number, data: FeePlanFormData): Promise<FeePlan> {
+  const response = await axiosInstance.patch(`/hostel/fee-plans/${id}`, toFeePlanPayload(data));
+  return normalizeFeePlan(unwrapItem<GenericRecord>(response.data));
+}
+
+export async function deleteFeePlan(id: string | number): Promise<void> {
+  await axiosInstance.delete(`/hostel/fee-plans/${id}`);
+}
+
+// Fee invoices
+export type InvoiceView = 'outstanding' | 'due' | 'overdue';
+
+export async function getInvoices(params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get('/hostel/invoices', { params });
+  return unwrapRecord(response.data);
+}
+
+export async function getInvoiceView(view: InvoiceView, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/invoices/${view}`, { params });
+  return unwrapRecord(response.data);
+}
+
+export async function getInvoice(id: string | number): Promise<GenericRecord> {
+  const response = await axiosInstance.get(`/hostel/invoices/${id}`);
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function createInvoice(data: InvoiceFormData): Promise<GenericRecord> {
+  const remarks = data.remarks.trim();
+  const response = await axiosInstance.post('/hostel/invoices', {
+    resident_id: Number(data.resident_id),
+    fee_plan_id: Number(data.fee_plan_id),
+    billing_period_start: data.billing_period_start,
+    due_date: data.due_date,
+    ...(remarks ? { remarks } : {}),
+  });
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function cancelInvoice(id: string | number, reason: string): Promise<void> {
+  await axiosInstance.post(`/hostel/invoices/${id}/cancel`, { reason: reason.trim() });
+}
+
+export async function getInvoicePayments(id: string | number, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/invoices/${id}/payments`, { params });
+  return unwrapRecord(response.data);
+}
+
+export async function recordInvoicePayment(id: string | number, data: InvoicePaymentFormData): Promise<GenericRecord> {
+  const reference = data.transaction_ref.trim();
+  const remarks = data.remarks.trim();
+  const response = await axiosInstance.post(`/hostel/invoices/${id}/payments`, {
+    amount_paid: Number(data.amount_paid),
+    payment_date: data.payment_date,
+    payment_mode: data.payment_mode,
+    ...(reference ? { transaction_ref: reference } : {}),
+    ...(remarks ? { remarks } : {}),
+  });
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function getResidentInvoices(residentId: string | number, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/residents/${residentId}/invoices`, { params });
+  return unwrapRecord(response.data);
+}
+
+export async function getResidentPayments(residentId: string | number, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/residents/${residentId}/payments`, { params });
+  return unwrapRecord(response.data);
+}
+
+export interface DownloadedFile {
+  blob: Blob;
+  filename: string | null;
+}
+
+// File endpoints need the auth header, so they can't be plain links: fetch the
+// file as a blob and let the caller show or save it.
+async function fetchBlob(path: string, params?: object): Promise<DownloadedFile> {
+  try {
+    const response = await axiosInstance.get(path, { params, responseType: 'blob' });
+    const disposition: string | undefined = response.headers['content-disposition'];
+    const match = disposition?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+    return { blob: response.data, filename: match ? decodeURIComponent(match[1]) : null };
+  } catch (error) {
+    // With responseType 'blob' an error body arrives as a Blob too; decode it so
+    // getApiErrorMessage can read the API's message.
+    const failure = error as { response?: { data?: unknown } };
+    if (failure.response?.data instanceof Blob) {
+      try {
+        failure.response.data = JSON.parse(await failure.response.data.text());
+      } catch {
+        // not JSON — leave it, the generic message will be used
+      }
+    }
+    throw error;
+  }
+}
+
+// Fee payments (read-only)
+export async function getPayments(params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get('/hostel/payments', { params });
+  return unwrapRecord(response.data);
+}
+
+export async function getPayment(id: string | number): Promise<GenericRecord> {
+  const response = await axiosInstance.get(`/hostel/payments/${id}`);
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+// The receipt may be a document (PDF/HTML) or JSON data; the caller checks the type.
+export function getPaymentReceipt(id: string | number): Promise<DownloadedFile> {
+  return fetchBlob(`/hostel/payments/${id}/receipt`);
+}
+
+// Discipline
+export async function getDisciplineRecords(params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get('/hostel/discipline-records', { params });
+  return unwrapRecord(response.data);
+}
+
+export async function getDisciplineRecord(id: string | number): Promise<GenericRecord> {
+  const response = await axiosInstance.get(`/hostel/discipline-records/${id}`);
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function getResidentDisciplineRecords(residentId: string | number, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/residents/${residentId}/discipline-records`, { params });
+  return unwrapRecord(response.data);
+}
+
+export async function createDisciplineRecord(data: DisciplineFormData): Promise<GenericRecord> {
+  const fine = data.fine_amount.trim();
+  const response = await axiosInstance.post(`/hostel/residents/${data.resident_id}/discipline-records`, {
+    incident_date: data.incident_date,
+    category: data.category.trim().toLowerCase().replace(/\s+/g, '_'),
+    description: data.description.trim(),
+    action_taken: data.action_taken.trim().toLowerCase().replace(/\s+/g, '_'),
+    ...(fine ? { fine_amount: Number(fine) } : {}),
+    ...(data.gate_pass_id ? { gate_pass_id: Number(data.gate_pass_id) } : {}),
+  });
+  return unwrapItem<GenericRecord>(response.data);
+}
+
+export async function linkDisciplineGatePass(id: string | number, gatePassId: number): Promise<void> {
+  await axiosInstance.post(`/hostel/discipline-records/${id}/link-gate-pass`, { gate_pass_id: gatePassId });
+}
+
+// Alerts
+export type AlertView = 'summary' | 'overdue-passes' | 'unaccounted-absences';
+
+export async function getAlerts(view: AlertView, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/alerts/${view}`, { params });
+  return unwrapRecord(response.data);
+}
+
+// Dashboard
+export type DashboardSectionKey = 'summary' | 'occupancy' | 'gate-status' | 'attendance' | 'complaints' | 'fees' | 'mess';
+
+export async function getDashboardSection(section: DashboardSectionKey): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/dashboard/${section}`);
+  return unwrapRecord(response.data);
+}
+
+// Reports
+export async function getHostelReport(report: string, params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get(`/hostel/reports/${encodeURIComponent(report)}`, { params });
+  return unwrapRecord(response.data);
+}
+
+export function exportHostelReport(report: string): Promise<DownloadedFile> {
+  return fetchBlob(`/hostel/reports/${encodeURIComponent(report)}/export`);
+}
+
+// Notification log
+export async function getNotifications(params: ListParams = {}): Promise<RecordResult> {
+  const response = await axiosInstance.get('/hostel/notifications', { params });
+  return unwrapRecord(response.data);
 }

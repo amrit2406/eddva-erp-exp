@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { ArrowRightLeft, BedDouble, DoorOpen, BadgeCheck, LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes, Tag, MapPin, Truck, Package, ClipboardList, Tags, ClipboardCheck, Wrench, Contact, BellRing, Bus, Route } from 'lucide-react';
+import { ArrowRightLeft, BedDouble, CalendarCheck, Gavel, DoorOpen, BadgeCheck, LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes, Tag, MapPin, Truck, Package, ClipboardList, Tags, ClipboardCheck, Wrench, Contact, BellRing, Bus, Route } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 import { useIsInstituteAdmin } from '../../features/sales-purchase/utils/rbac.utils';
@@ -100,6 +100,8 @@ const navItems: NavItem[] = [
       { path: '/hostel/permissions', label: 'Permissions', icon: Key },
       { path: '/hostel/roles', label: 'Roles', icon: Shield },
       { path: '/hostel/users', label: 'Users', icon: Users },
+      { path: '/hostel/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/hostel/alerts', label: 'Alerts', icon: AlertTriangle },
       { path: '/hostel/residents', label: 'Residents', icon: UserCheck },
       { path: '/hostel/allotments', label: 'Allotments', icon: ClipboardList },
       { path: '/hostel/transfer-requests', label: 'Transfer Requests', icon: ArrowRightLeft },
@@ -109,6 +111,16 @@ const navItems: NavItem[] = [
       { path: '/hostel/blocks', label: 'Blocks', icon: Building2 },
       { path: '/hostel/rooms', label: 'Rooms', icon: DoorOpen },
       { path: '/hostel/beds', label: 'Beds', icon: BedDouble },
+      { path: '/hostel/visitors', label: 'Visitors', icon: Contact },
+      { path: '/hostel/mess-menu', label: 'Mess Menu', icon: Utensils },
+      { path: '/hostel/mess-attendance', label: 'Mess Attendance', icon: CalendarCheck },
+      { path: '/hostel/complaints', label: 'Complaints', icon: Wrench },
+      { path: '/hostel/fee-plans', label: 'Fee Plans', icon: Tags },
+      { path: '/hostel/invoices', label: 'Fee Invoices', icon: Receipt },
+      { path: '/hostel/payments', label: 'Fee Payments', icon: CreditCard },
+      { path: '/hostel/discipline', label: 'Discipline', icon: Gavel },
+      { path: '/hostel/reports', label: 'Reports', icon: BarChart2 },
+      { path: '/hostel/notifications', label: 'Notification Log', icon: Bell },
     ]
   },
   {

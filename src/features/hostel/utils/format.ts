@@ -50,3 +50,17 @@ export function flattenRecord(record: Record<string, unknown>): Record<string, u
   });
   return flat;
 }
+
+// Current local time as an <input type="datetime-local"> value.
+export function nowDateTimeInput(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+// Amounts are assumed to be rupees. Accepts numeric strings (Decimal columns).
+export function formatCurrency(amount: unknown): string {
+  const value = Number(amount);
+  if (amount === null || amount === undefined || amount === '' || Number.isNaN(value)) return '—';
+  return value.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+}

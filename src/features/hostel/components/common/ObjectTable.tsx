@@ -7,6 +7,8 @@ interface ObjectTableProps {
   emptyMessage: string;
   // When given, the first column links to the row's detail page.
   rowHref?: (row: GenericRecord) => string | undefined;
+  // Adds a trailing actions column, e.g. a quick "check out" button.
+  rowActions?: (row: GenericRecord) => React.ReactNode;
 }
 
 const MAX_COLUMNS = 8;
@@ -64,7 +66,7 @@ function pickColumns(rows: GenericRecord[]): string[] {
 
 // Renders rows whose fields aren't known up front: picks the most useful
 // scalar fields as columns.
-export default function ObjectTable({ rows, emptyMessage, rowHref }: ObjectTableProps) {
+export default function ObjectTable({ rows, emptyMessage, rowHref, rowActions }: ObjectTableProps) {
   if (rows.length === 0) {
     return <div className="p-8 text-center text-slate-500">{emptyMessage}</div>;
   }
@@ -82,6 +84,7 @@ export default function ObjectTable({ rows, emptyMessage, rowHref }: ObjectTable
                 {humanizeKey(column)}
               </th>
             ))}
+            {rowActions && <th className="text-right py-3 px-4 font-semibold text-slate-700">Actions</th>}
           </tr>
         </thead>
         <tbody>
@@ -100,6 +103,7 @@ export default function ObjectTable({ rows, emptyMessage, rowHref }: ObjectTable
                     )}
                   </td>
                 ))}
+                {rowActions && <td className="py-3 px-4 text-right">{rowActions(rows[index])}</td>}
               </tr>
             );
           })}

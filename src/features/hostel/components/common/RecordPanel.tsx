@@ -10,9 +10,10 @@ interface RecordPanelProps {
   emptyMessage: string;
   pageSize?: number;
   rowHref?: (row: GenericRecord) => string | undefined;
+  rowActions?: (row: GenericRecord) => React.ReactNode;
 }
 
-export default function RecordPanel({ load, emptyMessage, pageSize = 20, rowHref }: RecordPanelProps) {
+export default function RecordPanel({ load, emptyMessage, pageSize = 20, rowHref, rowActions }: RecordPanelProps) {
   const [result, setResult] = useState<RecordResult | null>(null);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [page, setPage] = useState(1);
@@ -40,7 +41,7 @@ export default function RecordPanel({ load, emptyMessage, pageSize = 20, rowHref
 
   return (
     <>
-      <GenericDataView data={result.data} emptyMessage={emptyMessage} rowHref={rowHref} />
+      <GenericDataView data={result.data} emptyMessage={emptyMessage} rowHref={rowHref} rowActions={rowActions} />
       {pagination && <PaginationBar pagination={pagination} onPageChange={setPage} />}
     </>
   );

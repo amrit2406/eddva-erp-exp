@@ -252,6 +252,33 @@ import HostelAttendancePage from '../features/hostel/pages/attendance/Attendance
 import HostelMarkAttendancePage from '../features/hostel/pages/attendance/MarkAttendancePage';
 import HostelRollCallPage from '../features/hostel/pages/attendance/RollCallPage';
 import HostelAttendanceDetailPage from '../features/hostel/pages/attendance/AttendanceDetailPage';
+import HostelMessMenuPage from '../features/hostel/pages/mess-menu/MessMenuPage';
+import HostelCreateMenuEntryPage from '../features/hostel/pages/mess-menu/CreateMenuEntryPage';
+import HostelEditMenuEntryPage from '../features/hostel/pages/mess-menu/EditMenuEntryPage';
+import HostelVisitorsPage from '../features/hostel/pages/visitors/VisitorsPage';
+import HostelCreateVisitorPage from '../features/hostel/pages/visitors/CreateVisitorPage';
+import HostelVisitorDetailPage from '../features/hostel/pages/visitors/VisitorDetailPage';
+import HostelMessAttendancePage from '../features/hostel/pages/mess-attendance/MessAttendancePage';
+import HostelMarkMessAttendancePage from '../features/hostel/pages/mess-attendance/MarkMessAttendancePage';
+import HostelMessRollCallPage from '../features/hostel/pages/mess-attendance/MessRollCallPage';
+import HostelComplaintsPage from '../features/hostel/pages/complaints/ComplaintsPage';
+import HostelCreateComplaintPage from '../features/hostel/pages/complaints/CreateComplaintPage';
+import HostelComplaintDetailPage from '../features/hostel/pages/complaints/ComplaintDetailPage';
+import HostelFeePlansPage from '../features/hostel/pages/fee-plans/FeePlansPage';
+import HostelCreateFeePlanPage from '../features/hostel/pages/fee-plans/CreateFeePlanPage';
+import HostelEditFeePlanPage from '../features/hostel/pages/fee-plans/EditFeePlanPage';
+import HostelInvoicesPage from '../features/hostel/pages/invoices/InvoicesPage';
+import HostelCreateInvoicePage from '../features/hostel/pages/invoices/CreateInvoicePage';
+import HostelInvoiceDetailPage from '../features/hostel/pages/invoices/InvoiceDetailPage';
+import HostelPaymentsPage from '../features/hostel/pages/payments/PaymentsPage';
+import HostelPaymentDetailPage from '../features/hostel/pages/payments/PaymentDetailPage';
+import HostelDisciplinePage from '../features/hostel/pages/discipline/DisciplinePage';
+import HostelCreateDisciplinePage from '../features/hostel/pages/discipline/CreateDisciplinePage';
+import HostelDisciplineDetailPage from '../features/hostel/pages/discipline/DisciplineDetailPage';
+import HostelAlertsPage from '../features/hostel/pages/alerts/AlertsPage';
+import HostelDashboardPage from '../features/hostel/pages/dashboard/DashboardPage';
+import HostelReportsPage from '../features/hostel/pages/reports/ReportsPage';
+import HostelNotificationsPage from '../features/hostel/pages/notifications/NotificationsPage';
 import HostelRolesPage from '../features/hostel/pages/rbac/RolesPage';
 import HostelCreateRolePage from '../features/hostel/pages/rbac/CreateRolePage';
 import HostelEditRolePage from '../features/hostel/pages/rbac/EditRolePage';
@@ -1671,6 +1698,149 @@ export const routeConfig = [
   {
     path: '/hostel/attendance/:id',
     element: HostelAttendanceDetailPage,
+    isProtected: true,
+  },
+
+  // Hostel Mess Menu & Visitors
+  {
+    path: '/hostel/mess-menu',
+    element: HostelMessMenuPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/mess-menu/new',
+    element: HostelCreateMenuEntryPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/mess-menu/:id/edit',
+    element: HostelEditMenuEntryPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/visitors',
+    element: HostelVisitorsPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/visitors/new',
+    element: HostelCreateVisitorPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/visitors/:id',
+    element: HostelVisitorDetailPage,
+    isProtected: true,
+  },
+
+  // Hostel Mess Attendance & Complaints
+  {
+    path: '/hostel/mess-attendance',
+    element: HostelMessAttendancePage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/mess-attendance/new',
+    element: HostelMarkMessAttendancePage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/mess-attendance/roll-call',
+    element: HostelMessRollCallPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/complaints',
+    element: HostelComplaintsPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/complaints/new',
+    element: HostelCreateComplaintPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/complaints/:id',
+    element: HostelComplaintDetailPage,
+    isProtected: true,
+  },
+
+  // Hostel Fee Plans & Invoices
+  {
+    path: '/hostel/fee-plans',
+    element: HostelFeePlansPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/fee-plans/new',
+    element: HostelCreateFeePlanPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/fee-plans/:id/edit',
+    element: HostelEditFeePlanPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/invoices',
+    element: HostelInvoicesPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/invoices/new',
+    element: HostelCreateInvoicePage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/invoices/:id',
+    element: HostelInvoiceDetailPage,
+    isProtected: true,
+  },
+
+  // Hostel Payments, Discipline, Alerts, Dashboard, Reports & Notifications
+  {
+    path: '/hostel/payments',
+    element: HostelPaymentsPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/payments/:id',
+    element: HostelPaymentDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/discipline',
+    element: HostelDisciplinePage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/discipline/new',
+    element: HostelCreateDisciplinePage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/discipline/:id',
+    element: HostelDisciplineDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/alerts',
+    element: HostelAlertsPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/dashboard',
+    element: HostelDashboardPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/reports',
+    element: HostelReportsPage,
+    isProtected: true,
+  },
+  {
+    path: '/hostel/notifications',
+    element: HostelNotificationsPage,
     isProtected: true,
   },
 

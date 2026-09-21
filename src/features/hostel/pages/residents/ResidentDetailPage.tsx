@@ -13,8 +13,13 @@ import {
   getResidentAllotment,
   getResidentAllotmentHistory,
   getResidentAttendance,
+  getResidentDisciplineRecords,
   getResidentGatePasses,
+  getResidentInvoices,
+  getResidentMessAttendance,
+  getResidentPayments,
   getResidentTransferHistory,
+  getResidentVisitors,
   readmitResident,
   reinstateResident,
   requestResidentTransfer,
@@ -31,7 +36,17 @@ import { currentAcademicYear, hasRecordData, statusActions, todayISO } from '../
 import { recordId } from '../../utils/records';
 import type { GenericRecord, HostelResident, ListParams, RecordResult } from '../../types/hostel.types';
 
-type Tab = 'allotment' | 'allotment-history' | 'transfer-history' | 'gate-passes' | 'attendance';
+type Tab =
+  | 'allotment'
+  | 'allotment-history'
+  | 'transfer-history'
+  | 'gate-passes'
+  | 'attendance'
+  | 'meals'
+  | 'visitors'
+  | 'invoices'
+  | 'payments'
+  | 'discipline';
 type ModalKind = 'suspend' | 'reinstate' | 'readmit' | 'allot' | 'transfer' | 'transferRequest' | 'vacate';
 
 const TABS: { key: Tab; label: string }[] = [
@@ -40,7 +55,32 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'transfer-history', label: 'Transfer History' },
   { key: 'gate-passes', label: 'Gate Passes' },
   { key: 'attendance', label: 'Attendance' },
+  { key: 'meals', label: 'Meals' },
+  { key: 'visitors', label: 'Visitors' },
+  { key: 'invoices', label: 'Invoices' },
+  { key: 'payments', label: 'Payments' },
+  { key: 'discipline', label: 'Discipline' },
 ];
+
+const paymentHref = (row: GenericRecord) => {
+  const id = recordId(row, 'payment_id');
+  return id ? `/hostel/payments/${id}` : undefined;
+};
+
+const disciplineHref = (row: GenericRecord) => {
+  const id = recordId(row, 'discipline_record_id', 'record_id');
+  return id ? `/hostel/discipline/${id}` : undefined;
+};
+
+const invoiceHref = (row: GenericRecord) => {
+  const id = recordId(row, 'invoice_id');
+  return id ? `/hostel/invoices/${id}` : undefined;
+};
+
+const visitorHref = (row: GenericRecord) => {
+  const id = recordId(row, 'visitor_id');
+  return id ? `/hostel/visitors/${id}` : undefined;
+};
 
 const attendanceHref = (row: GenericRecord) => {
   const id = recordId(row, 'attendance_id');
@@ -181,6 +221,11 @@ export default function ResidentDetailPage() {
   const loadTransferHistory = useCallback((params: ListParams) => getResidentTransferHistory(id!, params), [id]);
   const loadGatePasses = useCallback((params: ListParams) => getResidentGatePasses(id!, params), [id]);
   const loadAttendance = useCallback((params: ListParams) => getResidentAttendance(id!, params), [id]);
+  const loadVisitors = useCallback((params: ListParams) => getResidentVisitors(id!, params), [id]);
+  const loadMeals = useCallback((params: ListParams) => getResidentMessAttendance(id!, params), [id]);
+  const loadInvoices = useCallback((params: ListParams) => getResidentInvoices(id!, params), [id]);
+  const loadPayments = useCallback((params: ListParams) => getResidentPayments(id!, params), [id]);
+  const loadDiscipline = useCallback((params: ListParams) => getResidentDisciplineRecords(id!, params), [id]);
 
   const submitModal = async (values: ActionValues) => {
     if (!id || !modal) return;
@@ -393,6 +438,93 @@ export default function ResidentDetailPage() {
               load={loadAttendance}
               emptyMessage="No attendance recorded for this resident"
               rowHref={attendanceHref}
+            />
+          </>
+        )}
+        {tab === 'invoices' && (
+          <>
+            {can('create', 'invoices') && (
+              <div className="flex justify-end p-4 border-b border-slate-200">
+                <Link to={`/hostel/invoices/new?resident_id=${resident.resident_id}`}>
+                  <Button variant="primary" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Invoice
+                  </Button>
+                </Link>
+              </div>
+            )}
+            <RecordPanel
+              key="invoices"
+              load={loadInvoices}
+              emptyMessage="No invoices raised for this resident"
+              rowHref={invoiceHref}
+            />
+          </>
+        )}
+        {tab === 'payments' && (
+          <RecordPanel
+            key="payments"
+            load={loadPayments}
+            emptyMessage="No payments recorded for this resident"
+            rowHref={paymentHref}
+          />
+        )}
+        {tab === 'discipline' && (
+          <>
+            {can('create', 'discipline_records') && (
+              <div className="flex justify-end p-4 border-b border-slate-200">
+                <Link to={`/hostel/discipline/new?resident_id=${resident.resident_id}`}>
+                  <Button variant="primary" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Record Incident
+                  </Button>
+                </Link>
+              </div>
+            )}
+            <RecordPanel
+              key="discipline"
+              load={loadDiscipline}
+              emptyMessage="No discipline records for this resident"
+              rowHref={disciplineHref}
+            />
+          </>
+        )}
+        {tab === 'meals' && (
+          <>
+            {(can('mark', 'mess_attendance') || can('create', 'mess_attendance')) && (
+              <div className="flex justify-end p-4 border-b border-slate-200">
+                <Link to={`/hostel/mess-attendance/new?resident_id=${resident.resident_id}`}>
+                  <Button variant="primary" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Mark Meal
+                  </Button>
+                </Link>
+              </div>
+            )}
+            <RecordPanel
+              key="meals"
+              load={loadMeals}
+              emptyMessage="No meal attendance recorded for this resident"
+            />
+          </>
+        )}
+        {tab === 'visitors' && (
+          <>
+            {can('create', 'visitors') && (
+              <div className="flex justify-end p-4 border-b border-slate-200">
+                <Link to={`/hostel/visitors/new?resident_id=${resident.resident_id}`}>
+                  <Button variant="primary" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Record Visitor
+                  </Button>
+                </Link>
+              </div>
+            )}
+            <RecordPanel
+              key="visitors"
+              load={loadVisitors}
+              emptyMessage="No visitors have come to see this resident"
+              rowHref={visitorHref}
             />
           </>
         )}

@@ -209,3 +209,140 @@ export interface BedListParams extends ListParams {
   block_id?: string;
   room_id?: string;
 }
+
+// Mess menu
+export interface MessMenuEntry {
+  menu_id: number;
+  day_of_week: string;
+  meal_type: string;
+  items: string[];
+  effective_from?: string | null;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface MessMenuFormData {
+  day_of_week: string;
+  meal_type: string;
+  items: string[];
+  effective_from: string;
+  is_active: boolean;
+}
+
+// One meal on one day, however the weekly/day endpoints happen to shape it.
+export interface MenuSlot {
+  day: string;
+  meal: string;
+  items: string[];
+}
+
+// Visitors
+export interface VisitorFormData {
+  resident_id: string;
+  visitor_name: string;
+  relation: string;
+  id_proof_type: string;
+  id_proof_number: string;
+  purpose: string;
+  // datetime-local value (no timezone); converted to ISO when sent. Blank = now.
+  in_time: string;
+}
+
+// Mess attendance
+export interface MessAttendanceFormData {
+  resident_id: string;
+  meal_date: string;
+  meal_type: string;
+  status: string;
+}
+
+export interface MessBulkPayload {
+  meal_date: string;
+  meal_type: string;
+  entries: { resident_id: number; status: string }[];
+}
+
+export interface MessAttendanceParams extends ListParams {
+  date?: string;
+  meal_type?: string;
+}
+
+// Complaints & maintenance
+export interface ComplaintFormData {
+  resident_id: string;
+  room_id: string;
+  category: string;
+  description: string;
+  priority: string;
+}
+
+export interface ComplaintEditData {
+  category: string;
+  description: string;
+  priority: string;
+}
+
+export interface ComplaintParams extends ListParams {
+  status?: string;
+  priority?: string;
+  category?: string;
+}
+
+// Fee plans
+export interface FeePlan {
+  fee_plan_id: number;
+  name: string;
+  room_type: string;
+  includes_mess: boolean;
+  // Decimal columns often serialise as strings, so always read via Number().
+  amount: number | string;
+  billing_cycle: string;
+  description?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface FeePlanFormData {
+  name: string;
+  room_type: string;
+  includes_mess: boolean;
+  amount: number;
+  billing_cycle: string;
+  description: string;
+  is_active: boolean;
+}
+
+export interface FeePlanParams extends ListParams {
+  room_type?: string;
+  is_active?: string;
+}
+
+// Fee invoices
+export interface InvoiceFormData {
+  resident_id: string;
+  fee_plan_id: string;
+  billing_period_start: string;
+  due_date: string;
+  remarks: string;
+}
+
+export interface InvoicePaymentFormData {
+  amount_paid: number;
+  payment_date: string;
+  payment_mode: string;
+  transaction_ref: string;
+  remarks: string;
+}
+
+// Discipline
+export interface DisciplineFormData {
+  resident_id: string;
+  incident_date: string;
+  category: string;
+  description: string;
+  action_taken: string;
+  fine_amount: string;
+  gate_pass_id: string;
+}
