@@ -71,6 +71,9 @@ const navItems: NavItem[] = [
     label: 'Admission',
     icon: GraduationCap,
     children: [
+      { path: '/admission/permissions', label: 'Permissions', icon: Key },
+      { path: '/admission/roles', label: 'Roles', icon: Shield },
+      { path: '/admission/users', label: 'Users', icon: Users },
       { path: '/admission/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/admission/sessions', label: 'Academic Sessions', icon: Calendar },
       { path: '/admission/programs', label: 'Programs', icon: BookOpen },
@@ -86,9 +89,6 @@ const navItems: NavItem[] = [
       { path: '/admission/reports', label: 'Reports', icon: BarChart2 },
       { path: '/admission/notifications', label: 'Notification Log', icon: Bell },
       { path: '/admission/fee-structures', label: 'Fee Structures', icon: Wallet },
-      { path: '/admission/permissions', label: 'Permissions', icon: Key },
-      { path: '/admission/roles', label: 'Roles', icon: Shield },
-      { path: '/admission/users', label: 'Users', icon: Users },
     ]
   },
   {
