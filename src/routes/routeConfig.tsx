@@ -284,6 +284,64 @@ import HostelCreateRolePage from '../features/hostel/pages/rbac/CreateRolePage';
 import HostelEditRolePage from '../features/hostel/pages/rbac/EditRolePage';
 import HostelUsersPage from '../features/hostel/pages/rbac/UsersPage';
 import HostelCreateUserPage from '../features/hostel/pages/rbac/CreateUserPage';
+// Alumni RBAC
+import AlumniRolesPage from '../features/alumni/pages/rbac/RolesPage';
+import AlumniCreateRolePage from '../features/alumni/pages/rbac/CreateRolePage';
+import AlumniEditRolePage from '../features/alumni/pages/rbac/EditRolePage';
+import AlumniUsersPage from '../features/alumni/pages/rbac/UsersPage';
+import AlumniCreateUserPage from '../features/alumni/pages/rbac/CreateUserPage';
+import AlumniPermissionsPage from '../features/alumni/pages/rbac/PermissionsPage';
+import AlumniCreatePermissionPage from '../features/alumni/pages/rbac/CreatePermissionPage';
+import AlumniEditPermissionPage from '../features/alumni/pages/rbac/EditPermissionPage';
+import AlumniRegisterPage from '../features/alumni/pages/auth/RegisterAlumniPage';
+import AlumniProfilesPage from '../features/alumni/pages/profiles/ProfilesPage';
+import AlumniCreateProfilePage from '../features/alumni/pages/profiles/CreateProfilePage';
+import AlumniEditProfilePage from '../features/alumni/pages/profiles/EditProfilePage';
+import AlumniProfileDetailPage from '../features/alumni/pages/profiles/ProfileDetailPage';
+import AlumniPublicDirectoryPage from '../features/alumni/pages/public/PublicDirectoryPage';
+import AlumniMyProfilePage from '../features/alumni/pages/me/MyProfilePage';
+import AlumniMyVerificationPage from '../features/alumni/pages/me/MyVerificationPage';
+import AlumniMyNotificationsPage from '../features/alumni/pages/me/MyNotificationsPage';
+import AlumniGroupsPage from '../features/alumni/pages/groups/GroupsPage';
+import AlumniCreateGroupPage from '../features/alumni/pages/groups/CreateGroupPage';
+import AlumniEditGroupPage from '../features/alumni/pages/groups/EditGroupPage';
+import AlumniGroupDetailPage from '../features/alumni/pages/groups/GroupDetailPage';
+import AlumniEventsPage from '../features/alumni/pages/events/EventsPage';
+import AlumniCreateEventPage from '../features/alumni/pages/events/CreateEventPage';
+import AlumniEditEventPage from '../features/alumni/pages/events/EditEventPage';
+import AlumniEventDetailPage from '../features/alumni/pages/events/EventDetailPage';
+import AlumniEventRegistrationsPage from '../features/alumni/pages/event-registrations/EventRegistrationsPage';
+import AlumniEventRegistrationDetailPage from '../features/alumni/pages/event-registrations/EventRegistrationDetailPage';
+import AlumniJobsPage from '../features/alumni/pages/jobs/JobsPage';
+import AlumniCreateJobPage from '../features/alumni/pages/jobs/CreateJobPage';
+import AlumniEditJobPage from '../features/alumni/pages/jobs/EditJobPage';
+import AlumniJobDetailPage from '../features/alumni/pages/jobs/JobDetailPage';
+import AlumniJobApplicationsPage from '../features/alumni/pages/job-applications/JobApplicationsPage';
+import AlumniJobApplicationDetailPage from '../features/alumni/pages/job-applications/JobApplicationDetailPage';
+import AlumniMentorshipProgramsPage from '../features/alumni/pages/mentorship-programs/MentorshipProgramsPage';
+import AlumniCreateMentorshipProgramPage from '../features/alumni/pages/mentorship-programs/CreateMentorshipProgramPage';
+import AlumniEditMentorshipProgramPage from '../features/alumni/pages/mentorship-programs/EditMentorshipProgramPage';
+import AlumniMentorshipProgramDetailPage from '../features/alumni/pages/mentorship-programs/MentorshipProgramDetailPage';
+import AlumniMentorsPage from '../features/alumni/pages/mentors/MentorsPage';
+import AlumniCreateMentorPage from '../features/alumni/pages/mentors/CreateMentorPage';
+import AlumniEditMentorPage from '../features/alumni/pages/mentors/EditMentorPage';
+import AlumniMentorshipMatchesPage from '../features/alumni/pages/mentorship-matches/MentorshipMatchesPage';
+import AlumniMentorshipMatchDetailPage from '../features/alumni/pages/mentorship-matches/MentorshipMatchDetailPage';
+import AlumniCampaignsPage from '../features/alumni/pages/campaigns/CampaignsPage';
+import AlumniCreateCampaignPage from '../features/alumni/pages/campaigns/CreateCampaignPage';
+import AlumniEditCampaignPage from '../features/alumni/pages/campaigns/EditCampaignPage';
+import AlumniCampaignDetailPage from '../features/alumni/pages/campaigns/CampaignDetailPage';
+import AlumniDonationsPage from '../features/alumni/pages/donations/DonationsPage';
+import AlumniCreateDonationPage from '../features/alumni/pages/donations/CreateDonationPage';
+import AlumniDonationDetailPage from '../features/alumni/pages/donations/DonationDetailPage';
+import AlumniNewslettersPage from '../features/alumni/pages/newsletters/NewslettersPage';
+import AlumniCreateNewsletterPage from '../features/alumni/pages/newsletters/CreateNewsletterPage';
+import AlumniEditNewsletterPage from '../features/alumni/pages/newsletters/EditNewsletterPage';
+import AlumniNewsletterDetailPage from '../features/alumni/pages/newsletters/NewsletterDetailPage';
+import AlumniCommunicationLogsPage from '../features/alumni/pages/communication-logs/CommunicationLogsPage';
+import AlumniDashboardPage from '../features/alumni/pages/dashboard/DashboardPage';
+import AlumniReportsPage from '../features/alumni/pages/reports/ReportsPage';
+import AlumniNotificationsPage from '../features/alumni/pages/notifications/NotificationsPage';
 // Library RBAC
 import LibraryRolesPage from '../features/library/pages/rbac/RolesPage';
 import LibraryCreateRolePage from '../features/library/pages/rbac/CreateRolePage';
@@ -1883,6 +1941,319 @@ export const routeConfig = [
   {
     path: '/hostel/users/new',
     element: HostelCreateUserPage,
+    isProtected: true,
+  },
+
+  // Alumni RBAC Routes
+  {
+    path: '/alumni/permissions',
+    element: AlumniPermissionsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/permissions/new',
+    element: AlumniCreatePermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/permissions/:id/edit',
+    element: AlumniEditPermissionPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/roles',
+    element: AlumniRolesPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/roles/new',
+    element: AlumniCreateRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/roles/:id/edit',
+    element: AlumniEditRolePage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/users',
+    element: AlumniUsersPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/users/new',
+    element: AlumniCreateUserPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/register',
+    element: AlumniRegisterPage,
+    isProtected: true,
+  },
+
+  // Alumni Directory Routes
+  {
+    path: '/alumni/profiles',
+    element: AlumniProfilesPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/profiles/new',
+    element: AlumniCreateProfilePage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/profiles/:id',
+    element: AlumniProfileDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/profiles/:id/edit',
+    element: AlumniEditProfilePage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/public-directory',
+    element: AlumniPublicDirectoryPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/me',
+    element: AlumniMyProfilePage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/me/verification',
+    element: AlumniMyVerificationPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/me/notifications',
+    element: AlumniMyNotificationsPage,
+    isProtected: true,
+  },
+
+  // Alumni Groups Routes
+  {
+    path: '/alumni/groups',
+    element: AlumniGroupsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/groups/new',
+    element: AlumniCreateGroupPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/groups/:id',
+    element: AlumniGroupDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/groups/:id/edit',
+    element: AlumniEditGroupPage,
+    isProtected: true,
+  },
+
+  // Alumni Events Routes
+  {
+    path: '/alumni/events',
+    element: AlumniEventsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/events/new',
+    element: AlumniCreateEventPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/events/:id',
+    element: AlumniEventDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/events/:id/edit',
+    element: AlumniEditEventPage,
+    isProtected: true,
+  },
+
+  // Alumni Event Registrations & Payments Routes
+  {
+    path: '/alumni/event-registrations',
+    element: AlumniEventRegistrationsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/event-registrations/:id',
+    element: AlumniEventRegistrationDetailPage,
+    isProtected: true,
+  },
+
+  // Alumni Job Board Routes
+  {
+    path: '/alumni/jobs',
+    element: AlumniJobsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/jobs/new',
+    element: AlumniCreateJobPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/jobs/:id',
+    element: AlumniJobDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/jobs/:id/edit',
+    element: AlumniEditJobPage,
+    isProtected: true,
+  },
+
+  // Alumni Job Applications Routes
+  {
+    path: '/alumni/job-applications',
+    element: AlumniJobApplicationsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/job-applications/:id',
+    element: AlumniJobApplicationDetailPage,
+    isProtected: true,
+  },
+
+  // Alumni Mentorship Programs Routes
+  {
+    path: '/alumni/mentorship-programs',
+    element: AlumniMentorshipProgramsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/mentorship-programs/new',
+    element: AlumniCreateMentorshipProgramPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/mentorship-programs/:id',
+    element: AlumniMentorshipProgramDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/mentorship-programs/:id/edit',
+    element: AlumniEditMentorshipProgramPage,
+    isProtected: true,
+  },
+
+  // Alumni Mentors Routes
+  {
+    path: '/alumni/mentors',
+    element: AlumniMentorsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/mentors/new',
+    element: AlumniCreateMentorPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/mentors/:id/edit',
+    element: AlumniEditMentorPage,
+    isProtected: true,
+  },
+
+  // Alumni Mentorship Matches Routes
+  {
+    path: '/alumni/mentorship-matches',
+    element: AlumniMentorshipMatchesPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/mentorship-matches/:id',
+    element: AlumniMentorshipMatchDetailPage,
+    isProtected: true,
+  },
+
+  // Alumni Fundraising Campaigns Routes
+  {
+    path: '/alumni/campaigns',
+    element: AlumniCampaignsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/campaigns/new',
+    element: AlumniCreateCampaignPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/campaigns/:id',
+    element: AlumniCampaignDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/campaigns/:id/edit',
+    element: AlumniEditCampaignPage,
+    isProtected: true,
+  },
+
+  // Alumni Donations & Receipts Routes
+  {
+    path: '/alumni/donations',
+    element: AlumniDonationsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/donations/new',
+    element: AlumniCreateDonationPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/donations/:id',
+    element: AlumniDonationDetailPage,
+    isProtected: true,
+  },
+
+  // Alumni Newsletters Routes
+  {
+    path: '/alumni/newsletters',
+    element: AlumniNewslettersPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/newsletters/new',
+    element: AlumniCreateNewsletterPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/newsletters/:id',
+    element: AlumniNewsletterDetailPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/newsletters/:id/edit',
+    element: AlumniEditNewsletterPage,
+    isProtected: true,
+  },
+
+  // Alumni Communication, Dashboard, Reports & Notifications Routes
+  {
+    path: '/alumni/communication-logs',
+    element: AlumniCommunicationLogsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/dashboard',
+    element: AlumniDashboardPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/reports',
+    element: AlumniReportsPage,
+    isProtected: true,
+  },
+  {
+    path: '/alumni/notifications',
+    element: AlumniNotificationsPage,
     isProtected: true,
   },
 

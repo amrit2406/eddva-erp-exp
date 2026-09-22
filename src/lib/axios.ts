@@ -4,6 +4,7 @@ import { getSalesPurchaseToken, clearSalesPurchaseToken } from '../features/sale
 import { getCanteenToken, clearCanteenSession } from '../features/canteen/utils/ssoSession';
 import { getAdmissionToken, clearAdmissionSession } from '../features/admission/utils/ssoSession';
 import { getHostelToken, clearHostelSession } from '../features/hostel/utils/ssoSession';
+import { getAlumniToken, clearAlumniSession } from '../features/alumni/utils/ssoSession';
 import { notifyAuthError } from './apiAuthEvents';
 
 const axiosInstance = axios.create({
@@ -52,6 +53,12 @@ const tokenIslands: TokenIsland[] = [
     getToken: getHostelToken,
     clear: clearHostelSession,
     retryFlag: '_hostelRetried',
+  },
+  {
+    matches: islandUrl('/alumni', ['/alumni/auth/sso']),
+    getToken: getAlumniToken,
+    clear: clearAlumniSession,
+    retryFlag: '_alumniRetried',
   },
 ];
 

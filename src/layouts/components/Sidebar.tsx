@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { ArrowRightLeft, BedDouble, CalendarCheck, Gavel, DoorOpen, BadgeCheck, LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes, Tag, MapPin, Truck, Package, ClipboardList, Tags, ClipboardCheck, Wrench, Contact, BellRing, Bus, Route } from 'lucide-react';
+import { ArrowRightLeft, BedDouble, Briefcase, Gift, GitBranch, Handshake, HeartHandshake, Mail, CalendarCheck, Gavel, DoorOpen, BadgeCheck, LayoutDashboard, GraduationCap, Building, ShoppingCart, ArrowRight, ChevronDown, Database, Shield, Key, Users, Utensils, Clock, UserPlus, Search, Monitor, PlayCircle, Receipt, CreditCard, Wallet, BarChart2, BookOpen, Folder, Settings, AlertTriangle, Trophy, Home, Swords, Award, Medal, Bell, Building2, UserCheck, LogIn, MessageSquare, Calendar, Boxes, Tag, MapPin, Truck, Package, ClipboardList, Tags, ClipboardCheck, Wrench, Contact, BellRing, Bus, Route } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../stores/ui.store';
 import { useIsInstituteAdmin } from '../../features/sales-purchase/utils/rbac.utils';
 import { useIsInstituteAdmin as useIsCanteenInstituteAdmin } from '../../features/canteen/utils/rbac.utils';
 import { useIsInstituteAdmin as useIsAdmissionInstituteAdmin } from '../../features/admission/utils/rbac.utils';
 import { useIsInstituteAdmin as useIsHostelInstituteAdmin } from '../../features/hostel/utils/rbac.utils';
+import { useIsInstituteAdmin as useIsAlumniInstituteAdmin } from '../../features/alumni/utils/rbac.utils';
 
 interface NavItem {
   path: string;
@@ -121,6 +122,37 @@ const navItems: NavItem[] = [
       { path: '/hostel/discipline', label: 'Discipline', icon: Gavel },
       { path: '/hostel/reports', label: 'Reports', icon: BarChart2 },
       { path: '/hostel/notifications', label: 'Notification Log', icon: Bell },
+    ]
+  },
+  {
+    path: '/alumni',
+    label: 'Alumni',
+    icon: GraduationCap,
+    children: [
+      { path: '/alumni/permissions', label: 'Permissions', icon: Key },
+      { path: '/alumni/roles', label: 'Roles', icon: Shield },
+      { path: '/alumni/users', label: 'Users', icon: Users },
+      { path: '/alumni/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/alumni/register', label: 'Register Alumni', icon: UserPlus },
+      { path: '/alumni/profiles', label: 'Directory', icon: Contact },
+      { path: '/alumni/public-directory', label: 'Public Directory', icon: Search },
+      { path: '/alumni/me', label: 'My Profile', icon: UserCheck },
+      { path: '/alumni/me/verification', label: 'My Verification', icon: BadgeCheck },
+      { path: '/alumni/me/notifications', label: 'My Notifications', icon: BellRing },
+      { path: '/alumni/groups', label: 'Groups', icon: Users },
+      { path: '/alumni/events', label: 'Events', icon: Calendar },
+      { path: '/alumni/event-registrations', label: 'Event Registrations', icon: CreditCard },
+      { path: '/alumni/jobs', label: 'Job Board', icon: Briefcase },
+      { path: '/alumni/job-applications', label: 'Job Applications', icon: ClipboardList },
+      { path: '/alumni/mentorship-programs', label: 'Mentorship Programs', icon: Handshake },
+      { path: '/alumni/mentors', label: 'Mentors', icon: UserCheck },
+      { path: '/alumni/mentorship-matches', label: 'Mentorship Matches', icon: GitBranch },
+      { path: '/alumni/campaigns', label: 'Campaigns', icon: HeartHandshake },
+      { path: '/alumni/donations', label: 'Donations', icon: Gift },
+      { path: '/alumni/newsletters', label: 'Newsletters', icon: Mail },
+      { path: '/alumni/communication-logs', label: 'Communication Logs', icon: MessageSquare },
+      { path: '/alumni/reports', label: 'Reports', icon: BarChart2 },
+      { path: '/alumni/notifications', label: 'Notifications', icon: Bell },
     ]
   },
   {
@@ -249,6 +281,7 @@ export default function Sidebar() {
   const isCanteenAdmin = useIsCanteenInstituteAdmin();
   const isAdmissionAdmin = useIsAdmissionInstituteAdmin();
   const isHostelAdmin = useIsHostelInstituteAdmin();
+  const isAlumniAdmin = useIsAlumniInstituteAdmin();
   const visibleNavItems = navItems.map((item) => {
     if (item.path === '/sales-purchase' && item.children && !isSalesPurchaseAdmin) {
       return {
@@ -279,6 +312,14 @@ export default function Sidebar() {
         ...item,
         children: item.children.filter(
           (child) => child.path !== '/hostel/roles' && child.path !== '/hostel/users'
+        ),
+      };
+    }
+    if (item.path === '/alumni' && item.children && !isAlumniAdmin) {
+      return {
+        ...item,
+        children: item.children.filter(
+          (child) => child.path !== '/alumni/roles' && child.path !== '/alumni/users'
         ),
       };
     }
