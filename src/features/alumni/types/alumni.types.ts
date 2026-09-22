@@ -99,19 +99,6 @@ export interface ResetPasswordResponse {
   message: string;
 }
 
-// Staff-only: creates an alumni profile and their portal login together
-// (alumni never self-register). The exact profile field set isn't confirmed
-// yet, so this stays a loose bag of fields rather than a fixed shape.
-export interface AlumniRegisterFormData {
-  full_name: string;
-  email: string;
-  phone: string;
-  graduation_year: string;
-  program: string;
-  username: string;
-  password: string;
-}
-
 export interface AlumniChangePasswordFormData {
   current_password: string;
   new_password: string;

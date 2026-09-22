@@ -71,6 +71,13 @@ export interface AlumniProfile extends AlumniProfileCore {
   updated_at?: string;
 }
 
+// Staff-only: creates the alumni's profile and portal login in one call
+// (alumni never self-register). Same fields as creating a profile directly,
+// plus a note explaining how the verification status was decided.
+export interface AlumniRegisterFormData extends AlumniProfileFormData {
+  verification_note: string;
+}
+
 export interface AlumniProfileListParams extends ListParams {
   verification_status?: string;
   batch_year?: string;

@@ -2,10 +2,12 @@ import { useState } from 'react';
 import Button from '../../../../components/ui/Button';
 import type { AlumniProfileFormData, AlumniProfileUpdateData } from '../../types/profile.types';
 
-// The staff create form and the staff/self edit form share these fields; only
-// create adds a one-time password, and only staff edit shows verification
-// status directly (self-edit goes through the verification-request flow instead).
-export type ProfileFormValue = AlumniProfileFormData;
+// The staff create form, the staff/self edit form, and the "register alumni +
+// portal login" form share these fields; only create/register add a one-time
+// password, only staff-facing forms show verification status directly
+// (self-edit goes through the verification-request flow instead), and only
+// register asks for a verification note.
+export type ProfileFormValue = AlumniProfileFormData & { verification_note?: string };
 
 interface ProfileFormProps {
   initialValues: ProfileFormValue;
@@ -15,7 +17,8 @@ interface ProfileFormProps {
   submittingLabel: string;
   showPassword?: boolean;
   showVerificationStatus?: boolean;
-  onSubmit: (data: AlumniProfileUpdateData & { password?: string }) => void;
+  showVerificationNote?: boolean;
+  onSubmit: (data: AlumniProfileUpdateData & { password?: string; verification_note?: string }) => void;
   onCancel: () => void;
 }
 
@@ -33,17 +36,24 @@ export default function ProfileForm({
   submittingLabel,
   showPassword = false,
   showVerificationStatus = false,
+  showVerificationNote = false,
   onSubmit,
   onCancel,
 }: ProfileFormProps) {
-  const [form, setForm] = useState<ProfileFormValue>(initialValues);
+  const [form, setForm] = useState<ProfileFormValue>({ verification_note: '', ...initialValues });
   const set = <K extends keyof ProfileFormValue>(key: K, value: ProfileFormValue[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const { password, ...core } = form;
-    onSubmit({ ...core, batch_year: Number(core.batch_year), graduation_year: Number(core.graduation_year), ...(showPassword ? { password } : {}) });
+    const { password, verification_note, ...core } = form;
+    onSubmit({
+      ...core,
+      batch_year: Number(core.batch_year),
+      graduation_year: Number(core.graduation_year),
+      ...(showPassword ? { password } : {}),
+      ...(showVerificationNote ? { verification_note } : {}),
+    });
   };
 
   return (
@@ -130,7 +140,7 @@ export default function ProfileForm({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label htmlFor="batch_year" className="block text-sm font-medium text-slate-700 mb-1">
-              Batch Year
+              Batch Year *
             </label>
             <input
               id="batch_year"
@@ -139,11 +149,12 @@ export default function ProfileForm({
               onChange={(e) => set('batch_year', e.target.value === '' ? NaN : Number(e.target.value))}
               placeholder="2015"
               className={inputClass}
+              required
             />
           </div>
           <div>
             <label htmlFor="graduation_year" className="block text-sm font-medium text-slate-700 mb-1">
-              Graduation Year
+              Graduation Year *
             </label>
             <input
               id="graduation_year"
@@ -152,6 +163,7 @@ export default function ProfileForm({
               onChange={(e) => set('graduation_year', e.target.value === '' ? NaN : Number(e.target.value))}
               placeholder="2015"
               className={inputClass}
+              required
             />
           </div>
           <div>
@@ -294,6 +306,21 @@ export default function ProfileForm({
             </div>
           )}
         </div>
+        {showVerificationNote && (
+          <div className="mt-4">
+            <label htmlFor="verification_note" className="block text-sm font-medium text-slate-700 mb-1">
+              Verification Note
+            </label>
+            <textarea
+              id="verification_note"
+              value={form.verification_note ?? ''}
+              onChange={(e) => set('verification_note', e.target.value)}
+              rows={2}
+              placeholder="How the verification status above was decided"
+              className={inputClass}
+            />
+          </div>
+        )}
         <div className="flex flex-wrap gap-6 mt-4">
           <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
             <input
