@@ -1,5 +1,6 @@
 import axiosInstance from '../../../lib/axios';
 import { extensionForMime, saveBlob } from '../utils/download';
+import { pickPhotoUrl } from '../utils/format';
 import type {
   AlumniProfile,
   AlumniProfileFormData,
@@ -62,7 +63,13 @@ function unwrapItem<T>(body: { data?: unknown }): T {
 }
 
 function normalizeProfile(raw: GenericRecord): AlumniProfile {
-  return { ...raw, profile_id: Number(raw.profile_id ?? raw.id) } as unknown as AlumniProfile;
+  // The backend's own column is alumni_id (matching resident_id, application_id,
+  // etc. in every other module); profile_id/id are only kept as a fallback.
+  return {
+    ...raw,
+    profile_id: Number(raw.alumni_id ?? raw.profile_id ?? raw.id),
+    photo_url: pickPhotoUrl(raw),
+  } as unknown as AlumniProfile;
 }
 
 function toProfileCorePayload(data: AlumniProfileUpdateData) {
@@ -159,14 +166,35 @@ export async function getProfileGroups(id: string | number): Promise<RecordResul
   return unwrapRecord(response.data);
 }
 
-export async function getProfilePhoto(id: string | number): Promise<GenericRecord> {
-  const response = await axiosInstance.get(`/alumni/profiles/${id}/photo`);
-  return unwrapItem<GenericRecord>(response.data);
+// The GET side of this endpoint isn't documented as JSON — it most likely
+// serves the image itself, so this fetches it as a blob and turns it into a
+// displayable object URL. Callers must revoke the URL once done with it
+// (see ProfileDetailPage). Falls back to reading a url field out of a JSON
+// body, in case the backend answers that way instead. Resolves to null when
+// the profile has no photo (a 404) rather than throwing.
+export async function getProfilePhotoUrl(id: string | number): Promise<string | null> {
+  try {
+    const response = await axiosInstance.get(`/alumni/profiles/${id}/photo`, { responseType: 'blob' });
+    const blob = response.data as Blob;
+    const contentType = String(response.headers['content-type'] || blob.type || '');
+    if (contentType.startsWith('image/')) {
+      return URL.createObjectURL(blob);
+    }
+    const text = await blob.text();
+    const parsed: unknown = JSON.parse(text);
+    const record = isRecord(parsed) ? ((parsed.data as unknown) ?? parsed) : null;
+    return isRecord(record) ? pickPhotoUrl(record) : null;
+  } catch (error) {
+    if ((error as { response?: { status?: number } }).response?.status === 404) return null;
+    throw error;
+  }
 }
 
 export async function uploadProfilePhoto(id: string | number, file: File): Promise<GenericRecord> {
   const body = new FormData();
-  body.append('photo', file);
+  // Confirmed against the backend: FileInterceptor('file', ...) only reads
+  // this exact multipart field name.
+  body.append('file', file);
   const response = await axiosInstance.post(`/alumni/profiles/${id}/photo`, body);
   return unwrapItem<GenericRecord>(response.data);
 }

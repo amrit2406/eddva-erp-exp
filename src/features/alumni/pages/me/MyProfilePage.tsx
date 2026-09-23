@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Card from '../../../../components/ui/Card';
 import ProfileForm from '../../components/profiles/ProfileForm';
 import PhotoUploader from '../../components/profiles/PhotoUploader';
 import VerificationBadge from '../../components/profiles/VerificationBadge';
-import { getMyProfile, updateMyProfile } from '../../api/me.api';
-import { uploadMyPhoto } from '../../api/me.api';
+import { getMyPhotoUrl, getMyProfile, updateMyProfile, uploadMyPhoto } from '../../api/me.api';
 import { useToast } from '../../../../hooks/useToast';
 import { getApiErrorMessage } from '../../utils/errors';
 import type { AlumniProfile, AlumniProfileFormData, AlumniProfileUpdateData } from '../../types/profile.types';
@@ -17,20 +16,36 @@ export default function MyProfilePage() {
   const { toast } = useToast();
   const [profile, setProfile] = useState<AlumniProfile | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // getMyPhotoUrl hands back an object URL (blob:...) when the endpoint
+  // serves the raw image; it must be revoked once replaced or unmounted.
+  const objectUrlRef = useRef<string | null>(null);
 
-  const load = () => {
-    getMyProfile()
-      .then((data) => {
-        setProfile(data);
-        setLoadError(null);
-      })
-      .catch((err) => setLoadError(getApiErrorMessage(err, 'Failed to load your profile')));
+  const load = async () => {
+    try {
+      const data = await getMyProfile();
+      setProfile(data);
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(getApiErrorMessage(err, 'Failed to load your profile'));
+    }
+  };
+
+  const loadPhoto = async () => {
+    const url = await getMyPhotoUrl();
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    objectUrlRef.current = url?.startsWith('blob:') ? url : null;
+    setPhotoUrl(url);
   };
 
   useEffect(() => {
     load();
+    loadPhoto();
+    return () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    };
   }, []);
 
   const handleSubmit = async (data: AlumniProfileUpdateData) => {
@@ -67,11 +82,14 @@ export default function MyProfilePage() {
           <Card className="border-slate-200">
             <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
               <PhotoUploader
-                currentPhotoUrl={profile.photo_url}
+                currentPhotoUrl={photoUrl}
                 onUpload={async (file) => {
                   await uploadMyPhoto(file);
                   toast.success('Photo updated');
-                  load();
+                  // The photo isn't part of GET /alumni/me — this is the
+                  // dedicated (undocumented but mirrored from the Directory
+                  // endpoint) source of truth for display.
+                  await loadPhoto();
                 }}
               />
               <VerificationBadge status={profile.verification_status} />

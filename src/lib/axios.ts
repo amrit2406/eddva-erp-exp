@@ -65,6 +65,17 @@ const tokenIslands: TokenIsland[] = [
 // Request interceptor to add auth token
 axiosInstance.interceptors.request.use(
   async (axiosConfig) => {
+    // The instance sets a default 'Content-Type: application/json'. Axios's
+    // own transformRequest checks that header before looking at the body: if
+    // it already resolves to application/json, a FormData body gets
+    // JSON.stringify'd instead of sent as multipart, and the real file
+    // content (and the multipart boundary) never reaches the server. Every
+    // file upload needs this header removed so the browser can set the
+    // correct 'multipart/form-data; boundary=...' one itself.
+    if (axiosConfig.data instanceof FormData) {
+      delete axiosConfig.headers['Content-Type'];
+    }
+
     const island = tokenIslands.find((i) => i.matches(axiosConfig.url));
     if (island) {
       try {

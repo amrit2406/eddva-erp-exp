@@ -25,6 +25,39 @@ export function formatValue(_key: string, value: unknown): string {
   return String(value);
 }
 
+const PHOTO_KEYS = [
+  'photo_url',
+  'photoUrl',
+  'avatar_url',
+  'avatarUrl',
+  'image_url',
+  'imageUrl',
+  'picture_url',
+  'pictureUrl',
+  'profile_photo_url',
+  'url',
+];
+
+// The backend's field for an uploaded photo isn't confirmed (it may not be
+// "photo_url"), so this checks the common spellings, including one level of
+// nesting (e.g. { photo: { url } }).
+export function pickPhotoUrl(record: Record<string, unknown> | null | undefined): string | null {
+  if (!record) return null;
+  for (const key of PHOTO_KEYS) {
+    const value = record[key];
+    if (typeof value === 'string' && value) return value;
+  }
+  for (const key of ['photo', 'avatar', 'picture', 'image']) {
+    const nested = record[key];
+    if (typeof nested === 'string' && nested) return nested;
+    if (nested && typeof nested === 'object') {
+      const url = pickPhotoUrl(nested as Record<string, unknown>);
+      if (url) return url;
+    }
+  }
+  return null;
+}
+
 export function todayISO(): string {
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, '0');

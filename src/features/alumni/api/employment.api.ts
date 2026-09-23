@@ -37,7 +37,9 @@ function toEmploymentPayload(data: EmploymentFormData) {
     industry: data.industry.trim(),
     location: data.location.trim(),
     start_date: data.start_date,
-    ...(data.end_date ? { end_date: data.end_date } : {}),
+    // A current role has no end date, even if one was left over from before
+    // "current" was checked.
+    ...(!data.is_current && data.end_date ? { end_date: data.end_date } : {}),
     is_current: data.is_current,
   };
 }

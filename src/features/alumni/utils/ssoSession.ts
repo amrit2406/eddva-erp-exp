@@ -141,3 +141,21 @@ export function getCachedIsAlumniInstituteAdmin(): boolean {
   if (!token) return false;
   return decodeToken(token)?.is_institute_admin === true;
 }
+
+function decodeInstituteId(token: string): string | null {
+  const instituteId = decodeToken(token)?.institute_id;
+  return typeof instituteId === 'string' ? instituteId : null;
+}
+
+// The Alumni session's own institute — needed for endpoints that are public
+// (no auth required) and so can't derive it from a token server-side, like
+// /alumni/public/directory. Resolves the token first (awaiting the SSO
+// exchange if it hasn't happened yet) rather than trusting a cache that may
+// not be warm yet.
+export async function getAlumniInstituteId(): Promise<string | null> {
+  try {
+    return decodeInstituteId(await getAlumniToken());
+  } catch {
+    return null;
+  }
+}

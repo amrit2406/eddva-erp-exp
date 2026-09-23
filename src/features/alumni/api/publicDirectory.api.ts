@@ -1,4 +1,5 @@
 import axiosInstance from '../../../lib/axios';
+import { getAlumniInstituteId } from '../utils/ssoSession';
 import type { GenericRecord, ListParams, Pagination, RecordResult } from '../types/profile.types';
 
 function isRecord(value: unknown): value is GenericRecord {
@@ -19,8 +20,14 @@ function unwrapRecord(body: unknown): RecordResult {
 }
 
 // Publicly readable — no permission is required to view it, and the request
-// still goes out even when nobody is signed in (see lib/axios.ts).
+// still goes out even when nobody is signed in (see lib/axios.ts). Being
+// public means it can't derive the institute from a session server-side, so
+// it validates institute_id as a required query param — this staff preview
+// pulls that from the current Alumni session's own token.
 export async function getPublicDirectory(params: ListParams = {}): Promise<RecordResult> {
-  const response = await axiosInstance.get('/alumni/public/directory', { params });
+  const instituteId = await getAlumniInstituteId();
+  const response = await axiosInstance.get('/alumni/public/directory', {
+    params: { ...params, ...(instituteId ? { institute_id: instituteId } : {}) },
+  });
   return unwrapRecord(response.data);
 }

@@ -75,7 +75,10 @@ export async function getJobApplicationResume(id: string | number): Promise<Gene
 
 export async function uploadJobApplicationResume(id: string | number, file: File): Promise<GenericRecord> {
   const body = new FormData();
-  body.append('resume', file);
+  // Not confirmed like the photo uploads were, but the same backend used
+  // FileInterceptor('file', ...) there, so this guesses the same convention
+  // instead of the semantic name — verify against this controller too.
+  body.append('file', file);
   const response = await axiosInstance.post(`/alumni/job-applications/${id}/resume`, body);
   return unwrapItem<GenericRecord>(response.data);
 }

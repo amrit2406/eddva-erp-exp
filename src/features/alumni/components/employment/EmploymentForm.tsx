@@ -105,26 +105,27 @@ export default function EmploymentForm({
             required
           />
         </div>
-        <div>
-          <label htmlFor="employment_end" className="block text-sm font-medium text-slate-700 mb-1">
-            End Date
-          </label>
-          <input
-            id="employment_end"
-            type="date"
-            value={form.end_date}
-            onChange={(e) => set('end_date', e.target.value)}
-            disabled={form.is_current}
-            className={inputClass}
-          />
-        </div>
+        {!form.is_current && (
+          <div>
+            <label htmlFor="employment_end" className="block text-sm font-medium text-slate-700 mb-1">
+              End Date
+            </label>
+            <input
+              id="employment_end"
+              type="date"
+              value={form.end_date}
+              onChange={(e) => set('end_date', e.target.value)}
+              className={inputClass}
+            />
+          </div>
+        )}
       </div>
 
       <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
         <input
           type="checkbox"
           checked={form.is_current}
-          onChange={(e) => set('is_current', e.target.checked)}
+          onChange={(e) => setForm((prev) => ({ ...prev, is_current: e.target.checked, end_date: e.target.checked ? '' : prev.end_date }))}
           className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
         />
         This is their current role

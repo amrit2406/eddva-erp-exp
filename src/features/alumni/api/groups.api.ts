@@ -13,7 +13,8 @@ function unwrapList<T = GenericRecord>(body: unknown): ListResult<T> {
     return { data: payload as T[], pagination: body.pagination as Pagination | undefined };
   }
   if (isRecord(payload)) {
-    const rows = ['items', 'rows', 'data', 'groups'].map((key) => payload[key]).find(Array.isArray);
+    const known = ['items', 'rows', 'data', 'groups'].map((key) => payload[key]).find(Array.isArray);
+    const rows = known ?? Object.values(payload).find(Array.isArray);
     return {
       data: (rows as T[] | undefined) ?? [],
       pagination: (body.pagination ?? payload.pagination) as Pagination | undefined,
@@ -29,7 +30,11 @@ function unwrapRecord(body: unknown): RecordResult {
     return { data: payload as GenericRecord[], pagination: body.pagination as Pagination | undefined };
   }
   if (isRecord(payload)) {
-    const rows = ['items', 'rows', 'data', 'members'].map((key) => payload[key]).find(Array.isArray);
+    // Try the likely key names first, then fall back to whatever array-valued
+    // property is actually there — the real key (e.g. "alumni", "profiles")
+    // isn't confirmed, and silently showing nothing is worse than a guess.
+    const known = ['items', 'rows', 'data', 'members'].map((key) => payload[key]).find(Array.isArray);
+    const rows = known ?? Object.values(payload).find(Array.isArray);
     return { data: (rows as GenericRecord[] | undefined) ?? [], pagination: body.pagination as Pagination | undefined };
   }
   return { data: [] };
@@ -39,8 +44,33 @@ function unwrapItem<T>(body: { data?: unknown }): T {
   return (body.data ?? body) as T;
 }
 
+const MEMBER_COUNT_KEYS = ['member_count', 'members_count', 'memberCount', 'total_members', 'members_total'];
+// Prisma's relation-count shape, as already used elsewhere in this backend
+// (e.g. a role's _count.user_roles) — a strong guess for how a group's own
+// member count is likely exposed too.
+const COUNT_RELATION_KEYS = ['members', 'alumni', 'group_members', 'alumni_members'];
+
+function pickMemberCount(raw: GenericRecord): number | undefined {
+  for (const key of MEMBER_COUNT_KEYS) {
+    if (typeof raw[key] === 'number') return raw[key] as number;
+  }
+  const count = raw._count;
+  if (isRecord(count)) {
+    for (const key of COUNT_RELATION_KEYS) {
+      if (typeof count[key] === 'number') return count[key] as number;
+    }
+  }
+  // The list endpoint may just embed the members array itself.
+  if (Array.isArray(raw.members)) return raw.members.length;
+  return undefined;
+}
+
 function normalizeGroup(raw: GenericRecord): AlumniGroup {
-  return { ...raw, group_id: Number(raw.group_id ?? raw.id) } as unknown as AlumniGroup;
+  return {
+    ...raw,
+    group_id: Number(raw.group_id ?? raw.id),
+    member_count: pickMemberCount(raw),
+  } as unknown as AlumniGroup;
 }
 
 function toGroupPayload(data: GroupFormData) {

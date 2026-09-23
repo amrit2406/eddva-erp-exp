@@ -1,4 +1,5 @@
 import axiosInstance from '../../../lib/axios';
+import { pickPhotoUrl } from '../utils/format';
 import type { AlumniProfile, AlumniProfileUpdateData, GenericRecord, ListParams, RecordResult, Pagination } from '../types/profile.types';
 
 function isRecord(value: unknown): value is GenericRecord {
@@ -7,6 +8,12 @@ function isRecord(value: unknown): value is GenericRecord {
 
 function unwrapItem<T>(body: { data?: unknown }): T {
   return (body.data ?? body) as T;
+}
+
+// The backend's field for an uploaded photo isn't confirmed, so this checks
+// the common spellings rather than assuming "photo_url".
+function normalizeMe(raw: GenericRecord): AlumniProfile {
+  return { ...raw, photo_url: pickPhotoUrl(raw) } as unknown as AlumniProfile;
 }
 
 function unwrapRecord(body: unknown): RecordResult {
@@ -32,7 +39,7 @@ function unwrapRecord(body: unknown): RecordResult {
 // alumni portal login — see this feature's summary.
 export async function getMyProfile(): Promise<AlumniProfile> {
   const response = await axiosInstance.get('/alumni/me');
-  return unwrapItem<AlumniProfile>(response.data);
+  return normalizeMe(unwrapItem<GenericRecord>(response.data));
 }
 
 export async function updateMyProfile(data: AlumniProfileUpdateData): Promise<AlumniProfile> {
@@ -56,7 +63,7 @@ export async function updateMyProfile(data: AlumniProfileUpdateData): Promise<Al
     email_opt_in: data.email_opt_in,
     sms_opt_in: data.sms_opt_in,
   });
-  return unwrapItem<AlumniProfile>(response.data);
+  return normalizeMe(unwrapItem<GenericRecord>(response.data));
 }
 
 export async function getMyVerification(): Promise<GenericRecord> {
@@ -70,9 +77,32 @@ export async function requestMyVerification(note: string): Promise<void> {
 
 export async function uploadMyPhoto(file: File): Promise<GenericRecord> {
   const body = new FormData();
-  body.append('photo', file);
+  // Confirmed against the backend: FileInterceptor('file', ...) only reads
+  // this exact multipart field name.
+  body.append('file', file);
   const response = await axiosInstance.post('/alumni/me/photo', body);
   return unwrapItem<GenericRecord>(response.data);
+}
+
+// Only POST is documented for this path, but /alumni/profiles/{id}/photo
+// supports GET on the same path shape, so this tries the same here. Falls
+// back to null (no photo) rather than throwing if the route doesn't exist —
+// same treatment as getProfilePhotoUrl in profiles.api.ts.
+export async function getMyPhotoUrl(): Promise<string | null> {
+  try {
+    const response = await axiosInstance.get('/alumni/me/photo', { responseType: 'blob' });
+    const blob = response.data as Blob;
+    const contentType = String(response.headers['content-type'] || blob.type || '');
+    if (contentType.startsWith('image/')) {
+      return URL.createObjectURL(blob);
+    }
+    const text = await blob.text();
+    const parsed: unknown = JSON.parse(text);
+    const record = isRecord(parsed) ? ((parsed.data as unknown) ?? parsed) : null;
+    return isRecord(record) ? pickPhotoUrl(record) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getMyNotifications(params: ListParams = {}): Promise<RecordResult> {

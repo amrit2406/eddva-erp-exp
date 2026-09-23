@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, KeyRound, Pencil, RotateCcw, Trash2, X } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
@@ -13,6 +13,7 @@ import {
   getPossibleDuplicates,
   getProfile,
   getProfileGroups,
+  getProfilePhotoUrl,
   getVerificationHistory,
   issueProfileAccount,
   reactivateProfile,
@@ -47,16 +48,28 @@ export default function ProfileDetailPage() {
   const { can } = useResourceAccess('alumni');
   const [profile, setProfile] = useState<AlumniProfile | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('employment');
   const [modal, setModal] = useState<ModalKind>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [accountPassword, setAccountPassword] = useState('');
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // getProfilePhotoUrl hands back an object URL (blob:...) when the endpoint
+  // serves the raw image; it must be revoked once replaced or unmounted.
+  const objectUrlRef = useRef<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!id) return;
     setProfile(await getProfile(id));
+  }, [id]);
+
+  const reloadPhoto = useCallback(async () => {
+    if (!id) return;
+    const url = await getProfilePhotoUrl(id);
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    objectUrlRef.current = url?.startsWith('blob:') ? url : null;
+    setPhotoUrl(url);
   }, [id]);
 
   useEffect(() => {
@@ -69,10 +82,20 @@ export default function ProfileDetailPage() {
       .catch((err) => {
         if (!cancelled && err?.response?.status !== 401) setLoadError(getApiErrorMessage(err, 'Failed to load profile'));
       });
+    reloadPhoto().catch(() => {
+      // No photo yet, or the endpoint failed — the uploader just shows the placeholder.
+    });
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, reloadPhoto]);
+
+  // Revoke the last object URL when the page itself unmounts.
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    };
+  }, []);
 
   const loadHistory = useCallback((params: ListParams) => getVerificationHistory(id!, params), [id]);
   const loadDuplicates = useCallback(() => getPossibleDuplicates(id!), [id]);
@@ -232,11 +255,13 @@ export default function ProfileDetailPage() {
       <Card className="border-slate-200">
         <div className="p-4">
           <PhotoUploader
-            currentPhotoUrl={profile.photo_url}
+            currentPhotoUrl={photoUrl}
             onUpload={async (file) => {
               await uploadProfilePhoto(profile.profile_id, file);
               toast.success('Photo updated');
-              await reload();
+              // The dedicated GET .../photo endpoint is the source of truth
+              // for display — the profile record itself doesn't carry it.
+              await reloadPhoto();
             }}
           />
         </div>
