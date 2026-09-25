@@ -14,13 +14,14 @@ import {
   Trophy,
   UtensilsCrossed,
 } from 'lucide-react';
-import Card from '../../../components/ui/Card';
 import type { DashboardData } from '../types/dashboard.types';
 import { rupees, toNumber } from '../utils/format';
 
 interface Snapshot {
   title: string;
   icon: LucideIcon;
+  // Decorative identity color; the title carries the meaning.
+  accent: string;
   to: string;
   lines: [string, string | number][];
 }
@@ -30,6 +31,7 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
   const snapshots: (Snapshot | undefined)[] = [
     accounts && {
       title: 'Accounts',
+      accent: '#008BE9',
       icon: Calculator,
       to: '/accounts/dashboard',
       lines: [
@@ -41,6 +43,7 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
     },
     sp && {
       title: 'Sales & Purchase',
+      accent: '#eb6834',
       icon: ShoppingCart,
       to: '/sales-purchase/dashboard',
       lines: [
@@ -52,6 +55,7 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
     },
     inventory && {
       title: 'Inventory',
+      accent: '#15936a',
       icon: Boxes,
       to: '/inventory',
       lines: [
@@ -63,6 +67,7 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
     },
     admission && {
       title: 'Admission',
+      accent: '#4a3aa7',
       icon: School,
       to: '/admission/dashboard',
       lines: [
@@ -74,6 +79,7 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
     },
     hostel && {
       title: 'Hostel',
+      accent: '#d55181',
       icon: BedDouble,
       to: '/hostel/dashboard',
       lines: [
@@ -85,6 +91,7 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
     },
     canteen && {
       title: 'Canteen',
+      accent: '#c98500',
       icon: UtensilsCrossed,
       to: '/canteen/dashboard',
       lines: [
@@ -96,6 +103,7 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
     },
     library && {
       title: 'Library',
+      accent: '#0a55a4',
       icon: BookOpen,
       to: '/library/dashboard',
       lines: [
@@ -107,6 +115,7 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
     },
     transport && {
       title: 'Transport',
+      accent: '#0891b2',
       icon: Bus,
       to: '/transport/dashboard',
       lines: [
@@ -118,6 +127,7 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
     },
     sports && {
       title: 'Sports',
+      accent: '#e34948',
       icon: Trophy,
       to: '/sports/dashboard',
       lines: [
@@ -129,6 +139,7 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
     },
     fo && {
       title: 'Front Office',
+      accent: '#7c3aed',
       icon: ClipboardList,
       to: '/front-office',
       lines: [
@@ -140,6 +151,7 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
     },
     alumni && {
       title: 'Alumni',
+      accent: '#008300',
       icon: GraduationCap,
       to: '/alumni/dashboard',
       lines: [
@@ -158,29 +170,57 @@ export default function ModuleSnapshots({ data }: { data: DashboardData }) {
   if (snapshots.length === 0) return null;
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Modules</h2>
+    <section className="space-y-4">
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">Modules</p>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-900">Everything at a glance</h2>
+        </div>
+        <p className="text-xs text-slate-500">{snapshots.length} modules</p>
+      </div>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-        {snapshots.map(({ title, icon: Icon, to, lines }) => (
-          <Card key={title} className="p-4 flex flex-col">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#008BE9]/10">
-                <Icon className="h-4 w-4 text-[#002C6D]" />
+        {snapshots.map(({ title, icon: Icon, accent, to, lines }, index) => (
+          <Link
+            key={title}
+            to={to}
+            className="animate-rise group relative flex flex-col overflow-hidden rounded-3xl bg-white p-5 shadow-soft ring-1 ring-slate-200/70 transition-all duration-300 hover:-translate-y-1 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            style={{ animationDelay: `${Math.min(index, 11) * 40}ms` }}
+          >
+            {/* Accent wash across the top that deepens on hover. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-60 transition-opacity duration-300 group-hover:opacity-100"
+              style={{ background: `linear-gradient(180deg, ${accent}1f, transparent)` }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full blur-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-50"
+              style={{ background: accent }}
+            />
+            <div className="relative flex items-center gap-3 mb-4">
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:rotate-[-6deg] group-hover:scale-110"
+                style={{ background: `linear-gradient(135deg, ${accent}, ${accent}b3)`, boxShadow: `0 8px 18px -8px ${accent}` }}
+              >
+                <Icon className="h-5 w-5 text-white" />
               </div>
-              <h3 className="font-semibold text-slate-900">{title}</h3>
+              <h3 className="font-semibold tracking-tight text-slate-900">{title}</h3>
+              <span
+                className="ml-auto flex h-7 w-7 items-center justify-center rounded-full bg-white/80 ring-1 ring-slate-200 transition-all duration-300 group-hover:translate-x-0.5"
+                style={{ color: accent }}
+              >
+                <ArrowRight className="h-3.5 w-3.5" />
+              </span>
             </div>
-            <dl className="space-y-1.5 flex-1">
+            <dl className="relative grid grid-cols-2 gap-2 flex-1">
               {lines.map(([label, value]) => (
-                <div key={label} className="flex justify-between gap-2 text-sm">
-                  <dt className="text-slate-500">{label}</dt>
-                  <dd className="font-medium text-slate-900 tabular-nums">{value}</dd>
+                <div key={label} className="rounded-2xl bg-slate-50/90 px-3 py-2 ring-1 ring-slate-100">
+                  <dt className="text-[11px] text-slate-500 truncate">{label}</dt>
+                  <dd className="mt-0.5 text-sm font-semibold text-slate-900 tabular-nums truncate">{value}</dd>
                 </div>
               ))}
             </dl>
-            <Link to={to} className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#008BE9] hover:text-[#002C6D]">
-              Open dashboard <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </Card>
+          </Link>
         ))}
       </div>
     </section>
