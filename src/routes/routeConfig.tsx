@@ -133,6 +133,7 @@ import CanteenCreatePermissionPage from '../features/canteen/pages/rbac/CreatePe
 import CanteenEditPermissionPage from '../features/canteen/pages/rbac/EditPermissionPage';
 import CanteenUsersPage from '../features/canteen/pages/rbac/UsersPage';
 import CanteenCreateUserPage from '../features/canteen/pages/rbac/CreateUserPage';
+import CanteenDashboardPage from '../features/canteen/pages/dashboard/DashboardPage';
 // Canteen Menu
 import MenuCategoriesPage from '../features/canteen/pages/menu/MenuCategoriesPage';
 import CreateMenuCategoryPage from '../features/canteen/pages/menu/CreateMenuCategoryPage';
@@ -348,6 +349,7 @@ import LibraryCreateRolePage from '../features/library/pages/rbac/CreateRolePage
 import LibraryEditRolePage from '../features/library/pages/rbac/EditRolePage';
 import LibraryPermissionsPage from '../features/library/pages/rbac/PermissionsPage';
 import LibraryCreatePermissionPage from '../features/library/pages/rbac/CreatePermissionPage';
+import LibraryDashboardPage from '../features/library/pages/dashboard/DashboardPage';
 import LibraryEditPermissionPage from '../features/library/pages/rbac/EditPermissionPage';
 import LibraryUsersPage from '../features/library/pages/rbac/UsersPage';
 import LibraryCreateUserPage from '../features/library/pages/rbac/CreateUserPage';
@@ -380,6 +382,7 @@ import SportsCreatePermissionPage from '../features/sports/pages/rbac/CreatePerm
 import SportsEditPermissionPage from '../features/sports/pages/rbac/EditPermissionPage';
 import SportsRolesPage from '../features/sports/pages/rbac/RolesPage';
 import SportsCreateRolePage from '../features/sports/pages/rbac/CreateRolePage';
+import SportsDashboardPage from '../features/sports/pages/dashboard/DashboardPage';
 import SportsEditRolePage from '../features/sports/pages/rbac/EditRolePage';
 import SportsUsersPage from '../features/sports/pages/rbac/UsersPage';
 import SportsCreateUserPage from '../features/sports/pages/rbac/CreateUserPage';
@@ -480,6 +483,7 @@ import AccountsCreateUserPage from '../features/accounts/pages/rbac/CreateUserPa
 import AccountsPermissionsPage from '../features/accounts/pages/rbac/PermissionsPage';
 import AccountsCreatePermissionPage from '../features/accounts/pages/rbac/CreatePermissionPage';
 import AccountsEditPermissionPage from '../features/accounts/pages/rbac/EditPermissionPage';
+import AccountsDashboardPage from '../features/accounts/pages/dashboard/DashboardPage';
 // Accounts Chart of Accounts
 import AccountGroupsPage from '../features/accounts/pages/coa/AccountGroupsPage';
 import CreateAccountGroupPage from '../features/accounts/pages/coa/CreateAccountGroupPage';
@@ -517,6 +521,7 @@ import TransportCreateRolePage from '../features/transport/pages/rbac/CreateRole
 import TransportEditRolePage from '../features/transport/pages/rbac/EditRolePage';
 import TransportUsersPage from '../features/transport/pages/rbac/UsersPage';
 import TransportCreateUserPage from '../features/transport/pages/rbac/CreateUserPage';
+import TransportDashboardPage from '../features/transport/pages/dashboard/DashboardPage';
 import TransportPermissionsPage from '../features/transport/pages/rbac/PermissionsPage';
 import TransportCreatePermissionPage from '../features/transport/pages/rbac/CreatePermissionPage';
 import TransportEditPermissionPage from '../features/transport/pages/rbac/EditPermissionPage';
@@ -1155,6 +1160,13 @@ export const routeConfig = [
     path: '/canteen/login',
     element: CanteenLoginPage,
     isPublic: true,
+  },
+
+  // Canteen Dashboard Route
+  {
+    path: '/canteen/dashboard',
+    element: CanteenDashboardPage,
+    isProtected: true,
   },
 
   // Canteen RBAC Routes
@@ -2257,6 +2269,13 @@ export const routeConfig = [
     isProtected: true,
   },
 
+  // Library Dashboard Route
+  {
+    path: '/library/dashboard',
+    element: LibraryDashboardPage,
+    isProtected: true,
+  },
+
   // Library RBAC Routes
   {
     path: '/library/roles',
@@ -2396,6 +2415,13 @@ export const routeConfig = [
   {
     path: '/library/reservations',
     element: LibraryReservationsPage,
+    isProtected: true,
+  },
+
+  // Sports Dashboard Route
+  {
+    path: '/sports/dashboard',
+    element: SportsDashboardPage,
     isProtected: true,
   },
 
@@ -2833,6 +2859,13 @@ export const routeConfig = [
     isProtected: true,
   },
 
+  // Accounts Dashboard Route
+  {
+    path: '/accounts/dashboard',
+    element: AccountsDashboardPage,
+    isProtected: true,
+  },
+
   // Accounts Account Mappings Routes
   {
     path: '/accounts/account-mappings',
@@ -3009,6 +3042,13 @@ export const routeConfig = [
   {
     path: '/accounts/users/new',
     element: AccountsCreateUserPage,
+    isProtected: true,
+  },
+
+  // Transport Dashboard Route
+  {
+    path: '/transport/dashboard',
+    element: TransportDashboardPage,
     isProtected: true,
   },
 
