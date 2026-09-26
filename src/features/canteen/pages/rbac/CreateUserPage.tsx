@@ -1,228 +1,197 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useState, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, ArrowLeft, Shield } from 'lucide-react';
+import PasswordInput from '../../../../components/premium/form/PasswordInput';
+import { useToast } from '../../../../hooks/useToast';
 import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
-import { getRoles, createUserAssignment } from '../../api/roles.api';
+import { createUserAssignment, getRoles } from '../../api/roles.api';
+import type { UserAssignmentFormData } from '../../types/canteen.types';
 import { getApiErrorMessage } from '../../utils/errors';
 import { useIsInstituteAdmin } from '../../utils/rbac.utils';
-import type { Role, UserAssignmentFormData } from '../../types/canteen.types';
+
+const MIN_PASSWORD = 8;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const input =
+  'w-full rounded-xl bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand';
+const card = 'rounded-3xl bg-white p-5 sm:p-6 shadow-soft ring-1 ring-slate-200/70';
+
+function Field({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
+      {children}
+      {error ? (
+        <span className="mt-1 flex items-center gap-1 text-xs text-red-600">
+          <AlertCircle className="h-3.5 w-3.5" /> {error}
+        </span>
+      ) : (
+        hint && <span className="mt-1 block text-xs text-slate-500">{hint}</span>
+      )}
+    </label>
+  );
+}
+
+// "raj.kumar@school.edu" -> "raj.kumar"
+const usernameFromEmail = (email: string) => email.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g, '');
 
 export default function CreateUserPage() {
   const isAdmin = useIsInstituteAdmin();
   const navigate = useNavigate();
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [formData, setFormData] = useState<UserAssignmentFormData>({
-    eddva_user_id: '',
-    user_name: '',
-    user_email: '',
-    username: '',
-    password: '',
-    role_id: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: roles = [], isLoading } = useQuery({ queryKey: ['canteen', 'roles'], queryFn: getRoles, enabled: isAdmin });
 
-  useEffect(() => {
-    if (isAdmin) {
-      loadRoles();
-    } else {
-      setLoading(false);
-    }
-  }, [isAdmin]);
+  const [form, setForm] = useState<UserAssignmentFormData>({ eddva_user_id: '', user_name: '', user_email: '', username: '', password: '', role_id: 0 });
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+  const set = (patch: Partial<UserAssignmentFormData>) => setForm((f) => ({ ...f, ...patch }));
 
-  async function loadRoles() {
-    try {
-      setLoading(true);
-      const data = await getRoles();
-      setRoles(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to load roles'));
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Suggest a username from the email until the admin types their own.
+  const username = usernameTouched ? form.username : usernameFromEmail(form.user_email);
+  const role = roles.find((r) => r.role_id === form.role_id);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setSubmitting(true);
-      setError(null);
-      await createUserAssignment({
-        ...formData,
-        role_id: Number(formData.role_id),
-      });
+  const create = useMutation({
+    mutationFn: (data: UserAssignmentFormData) => createUserAssignment(data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['canteen', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['canteen', 'roles'] });
+      toast.success(`${data.user_name} can now use Canteen`);
       navigate('/canteen/users');
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to assign user'));
-    } finally {
-      setSubmitting(false);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not add this user')),
+  });
+
+  const errors = {
+    user_name: form.user_name.trim() ? undefined : 'Enter their full name',
+    user_email: EMAIL.test(form.user_email.trim()) ? undefined : 'Enter a valid email address',
+    eddva_user_id: form.eddva_user_id.trim() ? undefined : 'Enter their ERP user ID',
+    username: username.trim() ? undefined : 'Choose a username',
+    password: form.password.length >= MIN_PASSWORD ? undefined : `At least ${MIN_PASSWORD} characters`,
+    role_id: form.role_id ? undefined : 'Choose a role',
+  };
+  const hasErrors = Object.values(errors).some(Boolean);
+  const show = (message?: string) => (showErrors ? message : undefined);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (hasErrors) {
+      setShowErrors(true);
+      return;
     }
+    create.mutate({
+      eddva_user_id: form.eddva_user_id.trim(),
+      user_name: form.user_name.trim(),
+      user_email: form.user_email.trim(),
+      username: username.trim(),
+      password: form.password,
+      role_id: Number(form.role_id),
+    });
   };
 
-  if (!isAdmin) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Assign User</h1>
-          <p className="text-slate-600 mt-1">Assign a user to a canteen role</p>
-        </div>
-        <InstituteAdminGuard section="User assignment" />
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Assign User</h1>
-          <p className="text-slate-600 mt-1">Assign a user to a canteen role</p>
-        </div>
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading roles...</div>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      <Link to="/canteen/users" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+        <ArrowLeft className="h-4 w-4" /> Users
+      </Link>
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Assign User</h1>
-        <p className="text-slate-600 mt-1">Create a canteen user assignment with login credentials</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">New user</h1>
+        <p className="mt-0.5 text-sm text-slate-500">Give someone a login for Canteen and choose what they can do.</p>
       </div>
 
-      <Card className="border-slate-200">
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
+      {!isAdmin ? (
+        <InstituteAdminGuard section="Users" />
+      ) : isLoading ? (
+        <div className="skeleton h-96 rounded-3xl" aria-busy="true" aria-label="Loading" />
+      ) : (
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
+          <section className={card}>
+            <h2 className="mb-4 text-base font-semibold text-slate-900">Person</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Full name" error={show(errors.user_name)}>
+                <input value={form.user_name} onChange={(e) => set({ user_name: e.target.value })} placeholder="e.g. Raj Kumar" autoComplete="off" className={input} />
+              </Field>
+              <Field label="Email" error={show(errors.user_email)}>
+                <input type="email" value={form.user_email} onChange={(e) => set({ user_email: e.target.value })} placeholder="raj@school.edu" autoComplete="off" className={input} />
+              </Field>
+              <Field label="ERP user ID" hint="Their ID in the main ERP system." error={show(errors.eddva_user_id)}>
+                <input value={form.eddva_user_id} onChange={(e) => set({ eddva_user_id: e.target.value })} placeholder="e.g. usr_counter_staff_001" autoComplete="off" className={input} />
+              </Field>
             </div>
-          )}
+          </section>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="eddva_user_id" className="block text-sm font-medium text-slate-700 mb-1">
-                  ERP User ID *
-                </label>
+          <section className={card}>
+            <h2 className="mb-4 text-base font-semibold text-slate-900">Login</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Username" hint={!usernameTouched && username ? 'Suggested from their email — you can change it.' : undefined} error={show(errors.username)}>
                 <input
-                  type="text"
-                  id="eddva_user_id"
-                  value={formData.eddva_user_id}
-                  onChange={(e) => setFormData({ ...formData, eddva_user_id: e.target.value })}
-                  placeholder="usr_counter_staff_001"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
+                  value={username}
+                  onChange={(e) => {
+                    setUsernameTouched(true);
+                    set({ username: e.target.value });
+                  }}
+                  placeholder="e.g. raj.kumar"
+                  autoComplete="off"
+                  className={`${input} font-mono`}
                 />
-              </div>
-
-              <div>
-                <label htmlFor="user_name" className="block text-sm font-medium text-slate-700 mb-1">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  id="user_name"
-                  value={formData.user_name}
-                  onChange={(e) => setFormData({ ...formData, user_name: e.target.value })}
-                  placeholder="Raj Counter Staff"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="user_email" className="block text-sm font-medium text-slate-700 mb-1">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  id="user_email"
-                  value={formData.user_email}
-                  onChange={(e) => setFormData({ ...formData, user_email: e.target.value })}
-                  placeholder="raj@school.edu"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1">
-                  Canteen Username *
-                </label>
-                <input
-                  type="text"
-                  id="username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  placeholder="counter_staff_raj"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
-                  Password *
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="CounterStaff#2026"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  minLength={8}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="role_id" className="block text-sm font-medium text-slate-700 mb-1">
-                  Role *
-                </label>
-                <select
-                  id="role_id"
-                  value={formData.role_id || ''}
-                  onChange={(e) => setFormData({ ...formData, role_id: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="">Select a role</option>
-                  {roles.map((role) => (
-                    <option key={role.role_id} value={role.role_id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              </Field>
+              <Field label="Password" hint={`At least ${MIN_PASSWORD} characters. Share it with them privately.`} error={show(errors.password)}>
+                <PasswordInput value={form.password} onChange={(e) => set({ password: e.target.value })} placeholder="Create a password" />
+              </Field>
             </div>
+          </section>
 
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => navigate('/canteen/users')}
-                disabled={submitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" disabled={submitting}>
-                {submitting ? 'Assigning...' : 'Assign User'}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </Card>
+          <section className={card}>
+            <h2 className="mb-4 text-base font-semibold text-slate-900">Role</h2>
+            {roles.length === 0 ? (
+              <p className="text-sm text-slate-600">
+                There are no roles yet.{' '}
+                <Link to="/canteen/roles/new" className="font-medium text-brand hover:text-brand-navy">
+                  Create a role first
+                </Link>
+                .
+              </p>
+            ) : (
+              <>
+                <Field label="What can they do?" error={show(errors.role_id)}>
+                  <select value={form.role_id || ''} onChange={(e) => set({ role_id: Number(e.target.value) })} className={`${input} sm:max-w-sm`}>
+                    <option value="">Choose a role</option>
+                    {roles.map((r) => (
+                      <option key={r.role_id} value={r.role_id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                {role?.description && (
+                  <p className="mt-3 flex items-start gap-2 rounded-2xl bg-slate-50/80 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-100">
+                    <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand" /> {role.description}
+                  </p>
+                )}
+              </>
+            )}
+          </section>
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => navigate('/canteen/users')}
+              disabled={create.isPending}
+              className="rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={create.isPending}
+              className="rounded-xl bg-gradient-to-r from-brand-navy to-brand px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand/25 transition hover:brightness-110 disabled:opacity-60"
+            >
+              {create.isPending ? 'Adding…' : 'Add user'}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

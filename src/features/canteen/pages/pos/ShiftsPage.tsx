@@ -1,122 +1,130 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Eye, PlayCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getShifts, getPosTerminals } from '../../api/canteen.api';
-import type { Shift, PosTerminal } from '../../types/canteen.types';
+import { useQuery } from '@tanstack/react-query';
+import { Eye, PlayCircle, Timer } from 'lucide-react';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import IconAction from '../../../../components/premium/list/IconAction';
+import { SearchBox, Segmented, StatusPill } from '../../../../components/premium/list/ListControls';
+import ListHeader from '../../../../components/premium/list/ListHeader';
+import { EmptyState, ListSkeleton, NoResults } from '../../../../components/premium/list/ListStates';
+import PagedTable from '../../../../components/premium/list/PagedTable';
+import { btnPrimary } from '../../../../components/premium/styles';
+import { rupees, toNumber } from '../../../../utils/dashboardFormat';
+import { getPosTerminals, getShifts } from '../../api/canteen.api';
+import type { Shift } from '../../types/canteen.types';
+import { getApiErrorMessage } from '../../utils/errors';
+import { cashDifference, dateTime, duration } from '../../utils/labels';
 
 export default function ShiftsPage() {
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [terminals, setTerminals] = useState<PosTerminal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [show, setShow] = useState('all');
+  const [page, setPage] = useState(1);
+  const { data: shifts = [], isLoading, error, refetch } = useQuery({ queryKey: ['canteen', 'shifts'], queryFn: () => getShifts() });
+  const { data: terminals = [] } = useQuery({ queryKey: ['canteen', 'terminals'], queryFn: () => getPosTerminals() });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const counterName = (s: Shift) => s.terminal?.name ?? terminals.find((t) => t.id === s.terminalId)?.name ?? 'Counter';
+  const openCount = shifts.filter((s) => s.status === 'OPEN').length;
 
-  async function loadData() {
-    try {
-      setLoading(true);
-      const [shiftsData, terminalsData] = await Promise.all([
-        getShifts(),
-        getPosTerminals()
-      ]);
-      setShifts(shiftsData);
-      setTerminals(terminalsData);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(err instanceof Error ? err.message : 'Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const q = search.trim().toLowerCase();
+  const filtered = shifts
+    .filter((s) => (show === 'open' ? s.status === 'OPEN' : show === 'closed' ? s.status === 'CLOSED' : true))
+    .filter((s) => !q || counterName(s).toLowerCase().includes(q))
+    // Open shifts first, then newest.
+    .sort((a, b) => (a.status === b.status ? b.shiftStart.localeCompare(a.shiftStart) : a.status === 'OPEN' ? -1 : 1));
 
-  const getTerminalName = (terminalId: string) => {
-    const terminal = terminals.find(t => t.id === terminalId);
-    return terminal ? terminal.name : terminalId;
-  };
+  const openButton = (
+    <Link to="/canteen/pos/shifts/open" className={btnPrimary}>
+      <PlayCircle className="h-4 w-4" /> Open a shift
+    </Link>
+  );
+
+  if (error) return <ErrorState message={getApiErrorMessage(error, 'Failed to load shifts')} onRetry={() => refetch()} />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Shifts</h1>
-          <p className="text-slate-600 mt-1">Manage canteen POS shifts</p>
-        </div>
-        <Link to="/canteen/pos/shifts/open">
-          <Button variant="primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Open Shift
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-5">
+      <ListHeader icon={Timer} title="Shifts" description="Each shift starts with the cash in the till and ends by counting it again." actions={openButton} />
 
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
+      {isLoading ? (
+        <ListSkeleton />
+      ) : shifts.length === 0 ? (
+        <EmptyState icon={Timer} title="No shifts yet" message="Open a shift on a counter at the start of the day, then close it when you finish to count the cash." action={openButton} />
       ) : (
-        <Card className="border-slate-200">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Terminal</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Opening Cash</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Closing Cash</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Opened At</th>
-                  <th className="text-right py-3 px-4 font-semibold text-slate-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shifts.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-slate-500">
-                      No shifts found
-                    </td>
-                  </tr>
-                ) : (
-                  shifts.map((shift) => (
-                    <tr key={shift.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <PlayCircle className="h-4 w-4 text-slate-400" />
-                          <span className="font-medium text-slate-900">{getTerminalName(shift.terminalId)}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">₹{shift.openingCash}</td>
-                      <td className="py-3 px-4 text-slate-600">{shift.closingCash ? `₹${shift.closingCash}` : '-'}</td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${shift.status === 'OPEN' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                          {shift.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">{new Date(shift.openedAt).toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link to={`/canteen/pos/shifts/${shift.id}`}>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        <>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SearchBox
+              value={search}
+              onChange={(v) => {
+                setSearch(v);
+                setPage(1);
+              }}
+              placeholder="Search by counter"
+            />
+            <Segmented
+              label="Shift status"
+              value={show}
+              onChange={(v) => {
+                setShow(v);
+                setPage(1);
+              }}
+              options={[
+                { value: 'all', label: 'All', count: shifts.length },
+                { value: 'open', label: 'Open', count: openCount },
+                { value: 'closed', label: 'Closed', count: shifts.length - openCount },
+              ]}
+            />
           </div>
-        </Card>
+          {filtered.length === 0 ? (
+            <NoResults
+              onClear={() => {
+                setSearch('');
+                setShow('all');
+              }}
+            />
+          ) : (
+            <PagedTable
+              rows={filtered}
+              rowKey={(s) => s.id}
+              page={page}
+              onPage={setPage}
+              noun="shifts"
+              minWidth={780}
+              columns={[
+                {
+                  header: 'Counter',
+                  cell: (s) => (
+                    <Link to={`/canteen/pos/shifts/${s.id}`} className="font-semibold text-brand-navy hover:text-brand hover:underline">
+                      {counterName(s)}
+                    </Link>
+                  ),
+                },
+                {
+                  header: 'Started',
+                  cell: (s) => (
+                    <div>
+                      <span className="text-slate-700">{dateTime(s.shiftStart)}</span>
+                      <span className="block text-[11px] text-slate-400">{s.status === 'OPEN' ? `Running ${duration(s.shiftStart)}` : `Lasted ${duration(s.shiftStart, s.shiftEnd)}`}</span>
+                    </div>
+                  ),
+                },
+                { header: 'Cash at start', align: 'right', cell: (s) => <span className="text-slate-700">{rupees(toNumber(s.openingCash))}</span> },
+                {
+                  header: 'Counted at close',
+                  align: 'right',
+                  cell: (s) => (s.status === 'CLOSED' ? <span className="text-slate-700">{rupees(toNumber(s.closingCash))}</span> : <span className="text-slate-400">—</span>),
+                },
+                {
+                  header: 'Result',
+                  cell: (s) => {
+                    if (s.status === 'OPEN') return <StatusPill label="Open now" color="#15936a" />;
+                    const diff = cashDifference(toNumber(s.variance));
+                    return <StatusPill label={diff.label} color={diff.color} title="Cash counted compared with what the till should hold" />;
+                  },
+                },
+              ]}
+              actions={(s) => <IconAction icon={Eye} label={s.status === 'OPEN' ? 'View or close shift' : 'View shift'} to={`/canteen/pos/shifts/${s.id}`} tone="brand" />}
+            />
+          )}
+        </>
       )}
     </div>
   );

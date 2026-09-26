@@ -6,6 +6,8 @@ export default function Breadcrumbs() {
   const pathnames = location.pathname.split('/').filter((x) => x);
 
   const formatBreadcrumbName = (name: string) => {
+    // Record IDs (UUIDs) mean nothing to people — the page title names the record.
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(name)) return 'Details';
     return name
       .split('-')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

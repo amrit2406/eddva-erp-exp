@@ -1,141 +1,104 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { openShift, getPosTerminals } from '../../api/canteen.api';
-import type { PosTerminal } from '../../types/canteen.types';
+import { useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { Field, FormActions, FormCard, FormLoading } from '../../../../components/premium/form/FormParts';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { inputClass } from '../../../../components/premium/styles';
+import { useToast } from '../../../../hooks/useToast';
+import { getPosTerminals, getShifts, openShift } from '../../api/canteen.api';
+import type { OpenShiftFormData } from '../../types/canteen.types';
+import { getApiErrorMessage } from '../../utils/errors';
+
+const QUICK_CASH = [0, 500, 1000, 2000];
 
 export default function OpenShiftPage() {
   const navigate = useNavigate();
-  const [terminals, setTerminals] = useState<PosTerminal[]>([]);
-  const [formData, setFormData] = useState({ terminalId: '', openingCash: 0 });
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const terminalsQuery = useQuery({ queryKey: ['canteen', 'terminals'], queryFn: () => getPosTerminals() });
+  const { data: shifts = [] } = useQuery({ queryKey: ['canteen', 'shifts'], queryFn: () => getShifts() });
+  const terminals = terminalsQuery.data ?? [];
+  const busy = new Set(shifts.filter((s) => s.status === 'OPEN').map((s) => s.terminalId));
 
-  useEffect(() => {
-    loadTerminals();
-  }, []);
+  const [terminalId, setTerminalId] = useState(searchParams.get('terminalId') ?? '');
+  const [cash, setCash] = useState('');
+  const [showErrors, setShowErrors] = useState(false);
 
-  async function loadTerminals() {
-    try {
-      setLoading(true);
-      const data = await getPosTerminals();
-      setTerminals(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(err instanceof Error ? err.message : 'Failed to load terminals');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.terminalId) {
-      setError('Please select a terminal');
-      return;
-    }
-    try {
-      setSubmitting(true);
-      setError(null);
-      const result = await openShift(formData);
-      navigate(`/canteen/pos/shifts/${result.id}`);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(err.response?.data?.message || 'Failed to open shift');
-    } finally {
-      setSubmitting(false);
-    }
+  const cashValue = cash.trim() === '' ? NaN : Number(cash);
+  const errors = {
+    terminalId: !terminalId ? 'Choose a counter' : busy.has(terminalId) ? 'This counter already has an open shift' : undefined,
+    cash: !Number.isFinite(cashValue) || cashValue < 0 ? 'Enter the cash in the till (0 if empty)' : undefined,
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Open Shift</h1>
-          <p className="text-slate-600 mt-1">Open a new POS shift</p>
-        </div>
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading terminals...</div>
-        </Card>
-      </div>
-    );
-  }
+  const open = useMutation({
+    mutationFn: (data: OpenShiftFormData) => openShift(data),
+    onSuccess: (shift) => {
+      queryClient.invalidateQueries({ queryKey: ['canteen', 'shifts'] });
+      toast.success('Shift opened');
+      navigate(shift?.id ? `/canteen/pos/shifts/${shift.id}` : '/canteen/pos/shifts');
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not open the shift')),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (errors.terminalId || errors.cash) {
+      setShowErrors(true);
+      return;
+    }
+    open.mutate({ terminalId, openingCash: cashValue });
+  };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Open Shift</h1>
-        <p className="text-slate-600 mt-1">Open a new POS shift</p>
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="terminalId" className="block text-sm font-medium text-slate-700 mb-1">
-                  Terminal *
-                </label>
-                <select
-                  id="terminalId"
-                  value={formData.terminalId}
-                  onChange={(e) => setFormData({ ...formData, terminalId: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
-                  required
-                >
-                  <option value="">Select a terminal</option>
-                  {terminals.map((terminal) => (
-                    <option key={terminal.id} value={terminal.id}>
-                      {terminal.name} - {terminal.location}
+    <div className="space-y-5">
+      <PageTitle back={{ to: '/canteen/pos/shifts', label: 'Shifts' }} title="Open a shift" subtitle="Count the cash in the till before you start taking orders." />
+      {terminalsQuery.isLoading ? (
+        <FormLoading blocks={1} />
+      ) : terminalsQuery.error ? (
+        <ErrorState message={getApiErrorMessage(terminalsQuery.error, 'Failed to load counters')} onRetry={() => terminalsQuery.refetch()} />
+      ) : (
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
+          <FormCard>
+            <div className="grid max-w-2xl gap-4 sm:grid-cols-2">
+              <Field label="Counter" error={busy.has(terminalId) || showErrors ? errors.terminalId : undefined}>
+                <select value={terminalId} onChange={(e) => setTerminalId(e.target.value)} className={inputClass}>
+                  <option value="">Choose a counter</option>
+                  {terminals.map((t) => (
+                    <option key={t.id} value={t.id} disabled={busy.has(t.id)}>
+                      {t.name}
+                      {t.location ? ` — ${t.location}` : ''}
+                      {busy.has(t.id) ? ' (already open)' : ''}
                     </option>
                   ))}
                 </select>
-              </div>
-
-              <div>
-                <label htmlFor="openingCash" className="block text-sm font-medium text-slate-700 mb-1">
-                  Opening Cash *
-                </label>
-                <input
-                  type="number"
-                  id="openingCash"
-                  value={formData.openingCash}
-                  onChange={(e) => setFormData({ ...formData, openingCash: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
-                  required
-                  step="0.01"
-                />
-              </div>
+                {terminals.length === 0 && (
+                  <Link to="/canteen/pos/terminals/new" className="mt-1 inline-block text-xs font-medium text-brand hover:text-brand-navy">
+                    Add a counter first
+                  </Link>
+                )}
+              </Field>
+              <Field label="Cash in the till (₹)" error={showErrors ? errors.cash : undefined}>
+                <input type="number" min={0} step="0.01" value={cash} onChange={(e) => setCash(e.target.value)} placeholder="e.g. 500" className={inputClass} />
+                <span className="mt-1.5 flex gap-1.5">
+                  {QUICK_CASH.map((amount) => (
+                    <button
+                      key={amount}
+                      type="button"
+                      onClick={() => setCash(String(amount))}
+                      className={`rounded-lg px-2 py-0.5 text-xs font-medium ring-1 ${cash !== '' && cashValue === amount ? 'bg-brand-navy text-white ring-brand-navy' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'}`}
+                    >
+                      ₹{amount.toLocaleString('en-IN')}
+                    </button>
+                  ))}
+                </span>
+              </Field>
             </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => navigate('/canteen/pos/shifts')}
-                disabled={submitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" disabled={submitting}>
-                {submitting ? 'Opening...' : 'Open Shift'}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </Card>
+          </FormCard>
+          <FormActions submitText="Open shift" isSubmitting={open.isPending} />
+        </form>
+      )}
     </div>
   );
 }

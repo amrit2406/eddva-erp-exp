@@ -1,152 +1,172 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Database } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getMenuItems, getItemSchedules, deleteMenuSchedule } from '../../api/canteen.api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CalendarClock, Pencil, Plus, Trash2 } from 'lucide-react';
+import ConfirmDialog from '../../../../components/feedback/ConfirmDialog';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import IconAction from '../../../../components/premium/list/IconAction';
+import { SearchBox } from '../../../../components/premium/list/ListControls';
+import ListHeader from '../../../../components/premium/list/ListHeader';
+import { EmptyState, ListSkeleton, NoResults } from '../../../../components/premium/list/ListStates';
+import PagedTable from '../../../../components/premium/list/PagedTable';
+import { btnPrimary } from '../../../../components/premium/styles';
+import { useToast } from '../../../../hooks/useToast';
+import { FoodMark } from '../../components/menu/FoodMark';
+import { deleteMenuSchedule, getMenuItems } from '../../api/canteen.api';
 import type { MenuItem, MenuSchedule } from '../../types/canteen.types';
+import { getApiErrorMessage } from '../../utils/errors';
+import { WEEK_DAYS, clockTime, dayLong } from '../../utils/labels';
 
-interface ItemWithSchedules extends MenuItem {
-  schedules: MenuSchedule[];
-}
+type Slot = MenuSchedule & { item: MenuItem };
+
+const dayRank = (day: string) => WEEK_DAYS.findIndex((d) => d.full === day || d.code === day);
 
 export default function MenuSchedulesPage() {
-  const [itemsWithSchedules, setItemsWithSchedules] = useState<ItemWithSchedules[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [search, setSearch] = useState('');
+  const [day, setDay] = useState('');
+  const [page, setPage] = useState(1);
+  const [pendingDelete, setPendingDelete] = useState<Slot | null>(null);
+  // Menu items already carry their time slots, so one request covers the page.
+  const { data: items = [], isLoading, error, refetch } = useQuery({ queryKey: ['canteen', 'menu-items'], queryFn: () => getMenuItems() });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
-    try {
-      setLoading(true);
-      const items = await getMenuItems();
-      
-      const itemsWithSchedulesData = await Promise.all(
-        items.map(async (item) => {
-          try {
-            const schedules = await getItemSchedules(item.id);
-            return { ...item, schedules };
-          } catch {
-            return { ...item, schedules: [] };
-          }
-        })
+  const remove = useMutation({
+    mutationFn: (s: Slot) => deleteMenuSchedule(s.id),
+    onSuccess: (_, s) => {
+      queryClient.setQueryData<MenuItem[]>(['canteen', 'menu-items'], (current) =>
+        current?.map((i) => (i.id === s.itemId ? { ...i, schedules: i.schedules?.filter((x) => x.id !== s.id) } : i)),
       );
-      
-      setItemsWithSchedules(itemsWithSchedulesData);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(err instanceof Error ? err.message : 'Failed to load schedules');
-    } finally {
-      setLoading(false);
-    }
-  }
+      queryClient.invalidateQueries({ queryKey: ['canteen', 'item-schedules', s.itemId] });
+      toast.success('Time slot removed');
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not remove the time slot')),
+    onSettled: () => setPendingDelete(null),
+  });
 
-  const handleDelete = async (scheduleId: string) => {
-    if (!window.confirm('Are you sure you want to delete this schedule?')) {
-      return;
-    }
-    try {
-      await deleteMenuSchedule(scheduleId);
-      setItemsWithSchedules(itemsWithSchedules.map(item => ({
-        ...item,
-        schedules: item.schedules.filter(s => s.id !== scheduleId)
-      })));
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      alert(err instanceof Error ? err.message : 'Failed to delete schedule');
-    }
-  };
+  const slots = useMemo<Slot[]>(() => items.flatMap((item) => (item.schedules ?? []).map((s) => ({ ...s, item }))), [items]);
 
-  const allSchedules = itemsWithSchedules.flatMap(item => 
-    item.schedules.map(schedule => ({
-      ...schedule,
-      itemName: item.name,
-      itemId: item.id
-    }))
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return slots
+      .filter((s) => !day || s.dayOfWeek === day)
+      .filter((s) => !q || s.item.name.toLowerCase().includes(q))
+      .sort((a, b) => dayRank(a.dayOfWeek) - dayRank(b.dayOfWeek) || a.startTime.localeCompare(b.startTime) || a.item.name.localeCompare(b.item.name));
+  }, [slots, search, day]);
+
+  const newButton = (
+    <Link to="/canteen/menu/schedules/new" className={btnPrimary}>
+      <Plus className="h-4 w-4" /> New time slot
+    </Link>
   );
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Menu Schedules</h1>
-          <p className="text-slate-600 mt-1">Manage menu item availability schedules</p>
-        </div>
-        <Link to="/canteen/menu/schedules/new">
-          <Button variant="primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Schedule
-          </Button>
-        </Link>
-      </div>
+  if (error) return <ErrorState message={getApiErrorMessage(error, 'Failed to load serving times')} onRetry={() => refetch()} />;
 
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
+  return (
+    <div className="space-y-5">
+      <ListHeader
+        icon={CalendarClock}
+        title="Serving times"
+        description="Items with a time slot can only be ordered in that window. Items without one can be ordered all day."
+        actions={newButton}
+      />
+
+      {isLoading ? (
+        <ListSkeleton />
+      ) : slots.length === 0 ? (
+        <EmptyState
+          icon={CalendarClock}
+          title="No time slots yet"
+          message="Everything can be ordered all day. Add a slot to limit an item, e.g. idli only at breakfast."
+          action={newButton}
+        />
       ) : (
-        <Card className="border-slate-200">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Item</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Day</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Start Time</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">End Time</th>
-                  <th className="text-right py-3 px-4 font-semibold text-slate-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allSchedules.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-center py-8 text-slate-500">
-                      No schedules found
-                    </td>
-                  </tr>
-                ) : (
-                  allSchedules.map((schedule) => (
-                    <tr key={schedule.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <Database className="h-4 w-4 text-slate-400" />
-                          <span className="font-medium text-slate-900">{schedule.itemName}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">{schedule.dayOfWeek}</td>
-                      <td className="py-3 px-4 text-slate-600">{schedule.startTime}</td>
-                      <td className="py-3 px-4 text-slate-600">{schedule.endTime}</td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link to={`/canteen/menu/schedules/${schedule.id}/edit`}>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(schedule.id)}>
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        <>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SearchBox
+              value={search}
+              onChange={(v) => {
+                setSearch(v);
+                setPage(1);
+              }}
+              placeholder="Search by item"
+            />
+            <select
+              value={day}
+              onChange={(e) => {
+                setDay(e.target.value);
+                setPage(1);
+              }}
+              aria-label="Filter by day"
+              className="rounded-2xl bg-white px-3 py-2.5 text-sm text-slate-700 shadow-soft ring-1 ring-slate-200/70 focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              <option value="">Every day</option>
+              {WEEK_DAYS.map((d) => (
+                <option key={d.full} value={d.full}>
+                  {d.long}
+                </option>
+              ))}
+            </select>
+            <p className="whitespace-nowrap text-xs text-slate-500">
+              {filtered.length} slot{filtered.length === 1 ? '' : 's'}
+            </p>
           </div>
-        </Card>
+          {filtered.length === 0 ? (
+            <NoResults
+              onClear={() => {
+                setSearch('');
+                setDay('');
+              }}
+            />
+          ) : (
+            <PagedTable
+              rows={filtered}
+              rowKey={(s) => s.id}
+              page={page}
+              onPage={setPage}
+              noun="slots"
+              minWidth={560}
+              columns={[
+                { header: 'Day', cell: (s) => <span className="font-medium text-slate-900">{dayLong(s.dayOfWeek)}</span> },
+                {
+                  header: 'Time',
+                  cell: (s) => (
+                    <span className="text-slate-700">
+                      {clockTime(s.startTime)} – {clockTime(s.endTime)}
+                    </span>
+                  ),
+                },
+                {
+                  header: 'Item',
+                  cell: (s) => (
+                    <span className="inline-flex items-center gap-2">
+                      <FoodMark type={s.item.foodType} />
+                      <Link to={`/canteen/menu/items/${s.item.id}`} className="font-semibold text-brand-navy hover:text-brand hover:underline">
+                        {s.item.name}
+                      </Link>
+                    </span>
+                  ),
+                },
+              ]}
+              actions={(s) => (
+                <>
+                  <IconAction icon={Pencil} label="Edit time slot" to={`/canteen/menu/schedules/${s.id}/edit`} />
+                  <IconAction icon={Trash2} label="Remove time slot" tone="danger" onClick={() => setPendingDelete(s)} />
+                </>
+              )}
+            />
+          )}
+        </>
       )}
+
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        onClose={() => !remove.isPending && setPendingDelete(null)}
+        onConfirm={() => pendingDelete && remove.mutate(pendingDelete)}
+        title="Remove this time slot?"
+        message={pendingDelete ? `${pendingDelete.item.name} will no longer be limited to ${dayLong(pendingDelete.dayOfWeek)}, ${clockTime(pendingDelete.startTime)} – ${clockTime(pendingDelete.endTime)}.` : ''}
+        confirmText={remove.isPending ? 'Removing…' : 'Remove slot'}
+      />
     </div>
   );
 }

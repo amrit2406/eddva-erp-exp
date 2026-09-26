@@ -1,6 +1,8 @@
-import { Check, X } from 'lucide-react';
-import { cn } from '../../../../utils/cn';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Check } from 'lucide-react';
 import type { PermissionResource, RolePermission } from '../../types/canteen.types';
+import { actionInfo, actionRank } from '../../utils/permissionLabels';
 
 interface ResourcePermissionsToggleProps {
   resources: PermissionResource[];
@@ -11,149 +13,161 @@ interface ResourcePermissionsToggleProps {
   className?: string;
 }
 
-function formatAction(action: string): string {
-  return action
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+// Non-admins can only hand out what they have themselves.
+function isActionAllowed(resource: string, action: string, myPermissions: RolePermission[], isInstituteAdmin: boolean): boolean {
+  if (isInstituteAdmin) return true;
+  return myPermissions.find((p) => p.resource === resource)?.actions.includes(action) ?? false;
 }
 
-function isActionAllowed(
-  resource: string,
-  action: string,
-  myPermissions: RolePermission[],
-  isInstituteAdmin: boolean
-): boolean {
-  if (isInstituteAdmin) {
-    return true;
-  }
-
-  const resourcePermission = myPermissions.find((permission) => permission.resource === resource);
-  return resourcePermission?.actions.includes(action) ?? false;
+// Small portalled hint for a disabled chip, so it's never clipped by the card.
+function Hint({ anchor, text }: { anchor: HTMLElement; text: string }) {
+  const rect = anchor.getBoundingClientRect();
+  return createPortal(
+    <span
+      role="tooltip"
+      className="pointer-events-none fixed z-[95] -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-[#0b1f3f] px-2.5 py-1 text-xs font-medium text-white shadow-lg"
+      style={{ top: rect.top - 6, left: rect.left + rect.width / 2 }}
+    >
+      {text}
+    </span>,
+    document.body,
+  );
 }
 
+// One row per area; tap an action chip to allow it, or "All" for the whole area.
 export default function ResourcePermissionsToggle({
   resources,
   selectedPermissions,
   onChange,
   myPermissions = [],
   isInstituteAdmin = false,
-  className,
+  className = '',
 }: ResourcePermissionsToggleProps) {
-  const getSelectedActions = (resource: string): string[] => {
-    return selectedPermissions.find((p) => p.resource === resource)?.actions ?? [];
+  const [hint, setHint] = useState<{ anchor: HTMLElement; text: string } | null>(null);
+
+  const selectedFor = (resource: string) => selectedPermissions.find((p) => p.resource === resource)?.actions ?? [];
+  const allowedFor = (r: PermissionResource) => r.available_actions.filter((a) => isActionAllowed(r.resource, a, myPermissions, isInstituteAdmin));
+
+  const setActions = (resource: string, actions: string[]) => {
+    const next = selectedPermissions.filter((p) => p.resource !== resource);
+    if (actions.length > 0) next.push({ resource, actions });
+    onChange(next);
   };
 
   const toggleAction = (resource: string, action: string) => {
-    if (!isActionAllowed(resource, action, myPermissions, isInstituteAdmin)) {
-      return;
-    }
-
-    const current = getSelectedActions(resource);
-    const updated = current.includes(action)
-      ? current.filter((a) => a !== action)
-      : [...current, action];
-
-    const next = selectedPermissions.filter((p) => p.resource !== resource);
-    if (updated.length > 0) {
-      next.push({ resource, actions: updated });
-    }
-    onChange(next);
+    if (!isActionAllowed(resource, action, myPermissions, isInstituteAdmin)) return;
+    const current = selectedFor(resource);
+    setActions(resource, current.includes(action) ? current.filter((a) => a !== action) : [...current, action]);
   };
 
-  const toggleAllForResource = (resourceItem: PermissionResource) => {
-    const allowedActions = resourceItem.available_actions.filter((action) =>
-      isActionAllowed(resourceItem.resource, action, myPermissions, isInstituteAdmin)
-    );
-    if (allowedActions.length === 0) {
-      return;
-    }
-
-    const current = getSelectedActions(resourceItem.resource);
-    const allSelected = allowedActions.every((a) => current.includes(a));
-
-    const next = selectedPermissions.filter((p) => p.resource !== resourceItem.resource);
-    if (!allSelected) {
-      next.push({ resource: resourceItem.resource, actions: allowedActions });
-    }
-    onChange(next);
+  const toggleArea = (r: PermissionResource) => {
+    const allowed = allowedFor(r);
+    if (allowed.length === 0) return;
+    const current = selectedFor(r.resource);
+    setActions(r.resource, allowed.every((a) => current.includes(a)) ? [] : allowed);
   };
 
-  const totalSelected = selectedPermissions.reduce((sum, p) => sum + p.actions.length, 0);
+  const selectEverything = () =>
+    onChange(resources.map((r) => ({ resource: r.resource, actions: allowedFor(r) })).filter((p) => p.actions.length > 0));
+
+  const sorted = [...resources].sort((a, b) => a.name.localeCompare(b.name));
+  const total = selectedPermissions.reduce((sum, p) => sum + p.actions.length, 0);
+  const areaCount = selectedPermissions.filter((p) => p.actions.length > 0).length;
 
   return (
-    <div className={cn('space-y-4', className)}>
-      {resources.map((resourceItem) => {
-        const selectedActions = getSelectedActions(resourceItem.resource);
-        const allSelected = resourceItem.available_actions.every((a) => selectedActions.includes(a));
-        const someSelected = selectedActions.length > 0 && !allSelected;
+    <div className={className}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-slate-600">
+          <span className="font-semibold text-slate-900">{total}</span> permission{total === 1 ? '' : 's'} in{' '}
+          <span className="font-semibold text-slate-900">{areaCount}</span> area{areaCount === 1 ? '' : 's'}
+        </p>
+        <div className="flex gap-1">
+          <button type="button" onClick={selectEverything} className="rounded-lg px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand/10">
+            Select everything
+          </button>
+          <button type="button" onClick={() => onChange([])} disabled={total === 0} className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 disabled:opacity-40">
+            Clear
+          </button>
+        </div>
+      </div>
 
-        return (
-          <div key={resourceItem.resource} className="border border-slate-200 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900">{resourceItem.name}</h3>
-                <p className="text-xs text-slate-500 mt-0.5">{resourceItem.resource}</p>
+      <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl ring-1 ring-slate-200/70">
+        {sorted.map((r) => {
+          const selected = selectedFor(r.resource);
+          const allowed = allowedFor(r);
+          const allOn = allowed.length > 0 && allowed.every((a) => selected.includes(a));
+          const actions = [...r.available_actions].sort((a, b) => actionRank(a) - actionRank(b));
+          return (
+            <li key={r.resource} className="grid gap-3 px-4 py-3.5 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:items-center">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-900">{r.name}</p>
+                  <p className="text-xs text-slate-500">
+                    {selected.length === 0 ? 'No access' : `${selected.length} of ${r.available_actions.length} allowed`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={allOn}
+                  aria-label={`Allow everything in ${r.name}`}
+                  onClick={() => toggleArea(r)}
+                  disabled={allowed.length === 0}
+                  className="flex items-center gap-2 text-xs font-medium text-slate-500 disabled:opacity-40 md:hidden"
+                >
+                  All
+                  <span className={`relative h-5 w-9 rounded-full transition-colors ${allOn ? 'bg-brand' : 'bg-slate-300'}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${allOn ? 'left-[18px]' : 'left-0.5'}`} />
+                  </span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => toggleAllForResource(resourceItem)}
-                className={cn(
-                  'text-xs font-medium px-2 py-1 rounded transition-colors',
-                  allSelected
-                    ? 'text-red-600 hover:bg-red-50'
-                    : someSelected
-                      ? 'text-blue-600 hover:bg-blue-50'
-                      : 'text-blue-600 hover:bg-blue-50'
-                )}
-              >
-                {allSelected ? 'Deselect all' : 'Select all'}
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {resourceItem.available_actions.map((action) => {
-                const isSelected = selectedActions.includes(action);
-                const isAllowed = isActionAllowed(
-                  resourceItem.resource,
-                  action,
-                  myPermissions,
-                  isInstituteAdmin
-                );
-                const permissionDetail = resourceItem.permissions.find((p) => p.action === action);
 
-                return (
-                  <button
-                    key={action}
-                    type="button"
-                    title={
-                      isAllowed
-                        ? permissionDetail?.description
-                        : 'Your account does not have this permission'
-                    }
-                    disabled={!isAllowed}
-                    onClick={() => toggleAction(resourceItem.resource, action)}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors',
-                      !isAllowed && 'opacity-40 cursor-not-allowed',
-                      isSelected
-                        ? 'bg-blue-50 border-blue-300 text-blue-800'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    )}
-                  >
-                    {isSelected ? (
-                      <Check className="h-3.5 w-3.5" />
-                    ) : (
-                      <X className="h-3.5 w-3.5 text-slate-300" />
-                    )}
-                    {formatAction(action)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-      <p className="text-xs text-slate-500">{totalSelected} permission(s) selected</p>
+              <div className="flex items-center gap-3">
+                <div className="flex flex-1 flex-wrap gap-1.5">
+                  {actions.map((action) => {
+                    const on = selected.includes(action);
+                    const can = isActionAllowed(r.resource, action, myPermissions, isInstituteAdmin);
+                    const info = actionInfo(action);
+                    return (
+                      <button
+                        key={action}
+                        type="button"
+                        aria-pressed={on}
+                        aria-disabled={!can}
+                        onClick={() => toggleAction(r.resource, action)}
+                        onMouseEnter={(e) => !can && setHint({ anchor: e.currentTarget, text: "You don't have this yourself, so you can't give it" })}
+                        onMouseLeave={() => setHint(null)}
+                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${
+                          !can ? 'cursor-not-allowed bg-slate-50 text-slate-300 ring-slate-100' : on ? 'text-white ring-transparent' : 'bg-white text-slate-600 ring-slate-200 hover:ring-slate-300'
+                        }`}
+                        style={can && on ? { background: info.color } : undefined}
+                      >
+                        {on && <Check className="h-3 w-3" />}
+                        {info.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={allOn}
+                  aria-label={`Allow everything in ${r.name}`}
+                  onClick={() => toggleArea(r)}
+                  disabled={allowed.length === 0}
+                  className="hidden items-center gap-2 text-xs font-medium text-slate-500 disabled:opacity-40 md:flex"
+                >
+                  All
+                  <span className={`relative h-5 w-9 rounded-full transition-colors ${allOn ? 'bg-brand' : 'bg-slate-300'}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${allOn ? 'left-[18px]' : 'left-0.5'}`} />
+                  </span>
+                </button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {hint && <Hint anchor={hint.anchor} text={hint.text} />}
     </div>
   );
 }

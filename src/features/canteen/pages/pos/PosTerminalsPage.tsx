@@ -1,121 +1,133 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Monitor } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getPosTerminals, deletePosTerminal } from '../../api/canteen.api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Eye, Monitor, Pencil, Plus, Trash2 } from 'lucide-react';
+import ConfirmDialog from '../../../../components/feedback/ConfirmDialog';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import IconAction from '../../../../components/premium/list/IconAction';
+import { SearchBox, StatusPill } from '../../../../components/premium/list/ListControls';
+import ListHeader from '../../../../components/premium/list/ListHeader';
+import { EmptyState, ListSkeleton, NoResults } from '../../../../components/premium/list/ListStates';
+import PagedTable from '../../../../components/premium/list/PagedTable';
+import { btnPrimary } from '../../../../components/premium/styles';
+import { useToast } from '../../../../hooks/useToast';
+import { deletePosTerminal, getPosTerminals, getShifts } from '../../api/canteen.api';
 import type { PosTerminal } from '../../types/canteen.types';
+import { getApiErrorMessage } from '../../utils/errors';
+
+const KEY = ['canteen', 'terminals'];
 
 export default function PosTerminalsPage() {
-  const [terminals, setTerminals] = useState<PosTerminal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pendingDelete, setPendingDelete] = useState<PosTerminal | null>(null);
+  const { data: terminals = [], isLoading, error, refetch } = useQuery({ queryKey: KEY, queryFn: () => getPosTerminals() });
+  const { data: shifts = [] } = useQuery({ queryKey: ['canteen', 'shifts'], queryFn: () => getShifts() });
 
-  useEffect(() => {
-    loadTerminals();
-  }, []);
+  const remove = useMutation({
+    mutationFn: (t: PosTerminal) => deletePosTerminal(t.id),
+    onSuccess: (_, t) => {
+      queryClient.setQueryData<PosTerminal[]>(KEY, (current) => current?.filter((x) => x.id !== t.id));
+      toast.success(`“${t.name}” deleted`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not delete this counter')),
+    onSettled: () => setPendingDelete(null),
+  });
 
-  async function loadTerminals() {
-    try {
-      setLoading(true);
-      const data = await getPosTerminals();
-      setTerminals(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(err instanceof Error ? err.message : 'Failed to load terminals');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const openAt = useMemo(() => new Set(shifts.filter((s) => s.status === 'OPEN').map((s) => s.terminalId)), [shifts]);
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this terminal?')) {
-      return;
-    }
-    try {
-      await deletePosTerminal(id);
-      setTerminals(terminals.filter((t) => t.id !== id));
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      alert(err instanceof Error ? err.message : 'Failed to delete terminal');
-    }
-  };
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return terminals.filter((t) => !q || t.name.toLowerCase().includes(q) || (t.location ?? '').toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+  }, [terminals, search]);
+
+  const newButton = (
+    <Link to="/canteen/pos/terminals/new" className={btnPrimary}>
+      <Plus className="h-4 w-4" /> New counter
+    </Link>
+  );
+
+  if (error) return <ErrorState message={getApiErrorMessage(error, 'Failed to load counters')} onRetry={() => refetch()} />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">POS Terminals</h1>
-          <p className="text-slate-600 mt-1">Manage canteen POS terminals</p>
-        </div>
-        <Link to="/canteen/pos/terminals/new">
-          <Button variant="primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Terminal
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-5">
+      <ListHeader icon={Monitor} title="Counters" description="Billing points (POS terminals) where staff take orders and payments." actions={newButton} />
 
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
+      {isLoading ? (
+        <ListSkeleton />
+      ) : terminals.length === 0 ? (
+        <EmptyState icon={Monitor} title="No counters yet" message="Add each billing counter. Staff open a shift on a counter before taking orders." action={newButton} />
       ) : (
-        <Card className="border-slate-200">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Name</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Location</th>
-                  <th className="text-right py-3 px-4 font-semibold text-slate-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {terminals.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="text-center py-8 text-slate-500">
-                      No terminals found
-                    </td>
-                  </tr>
-                ) : (
-                  terminals.map((terminal) => (
-                    <tr key={terminal.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <Monitor className="h-4 w-4 text-slate-400" />
-                          <span className="font-medium text-slate-900">{terminal.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">{terminal.location}</td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link to={`/canteen/pos/terminals/${terminal.id}/edit`}>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(terminal.id)}>
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        <>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SearchBox
+              value={search}
+              onChange={(v) => {
+                setSearch(v);
+                setPage(1);
+              }}
+              placeholder="Search by name or place"
+            />
+            <p className="whitespace-nowrap text-xs text-slate-500">
+              {filtered.length} counter{filtered.length === 1 ? '' : 's'} · {openAt.size} open now
+            </p>
           </div>
-        </Card>
+          {filtered.length === 0 ? (
+            <NoResults onClear={() => setSearch('')} />
+          ) : (
+            <PagedTable
+              rows={filtered}
+              rowKey={(t) => t.id}
+              page={page}
+              onPage={setPage}
+              noun="counters"
+              minWidth={640}
+              columns={[
+                {
+                  header: 'Counter',
+                  cell: (t) => (
+                    <Link to={`/canteen/pos/terminals/${t.id}`} className="font-semibold text-brand-navy hover:text-brand hover:underline">
+                      {t.name}
+                    </Link>
+                  ),
+                },
+                { header: 'Place', cell: (t) => <span className="text-slate-600">{t.location || '—'}</span> },
+                { header: 'Right now', cell: (t) => <StatusPill label={openAt.has(t.id) ? 'Shift open' : 'Closed'} color={openAt.has(t.id) ? '#15936a' : '#94a3b8'} /> },
+                { header: 'Orders', align: 'right', cell: (t) => <span className="text-slate-700">{t._count?.orders ?? 0}</span> },
+                { header: 'Shifts', align: 'right', cell: (t) => <span className="text-slate-700">{t._count?.shifts ?? 0}</span> },
+              ]}
+              actions={(t) => (
+                <>
+                  <IconAction icon={Eye} label="View counter" to={`/canteen/pos/terminals/${t.id}`} tone="brand" />
+                  <IconAction icon={Pencil} label="Edit counter" to={`/canteen/pos/terminals/${t.id}/edit`} />
+                  <IconAction
+                    icon={Trash2}
+                    label={openAt.has(t.id) ? 'Close the open shift before deleting' : 'Delete counter'}
+                    tone="danger"
+                    disabled={openAt.has(t.id)}
+                    onClick={() => setPendingDelete(t)}
+                  />
+                </>
+              )}
+            />
+          )}
+        </>
       )}
+
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        onClose={() => !remove.isPending && setPendingDelete(null)}
+        onConfirm={() => pendingDelete && remove.mutate(pendingDelete)}
+        title="Delete this counter?"
+        message={
+          pendingDelete
+            ? `“${pendingDelete.name}” will be removed.${pendingDelete._count?.orders ? ` It has ${pendingDelete._count.orders} past orders, so the delete may be refused.` : ''}`
+            : ''
+        }
+        confirmText={remove.isPending ? 'Deleting…' : 'Delete counter'}
+      />
     </div>
   );
 }

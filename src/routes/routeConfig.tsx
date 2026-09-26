@@ -138,9 +138,11 @@ import CanteenDashboardPage from '../features/canteen/pages/dashboard/DashboardP
 import MenuCategoriesPage from '../features/canteen/pages/menu/MenuCategoriesPage';
 import CreateMenuCategoryPage from '../features/canteen/pages/menu/CreateMenuCategoryPage';
 import EditMenuCategoryPage from '../features/canteen/pages/menu/EditMenuCategoryPage';
+import MenuCategoryDetailsPage from '../features/canteen/pages/menu/MenuCategoryDetailsPage';
 import MenuItemsPage from '../features/canteen/pages/menu/MenuItemsPage';
 import CreateMenuItemPage from '../features/canteen/pages/menu/CreateMenuItemPage';
 import EditMenuItemPage from '../features/canteen/pages/menu/EditMenuItemPage';
+import MenuItemDetailsPage from '../features/canteen/pages/menu/MenuItemDetailsPage';
 import MenuSchedulesPage from '../features/canteen/pages/menu/MenuSchedulesPage';
 import CreateMenuSchedulePage from '../features/canteen/pages/menu/CreateMenuSchedulePage';
 import EditMenuSchedulePage from '../features/canteen/pages/menu/EditMenuSchedulePage';
@@ -149,10 +151,12 @@ import MembersPage from '../features/canteen/pages/members/MembersPage';
 import CreateMemberPage from '../features/canteen/pages/members/CreateMemberPage';
 import EditMemberPage from '../features/canteen/pages/members/EditMemberPage';
 import MemberLookupPage from '../features/canteen/pages/members/MemberLookupPage';
+import MemberDetailsPage from '../features/canteen/pages/members/MemberDetailsPage';
 // Canteen POS
 import PosTerminalsPage from '../features/canteen/pages/pos/PosTerminalsPage';
 import CreatePosTerminalPage from '../features/canteen/pages/pos/CreatePosTerminalPage';
 import EditPosTerminalPage from '../features/canteen/pages/pos/EditPosTerminalPage';
+import PosTerminalDetailsPage from '../features/canteen/pages/pos/PosTerminalDetailsPage';
 import ShiftsPage from '../features/canteen/pages/pos/ShiftsPage';
 import OpenShiftPage from '../features/canteen/pages/pos/OpenShiftPage';
 import ViewShiftPage from '../features/canteen/pages/pos/ViewShiftPage';
@@ -1232,6 +1236,11 @@ export const routeConfig = [
     element: MemberLookupPage,
     isProtected: true,
   },
+  {
+    path: '/canteen/members/:id',
+    element: MemberDetailsPage,
+    isProtected: true,
+  },
   
   // Canteen POS Routes
   {
@@ -1247,6 +1256,11 @@ export const routeConfig = [
   {
     path: '/canteen/pos/terminals/:id/edit',
     element: EditPosTerminalPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/pos/terminals/:id',
+    element: PosTerminalDetailsPage,
     isProtected: true,
   },
   {
@@ -1339,6 +1353,11 @@ export const routeConfig = [
     isProtected: true,
   },
   {
+    path: '/canteen/menu/categories/:id',
+    element: MenuCategoryDetailsPage,
+    isProtected: true,
+  },
+  {
     path: '/canteen/menu/items',
     element: MenuItemsPage,
     isProtected: true,
@@ -1351,6 +1370,11 @@ export const routeConfig = [
   {
     path: '/canteen/menu/items/:id/edit',
     element: EditMenuItemPage,
+    isProtected: true,
+  },
+  {
+    path: '/canteen/menu/items/:id',
+    element: MenuItemDetailsPage,
     isProtected: true,
   },
   {

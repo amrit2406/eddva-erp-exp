@@ -1,760 +1,340 @@
-import { useState, useEffect, useCallback } from 'react';
-import {
-  BarChart2,
-  ShoppingBag,
-  Tag,
-  CreditCard,
-  Clock,
-  TrendingUp,
-  TrendingDown,
-  IndianRupee,
-  Receipt,
-  RefreshCw,
-} from 'lucide-react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import {
-  getSalesReport,
-  getItemSalesReport,
-  getCategorySalesReport,
-  getPaymentSummaryReport,
-  getShiftsReport,
-} from '../../api/canteen.api';
-import type {
-  SalesReport,
-  ItemSalesReport,
-  CategorySalesReport,
-  PaymentSummaryReport,
-  ShiftsReport,
-  ReportParams,
-} from '../../types/canteen.types';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import type { LucideIcon } from 'lucide-react';
+import { Ban, ChartColumn, CheckCircle2, ClipboardList, Download, IndianRupee } from 'lucide-react';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { InfoCard } from '../../../../components/premium/detail/DetailParts';
+import { Segmented, StatusPill } from '../../../../components/premium/list/ListControls';
+import ListHeader from '../../../../components/premium/list/ListHeader';
+import { EmptyState, ListSkeleton } from '../../../../components/premium/list/ListStates';
+import PagedTable from '../../../../components/premium/list/PagedTable';
+import { btnSecondary, inputClass } from '../../../../components/premium/styles';
+import { rupees, toNumber } from '../../../../utils/dashboardFormat';
+import { getCategorySalesReport, getItemSalesReport, getPaymentSummaryReport, getSalesReport, getShiftsReport } from '../../api/canteen.api';
+import type { ReportParams, SalesReport, ShiftsReport as ShiftsReportData } from '../../types/canteen.types';
+import { downloadCsv } from '../../utils/csv';
+import { getApiErrorMessage } from '../../utils/errors';
+import { cashDifference, dateTime, duration, paymentModeLabel } from '../../utils/labels';
 
-// ─── Tab config ──────────────────────────────────────────────────────────────
+type Tab = 'sales' | 'items' | 'categories' | 'payments' | 'shifts';
+type Period = 'today' | 'week' | 'month' | 'all' | 'custom';
 
-type TabId = 'sales' | 'item-sales' | 'category-sales' | 'payment-summary' | 'shifts';
-
-const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: 'sales',            label: 'Sales',            icon: BarChart2   },
-  { id: 'item-sales',       label: 'Item Sales',       icon: ShoppingBag },
-  { id: 'category-sales',   label: 'Category Sales',   icon: Tag         },
-  { id: 'payment-summary',  label: 'Payment Summary',  icon: CreditCard  },
-  { id: 'shifts',           label: 'Shifts',           icon: Clock       },
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'sales', label: 'Summary' },
+  { value: 'items', label: 'Items' },
+  { value: 'categories', label: 'Categories' },
+  { value: 'payments', label: 'Payments' },
+  { value: 'shifts', label: 'Shifts' },
 ];
 
-// ─── Stat card ───────────────────────────────────────────────────────────────
+const PERIODS: { value: Period; label: string }[] = [
+  { value: 'today', label: 'Today' },
+  { value: 'week', label: 'Last 7 days' },
+  { value: 'month', label: 'This month' },
+  { value: 'all', label: 'All time' },
+  { value: 'custom', label: 'Pick dates' },
+];
 
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  color = 'blue',
-}: {
-  label: string;
-  value: string | number;
-  icon: React.ElementType;
-  color?: 'blue' | 'green' | 'amber' | 'purple' | 'red';
-}) {
-  const colors = {
-    blue:   { bg: 'bg-[#008BE9]/10', text: 'text-[#008BE9]' },
-    green:  { bg: 'bg-green-100',    text: 'text-green-600'  },
-    amber:  { bg: 'bg-amber-100',    text: 'text-amber-600'  },
-    purple: { bg: 'bg-purple-100',   text: 'text-purple-600' },
-    red:    { bg: 'bg-red-100',      text: 'text-red-600'    },
-  };
-  const c = colors[color];
-  return (
-    <Card className="border-slate-200">
-      <div className="p-5 flex items-center gap-4">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${c.bg}`}>
-          <Icon className={`h-5 w-5 ${c.text}`} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs text-slate-500 uppercase tracking-wide font-medium truncate">{label}</p>
-          <p className="text-xl font-bold text-slate-900 truncate">{value}</p>
-        </div>
-      </div>
-    </Card>
-  );
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const dayStart = (value: string) => new Date(`${value}T00:00:00`).toISOString();
+const dayEnd = (value: string) => new Date(`${value}T23:59:59.999`).toISOString();
+
+// Whole local days, sent as timestamps so the last day is included.
+function periodParams(period: Period, from: string, to: string): ReportParams {
+  const today = new Date();
+  switch (period) {
+    case 'today':
+      return { dateFrom: dayStart(ymd(today)), dateTo: dayEnd(ymd(today)) };
+    case 'week': {
+      const start = new Date(today);
+      start.setDate(today.getDate() - 6);
+      return { dateFrom: dayStart(ymd(start)), dateTo: dayEnd(ymd(today)) };
+    }
+    case 'month':
+      return { dateFrom: dayStart(ymd(new Date(today.getFullYear(), today.getMonth(), 1))), dateTo: dayEnd(ymd(today)) };
+    case 'custom':
+      return { dateFrom: from ? dayStart(from) : undefined, dateTo: to ? dayEnd(to) : undefined };
+    default:
+      return {};
+  }
 }
-
-// ─── Date filter bar ─────────────────────────────────────────────────────────
-
-function DateFilter({
-  startDate,
-  endDate,
-  onStartDate,
-  onEndDate,
-  onApply,
-  onClear,
-  loading,
-}: {
-  startDate: string;
-  endDate: string;
-  onStartDate: (v: string) => void;
-  onEndDate:   (v: string) => void;
-  onApply: () => void;
-  onClear: () => void;
-  loading: boolean;
-}) {
-  return (
-    <div className="flex flex-wrap items-end gap-3">
-      <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">From</label>
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => onStartDate(e.target.value)}
-          className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
-        />
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">To</label>
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => onEndDate(e.target.value)}
-          className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
-        />
-      </div>
-      <Button variant="primary" size="sm" onClick={onApply} disabled={loading}>
-        <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-        {loading ? 'Loading…' : 'Apply'}
-      </Button>
-      {(startDate || endDate) && (
-        <Button variant="ghost" size="sm" onClick={onClear} disabled={loading}>
-          Clear
-        </Button>
-      )}
-    </div>
-  );
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CanteenReportsPage() {
-  const [activeTab, setActiveTab] = useState<TabId>('sales');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate]     = useState('');
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('sales');
+  const [period, setPeriod] = useState<Period>('month');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const params = periodParams(period, from, to);
+  const key = ['canteen', 'report', params.dateFrom ?? '', params.dateTo ?? ''];
+  const badRange = period === 'custom' && from && to && from > to;
 
-  // Report data
-  const [salesData,          setSalesData]          = useState<SalesReport | null>(null);
-  const [itemSalesData,      setItemSalesData]      = useState<ItemSalesReport | null>(null);
-  const [categorySalesData,  setCategorySalesData]  = useState<CategorySalesReport | null>(null);
-  const [paymentSummaryData, setPaymentSummaryData] = useState<PaymentSummaryReport | null>(null);
-  const [shiftsData,         setShiftsData]         = useState<ShiftsReport | null>(null);
+  const sales = useQuery({ queryKey: [...key, 'sales'], queryFn: () => getSalesReport(params), enabled: tab === 'sales' && !badRange });
+  const items = useQuery({ queryKey: [...key, 'items'], queryFn: () => getItemSalesReport(params), enabled: tab === 'items' && !badRange });
+  const categories = useQuery({ queryKey: [...key, 'categories'], queryFn: () => getCategorySalesReport(params), enabled: tab === 'categories' && !badRange });
+  const payments = useQuery({ queryKey: [...key, 'payments'], queryFn: () => getPaymentSummaryReport(params), enabled: tab === 'payments' && !badRange });
+  const shifts = useQuery({ queryKey: [...key, 'shifts'], queryFn: () => getShiftsReport(params), enabled: tab === 'shifts' && !badRange });
+  const active = { sales, items, categories, payments, shifts }[tab];
 
-  const params = useCallback((): ReportParams => {
-    const p: ReportParams = {};
-    if (startDate) p.startDate = startDate;
-    if (endDate)   p.endDate   = endDate;
-    return p;
-  }, [startDate, endDate]);
+  const periodLabel = period === 'custom' ? [from, to].filter(Boolean).join(' to ') || 'All time' : PERIODS.find((p) => p.value === period)!.label;
+  const fileName = `canteen-${tab}`;
 
-  const loadReport = useCallback(async (tab: TabId, p: ReportParams) => {
-    try {
-      setLoading(true);
-      setError(null);
-      switch (tab) {
-        case 'sales':           setSalesData(await getSalesReport(p));           break;
-        case 'item-sales':      setItemSalesData(await getItemSalesReport(p));   break;
-        case 'category-sales':  setCategorySalesData(await getCategorySalesReport(p)); break;
-        case 'payment-summary': setPaymentSummaryData(await getPaymentSummaryReport(p)); break;
-        case 'shifts':          setShiftsData(await getShiftsReport(p));         break;
-      }
-    } catch (err: any) {
-      if (err.response?.status === 401) return;
-      setError(err.response?.data?.message || err.message || 'Failed to load report');
-    } finally {
-      setLoading(false);
+  const exportCsv = () => {
+    if (tab === 'items' && items.data) {
+      downloadCsv(fileName, ['Item', 'Category', 'Quantity sold', 'Sales (₹)'], items.data.map((r) => [r.itemName, r.categoryName, r.quantitySold, r.totalSales]));
+    } else if (tab === 'categories' && categories.data) {
+      downloadCsv(fileName, ['Category', 'Items sold', 'Sales (₹)'], categories.data.map((r) => [r.categoryName, r.totalItemsSold, r.totalSales]));
+    } else if (tab === 'payments' && payments.data) {
+      downloadCsv(fileName, ['Paid by', 'Status', 'Payments', 'Amount (₹)'], payments.data.map((r) => [paymentModeLabel(r.paymentMode), r.status, r.transactionCount, r.totalAmount]));
+    } else if (tab === 'shifts' && shifts.data) {
+      downloadCsv(
+        fileName,
+        ['Counter', 'Started', 'Ended', 'Cash at start (₹)', 'Should be in till (₹)', 'Counted (₹)', 'Difference (₹)', 'Status'],
+        shifts.data.shifts.map((s) => [s.terminal?.name ?? '', s.shiftStart, s.shiftEnd ?? '', toNumber(s.openingCash), toNumber(s.expectedCash), toNumber(s.closingCash), toNumber(s.variance), s.status]),
+      );
+    } else if (tab === 'sales' && sales.data) {
+      const d = sales.data;
+      downloadCsv(fileName, ['Measure', 'Value'], [
+        ['Orders', d.totalOrders],
+        ['Collected', d.completedOrders],
+        ['Cancelled', d.cancelledOrders],
+        ['Gross sales (₹)', d.grossSales],
+        ['Discount (₹)', d.discount],
+        ['Tax (₹)', d.tax],
+        ['Net sales (₹)', d.netSales],
+        ['Cash (₹)', d.cashSales],
+        ['UPI (₹)', d.upiSales],
+        ['Card (₹)', d.cardSales],
+        ['Wallet (₹)', d.walletSales],
+      ]);
     }
-  }, []);
-
-  // Load on tab switch
-  useEffect(() => {
-    loadReport(activeTab, params());
-  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleApply = () => loadReport(activeTab, params());
-  const handleClear = () => {
-    setStartDate('');
-    setEndDate('');
-    loadReport(activeTab, {});
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Reports & Analytics</h1>
-        <p className="text-slate-600 mt-1">Canteen performance insights</p>
-      </div>
-
-      {/* Tab bar */}
-      <div className="flex gap-1 flex-wrap border-b border-slate-200">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === id
-                ? 'border-[#008BE9] text-[#008BE9]'
-                : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
-            }`}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
+    <div className="space-y-5">
+      <ListHeader
+        icon={ChartColumn}
+        title="Reports"
+        description="How the canteen is doing — sales, best sellers, payments and cash counts."
+        actions={
+          <button type="button" onClick={exportCsv} disabled={!active.data} className={btnSecondary}>
+            <Download className="h-4 w-4" /> Export CSV
           </button>
-        ))}
-      </div>
-
-      {/* Date filter */}
-      <DateFilter
-        startDate={startDate}
-        endDate={endDate}
-        onStartDate={setStartDate}
-        onEndDate={setEndDate}
-        onApply={handleApply}
-        onClear={handleClear}
-        loading={loading}
-      />
-
-      {/* Error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-          {error}
+        }
+      >
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <Segmented label="Report" value={tab} onChange={(v) => setTab(v as Tab)} options={TABS} />
+          <div className="flex flex-wrap items-center gap-2">
+            <Segmented label="Period" value={period} onChange={(v) => setPeriod(v as Period)} options={PERIODS} />
+          </div>
         </div>
-      )}
+        {period === 'custom' && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+            <input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} aria-label="From date" className={`${inputClass} w-auto`} />
+            <span>to</span>
+            <input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} aria-label="To date" className={`${inputClass} w-auto`} />
+            {badRange && <span className="text-xs text-red-600">The start date is after the end date.</span>}
+          </div>
+        )}
+      </ListHeader>
 
-      {/* ── Sales Report ─────────────────────────────────────────────────────── */}
-      {activeTab === 'sales' && (
-        <>
-          {loading && !salesData ? (
-            <LoadingCard />
-          ) : salesData ? (
-            <SalesReportView data={salesData} />
-          ) : (
-            <EmptyCard />
-          )}
-        </>
-      )}
-
-      {/* ── Item Sales Report ─────────────────────────────────────────────────── */}
-      {activeTab === 'item-sales' && (
-        <>
-          {loading && !itemSalesData ? (
-            <LoadingCard />
-          ) : itemSalesData ? (
-            <ItemSalesReportView data={itemSalesData} />
-          ) : (
-            <EmptyCard />
-          )}
-        </>
-      )}
-
-      {/* ── Category Sales Report ─────────────────────────────────────────────── */}
-      {activeTab === 'category-sales' && (
-        <>
-          {loading && !categorySalesData ? (
-            <LoadingCard />
-          ) : categorySalesData ? (
-            <CategorySalesReportView data={categorySalesData} />
-          ) : (
-            <EmptyCard />
-          )}
-        </>
-      )}
-
-      {/* ── Payment Summary Report ────────────────────────────────────────────── */}
-      {activeTab === 'payment-summary' && (
-        <>
-          {loading && !paymentSummaryData ? (
-            <LoadingCard />
-          ) : paymentSummaryData ? (
-            <PaymentSummaryReportView data={paymentSummaryData} />
-          ) : (
-            <EmptyCard />
-          )}
-        </>
-      )}
-
-      {/* ── Shifts Report ─────────────────────────────────────────────────────── */}
-      {activeTab === 'shifts' && (
-        <>
-          {loading && !shiftsData ? (
-            <LoadingCard />
-          ) : shiftsData ? (
-            <ShiftsReportView data={shiftsData} />
-          ) : (
-            <EmptyCard />
-          )}
-        </>
-      )}
+      {badRange ? null : active.isLoading ? (
+        <ListSkeleton />
+      ) : active.error ? (
+        <ErrorState message={getApiErrorMessage(active.error, 'Failed to load the report')} onRetry={() => active.refetch()} />
+      ) : tab === 'sales' && sales.data ? (
+        <SalesSummary data={sales.data} period={periodLabel} />
+      ) : tab === 'items' && items.data ? (
+        <ShareTable
+          key={tab}
+          empty="No items sold in this period."
+          rows={[...items.data].sort((a, b) => b.totalSales - a.totalSales).map((r) => ({ key: r.itemId, name: r.itemName, sub: r.categoryName, qty: r.quantitySold, amount: r.totalSales }))}
+          nameHeader="Item"
+          qtyHeader="Sold"
+        />
+      ) : tab === 'categories' && categories.data ? (
+        <ShareTable
+          key={tab}
+          empty="Nothing sold in this period."
+          rows={[...categories.data].sort((a, b) => b.totalSales - a.totalSales).map((r) => ({ key: r.categoryName, name: r.categoryName, qty: r.totalItemsSold, amount: r.totalSales }))}
+          nameHeader="Category"
+          qtyHeader="Items sold"
+        />
+      ) : tab === 'payments' && payments.data ? (
+        <ShareTable
+          key={tab}
+          empty="No payments in this period."
+          rows={[...payments.data]
+            .sort((a, b) => b.totalAmount - a.totalAmount)
+            .map((r) => ({ key: `${r.paymentMode}-${r.status}`, name: paymentModeLabel(r.paymentMode), sub: r.status === 'success' ? undefined : r.status, qty: r.transactionCount, amount: r.totalAmount }))}
+          nameHeader="Paid by"
+          qtyHeader="Payments"
+        />
+      ) : tab === 'shifts' && shifts.data ? (
+        <ShiftsReport data={shifts.data} />
+      ) : null}
     </div>
   );
 }
 
-// ─── Sub-views ────────────────────────────────────────────────────────────────
-
-function LoadingCard() {
+function Tile({ label, value, hint, icon: Icon, color }: { label: string; value: string; hint?: string; icon: LucideIcon; color: string }) {
   return (
-    <Card className="border-slate-200">
-      <div className="p-10 text-center text-slate-500">Loading report…</div>
-    </Card>
+    <div className="animate-rise rounded-3xl bg-white p-5 shadow-soft ring-1 ring-slate-200/70">
+      <div className="flex items-center gap-2">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: `${color}1a`, color }}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <p className="text-sm font-medium text-slate-500">{label}</p>
+      </div>
+      <p className="mt-3 text-2xl font-semibold tabular-nums tracking-tight text-slate-900">{value}</p>
+      {hint && <p className="text-xs text-slate-500">{hint}</p>}
+    </div>
   );
 }
 
-function EmptyCard() {
+function ShareBar({ share }: { share: number }) {
   return (
-    <Card className="border-slate-200">
-      <div className="p-10 text-center text-slate-400">No data available</div>
-    </Card>
+    <span className="flex items-center gap-2">
+      <span className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+        <span className="block h-full rounded-full bg-gradient-to-r from-brand-navy to-brand" style={{ width: `${share > 0 ? Math.max(2, share) : 0}%` }} />
+      </span>
+      <span className="w-10 text-right text-xs tabular-nums text-slate-500">{Math.round(share)}%</span>
+    </span>
   );
 }
 
-// ── Sales ─────────────────────────────────────────────────────────────────────
-
-function SalesReportView({ data }: { data: SalesReport }) {
-  const r: any = data;
-
-  // Sales breakdown rows for the channel table
-  const salesChannels = [
-    { label: 'Cash',   value: r.cashSales   ?? 0, color: 'bg-green-100 text-green-700'  },
-    { label: 'Card',   value: r.cardSales   ?? 0, color: 'bg-blue-100 text-blue-700'    },
-    { label: 'UPI',    value: r.upiSales    ?? 0, color: 'bg-purple-100 text-purple-700' },
-    { label: 'Wallet', value: r.walletSales ?? 0, color: 'bg-orange-100 text-orange-700' },
+function SalesSummary({ data, period }: { data: SalesReport; period: string }) {
+  if (data.totalOrders === 0) return <EmptyState icon={ClipboardList} title="No orders in this period" message={`Nothing was ordered (${period.toLowerCase()}). Try a longer period.`} />;
+  const channels = [
+    ['Cash', data.cashSales],
+    ['UPI', data.upiSales],
+    ['Card', data.cardSales],
+    ['Canteen wallet', data.walletSales],
+  ] as const;
+  const paidTotal = channels.reduce((s, [, v]) => s + v, 0);
+  const rows: [string, ReactNode][] = [
+    ['Food sold', rupees(data.grossSales)],
+    ['Discounts', <span className="text-emerald-700">−{rupees(data.discount)}</span>],
+    ['Tax', `+${rupees(data.tax)}`],
+    ['Net sales', <span className="text-base font-semibold">{rupees(data.netSales)}</span>],
   ];
 
   return (
-    <div className="space-y-6">
-      {/* KPI cards — row 1 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Total Orders"     value={r.totalOrders     ?? 0}                          icon={Receipt}     color="blue"   />
-        <StatCard label="Completed Orders" value={r.completedOrders ?? 0}                          icon={TrendingUp}  color="green"  />
-        <StatCard label="Cancelled Orders" value={r.cancelledOrders ?? 0}                          icon={TrendingDown} color="red"   />
-        <StatCard label="Gross Sales"      value={`₹${Number(r.grossSales ?? 0).toFixed(2)}`}      icon={IndianRupee} color="amber"  />
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Tile label="Net sales" value={rupees(data.netSales)} hint={period} icon={IndianRupee} color="#008BE9" />
+        <Tile label="Orders" value={`${data.totalOrders}`} hint={`Avg ${rupees(Math.round(data.netSales / Math.max(1, data.totalOrders - data.cancelledOrders)))} each`} icon={ClipboardList} color="#7c3aed" />
+        <Tile label="Collected" value={`${data.completedOrders}`} hint="Handed over" icon={CheckCircle2} color="#15936a" />
+        <Tile label="Cancelled" value={`${data.cancelledOrders}`} hint={data.totalOrders ? `${Math.round((data.cancelledOrders / data.totalOrders) * 100)}% of orders` : undefined} icon={Ban} color="#d03b3b" />
       </div>
-
-      {/* KPI cards — row 2 */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <StatCard label="Discount"  value={`₹${Number(r.discount  ?? 0).toFixed(2)}`}  icon={TrendingDown} color="red"    />
-        <StatCard label="Tax"       value={`₹${Number(r.tax       ?? 0).toFixed(2)}`}  icon={IndianRupee}  color="amber"  />
-        <StatCard label="Net Sales" value={`₹${Number(r.netSales  ?? 0).toFixed(2)}`}  icon={TrendingUp}   color="green"  />
+      <div className="grid gap-5 lg:grid-cols-2">
+        <InfoCard title="How the money adds up" icon={IndianRupee} rows={rows} />
+        <InfoCard title="How members paid" icon={IndianRupee} delay={60}>
+          {paidTotal === 0 ? (
+            <p className="text-sm text-slate-500">No payments received yet.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {channels.map(([label, value]) => (
+                <li key={label} className="flex items-center gap-3 py-2.5 text-sm">
+                  <span className="w-32 font-medium text-slate-800">{label}</span>
+                  <ShareBar share={(value / paidTotal) * 100} />
+                  <span className="ml-auto font-medium tabular-nums text-slate-900">{rupees(value)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {paidTotal > 0 && paidTotal < data.netSales && <p className="mt-3 text-xs text-slate-500">{rupees(data.netSales - paidTotal)} of sales is still unpaid.</p>}
+        </InfoCard>
       </div>
+    </div>
+  );
+}
 
-      {/* Sales by channel */}
-      <Card className="border-slate-200">
-        <div className="p-5">
-          <h3 className="text-sm font-semibold text-slate-800 mb-4">Sales by Payment Channel</h3>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left py-2 px-3 text-xs font-semibold text-slate-600 uppercase tracking-wide">Channel</th>
-                <th className="text-right py-2 px-3 text-xs font-semibold text-slate-600 uppercase tracking-wide">Amount</th>
-                <th className="text-right py-2 px-3 text-xs font-semibold text-slate-600 uppercase tracking-wide">Share %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {salesChannels.map((ch) => {
-                const gross = Number(r.grossSales ?? 0);
-                const share = gross > 0 ? (Number(ch.value) / gross) * 100 : 0;
-                return (
-                  <tr key={ch.label} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-2.5 px-3">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${ch.color}`}>
-                        {ch.label}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3 text-right font-semibold text-slate-900">
-                      ₹{Number(ch.value).toFixed(2)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                          <div className="h-full bg-[#008BE9] rounded-full" style={{ width: `${Math.min(share, 100).toFixed(1)}%` }} />
-                        </div>
-                        <span className="text-xs text-slate-600 w-10 text-right">{share.toFixed(1)}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="border-t-2 border-slate-200 bg-slate-50">
-                <td className="py-2.5 px-3 text-xs font-semibold text-slate-600 uppercase">Gross Total</td>
-                <td className="py-2.5 px-3 text-right font-bold text-slate-900">₹{Number(r.grossSales ?? 0).toFixed(2)}</td>
-                <td className="py-2.5 px-3 text-right font-bold text-slate-900">100%</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </Card>
+interface ShareRow {
+  key: string;
+  name: string;
+  sub?: string;
+  qty: number;
+  amount: number;
+}
 
-      {/* Summary breakdown */}
-      <Card className="border-slate-200">
-        <div className="p-5">
-          <h3 className="text-sm font-semibold text-slate-800 mb-4">Sales Summary</h3>
-          <dl className="divide-y divide-slate-100">
-            {[
-              { label: 'Gross Sales',  value: r.grossSales,  cls: 'text-slate-900' },
-              { label: 'Discount',     value: -r.discount,   cls: 'text-red-600'   },
-              { label: 'Tax',          value: r.tax,         cls: 'text-slate-900' },
-              { label: 'Net Sales',    value: r.netSales,    cls: 'text-green-700 font-bold text-base' },
-            ].map(({ label, value, cls }) => (
-              <div key={label} className="flex items-center justify-between py-2.5 px-1">
-                <dt className="text-sm text-slate-600">{label}</dt>
-                <dd className={`text-sm ${cls}`}>
-                  {Number(value ?? 0) < 0 ? '-' : ''}₹{Math.abs(Number(value ?? 0)).toFixed(2)}
-                </dd>
+function ShareTable({ rows, nameHeader, qtyHeader, empty }: { rows: ShareRow[]; nameHeader: string; qtyHeader: string; empty: string }) {
+  const [page, setPage] = useState(1);
+  const total = rows.reduce((s, r) => s + r.amount, 0);
+  if (rows.length === 0) return <EmptyState icon={ChartColumn} title="Nothing to show" message={empty} />;
+  const rank = new Map(rows.map((r, i) => [r.key, i + 1]));
+  return (
+    <PagedTable
+      rows={rows}
+      rowKey={(r) => r.key}
+      page={page}
+      onPage={setPage}
+      noun="rows"
+      minWidth={620}
+      columns={[
+        { header: '#', className: 'w-12', cell: (r) => <span className="text-xs font-semibold text-slate-400">{rank.get(r.key)}</span> },
+        {
+          header: nameHeader,
+          cell: (r) => (
+            <div>
+              <span className="font-medium text-slate-900">{r.name}</span>
+              {r.sub && <p className="text-xs text-slate-500">{r.sub}</p>}
+            </div>
+          ),
+        },
+        { header: qtyHeader, align: 'right', cell: (r) => <span className="text-slate-700">{r.qty.toLocaleString('en-IN')}</span> },
+        { header: 'Amount', align: 'right', cell: (r) => <span className="font-medium text-slate-900">{rupees(r.amount)}</span> },
+        { header: 'Share', cell: (r) => <ShareBar share={total ? (r.amount / total) * 100 : 0} /> },
+      ]}
+    />
+  );
+}
+
+function ShiftsReport({ data }: { data: ShiftsReportData }) {
+  const [page, setPage] = useState(1);
+  const { summary, shifts } = data;
+  if (shifts.length === 0) return <EmptyState icon={ChartColumn} title="No shifts in this period" message="Shifts opened and closed in this period will show here." />;
+  const diff = cashDifference(summary.totalVariance);
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Tile label="Shifts" value={`${summary.totalShifts}`} hint={`${summary.openShiftsCount} still open`} icon={ClipboardList} color="#7c3aed" />
+        <Tile label="Should be in tills" value={rupees(summary.totalExpectedCash)} icon={IndianRupee} color="#008BE9" />
+        <Tile label="Counted" value={rupees(summary.totalClosingCash)} icon={CheckCircle2} color="#15936a" />
+        <Tile label="Difference" value={diff.label} hint="Counted vs expected" icon={Ban} color={diff.color} />
+      </div>
+      <PagedTable
+        rows={[...shifts].sort((a, b) => b.shiftStart.localeCompare(a.shiftStart))}
+        rowKey={(s) => s.id}
+        page={page}
+        onPage={setPage}
+        noun="shifts"
+        minWidth={760}
+        columns={[
+          {
+            header: 'Counter',
+            cell: (s) => (
+              <div>
+                <span className="font-medium text-slate-900">{s.terminal?.name ?? 'Counter'}</span>
+                <p className="text-xs text-slate-500">
+                  {dateTime(s.shiftStart)} · {duration(s.shiftStart, s.shiftEnd)}
+                </p>
               </div>
-            ))}
-          </dl>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-// ── Item Sales ─────────────────────────────────────────────────────────────────
-
-function ItemSalesReportView({ data }: { data: ItemSalesReport }) {
-  const items: any[] = Array.isArray(data)
-    ? (data as any[])
-    : (data as any).items
-      ?? (data as any).data
-      ?? Object.values(data as any).find((v) => Array.isArray(v))
-      ?? [];
-
-  // API fields: categoryName, totalItemsSold, totalSales
-  const totalRevenue  = (data as any).totalRevenue  ?? items.reduce((s: number, r: any) => s + Number(r.totalSales    ?? r.revenue     ?? 0), 0);
-  const totalQuantity = (data as any).totalQuantity ?? items.reduce((s: number, r: any) => s + Number(r.totalItemsSold ?? r.quantitySold ?? 0), 0);
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Total Categories" value={items.length}                          icon={ShoppingBag} color="blue"  />
-        <StatCard label="Total Items Sold"  value={totalQuantity}                        icon={TrendingUp}  color="green" />
-        <StatCard label="Total Sales"       value={`₹${Number(totalRevenue).toFixed(2)}`} icon={IndianRupee} color="amber" />
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">#</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Category</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Items Sold</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Total Sales</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.length === 0 ? (
-                <tr><td colSpan={4} className="py-8 text-center text-slate-400">No item sales data</td></tr>
-              ) : (
-                items.map((row: any, i: number) => (
-                  <tr key={row.itemId ?? row.categoryName ?? i} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-3 px-4 text-sm text-slate-500">{i + 1}</td>
-                    <td className="py-3 px-4 font-medium text-slate-900">{row.categoryName ?? row.itemName ?? row.name ?? '—'}</td>
-                    <td className="py-3 px-4 text-right text-slate-700">{row.totalItemsSold ?? row.quantitySold ?? 0}</td>
-                    <td className="py-3 px-4 text-right font-semibold text-slate-900">₹{Number(row.totalSales ?? row.revenue ?? 0).toFixed(2)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-            <tfoot>
-              {items.length > 0 && (
-                <tr className="border-t-2 border-slate-200 bg-slate-50">
-                  <td colSpan={2} className="py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase">Total</td>
-                  <td className="py-2.5 px-4 text-right font-bold text-slate-900">{totalQuantity}</td>
-                  <td className="py-2.5 px-4 text-right font-bold text-slate-900">₹{Number(totalRevenue).toFixed(2)}</td>
-                </tr>
-              )}
-            </tfoot>
-          </table>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-// ── Category Sales ─────────────────────────────────────────────────────────────
-
-function CategorySalesReportView({ data }: { data: CategorySalesReport }) {
-  const cats: any[] = Array.isArray(data)
-    ? (data as any[])
-    : (data as any).categories
-      ?? (data as any).data
-      ?? Object.values(data as any).find((v) => Array.isArray(v))
-      ?? [];
-
-  // API fields: totalItemsSold, totalSales (also handle revenue/quantitySold aliases)
-  const totalRevenue = (data as any).totalRevenue
-    ?? cats.reduce((s: number, r: any) => s + Number(r.totalSales ?? r.revenue ?? 0), 0);
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Categories"    value={cats.length}                             icon={Tag}         color="purple" />
-        <StatCard label="Total Revenue" value={`₹${Number(totalRevenue).toFixed(2)}`}   icon={IndianRupee} color="blue"   />
-        <StatCard label="Total Items Sold" value={cats.reduce((s: number, r: any) => s + Number(r.totalItemsSold ?? r.quantitySold ?? 0), 0)} icon={ShoppingBag} color="green" />
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">#</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Category</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Items Sold</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Total Sales</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Share %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cats.length === 0 ? (
-                <tr><td colSpan={6} className="py-8 text-center text-slate-400">No category sales data</td></tr>
-              ) : (
-                cats.map((row: any, i: number) => {
-                  const revenue = Number(row.totalSales ?? row.revenue ?? 0);
-                  const share = totalRevenue > 0 ? (revenue / Number(totalRevenue)) * 100 : 0;
-                  return (
-                    <tr key={row.categoryId ?? i} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-4 text-sm text-slate-500">{i + 1}</td>
-                      <td className="py-3 px-4 font-medium text-slate-900">{row.categoryName ?? row.name ?? '—'}</td>
-                      <td className="py-3 px-4 text-right text-slate-700">{row.totalItemsSold ?? row.quantitySold ?? 0}</td>
-                      <td className="py-3 px-4 text-right font-semibold text-slate-900">₹{revenue.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-16 h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                            <div className="h-full bg-[#008BE9] rounded-full" style={{ width: `${Math.min(share, 100).toFixed(1)}%` }} />
-                          </div>
-                          <span className="text-xs text-slate-600 w-10 text-right">{share.toFixed(1)}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-            <tfoot>
-              {cats.length > 0 && (
-                <tr className="border-t-2 border-slate-200 bg-slate-50">
-                  <td colSpan={3} className="py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase">Total</td>
-                  <td className="py-2.5 px-4 text-right font-bold text-slate-900">₹{Number(totalRevenue).toFixed(2)}</td>
-                  <td className="py-2.5 px-4 text-right font-bold text-slate-900">100%</td>
-                </tr>
-              )}
-            </tfoot>
-          </table>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-// ── Payment Summary ────────────────────────────────────────────────────────────
-
-const paymentModeColors: Record<string, string> = {
-  CASH:          'bg-green-100 text-green-700',
-  CARD:          'bg-blue-100 text-blue-700',
-  UPI:           'bg-purple-100 text-purple-700',
-  WALLET:        'bg-orange-100 text-orange-700',
-  BANK_TRANSFER: 'bg-sky-100 text-sky-700',
-  OTHER:         'bg-slate-100 text-slate-700',
-};
-
-function PaymentSummaryReportView({ data }: { data: PaymentSummaryReport }) {
-  const payments: any[] = Array.isArray(data)
-    ? (data as any[])
-    : (data as any).payments
-      ?? (data as any).data
-      ?? Object.values(data as any).find((v) => Array.isArray(v))
-      ?? [];
-
-  const totalAmount       = (data as any).totalAmount       ?? payments.reduce((s: number, r: any) => s + Number(r.totalAmount ?? 0), 0);
-  const totalTransactions = (data as any).totalTransactions ?? payments.reduce((s: number, r: any) => s + Number(r.transactionCount ?? r.count ?? 0), 0);
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Total Collected"   value={`₹${Number(totalAmount).toFixed(2)}`} icon={IndianRupee} color="blue"  />
-        <StatCard label="Total Transactions" value={totalTransactions}                   icon={Receipt}     color="green" />
-        <StatCard label="Payment Modes"      value={payments.length}                     icon={CreditCard}  color="purple"/>
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Mode</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Status</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Transactions</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Total Amount</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Share %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.length === 0 ? (
-                <tr><td colSpan={4} className="py-8 text-center text-slate-400">No payment data</td></tr>
-              ) : (
-                payments.map((row: any, i: number) => {
-                  const mode  = row.paymentMode ?? row.mode ?? 'OTHER';
-                  const share = Number(totalAmount) > 0 ? (Number(row.totalAmount ?? 0) / Number(totalAmount)) * 100 : 0;
-                  return (
-                    <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${paymentModeColors[mode] ?? paymentModeColors['OTHER']}`}>
-                          {mode}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          (row.status ?? '').toLowerCase() === 'success'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {row.status ?? '—'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-slate-700">{row.transactionCount ?? row.count ?? 0}</td>
-                      <td className="py-3 px-4 text-right font-semibold text-slate-900">₹{Number(row.totalAmount ?? 0).toFixed(2)}</td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-16 h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                            <div className="h-full bg-[#008BE9] rounded-full" style={{ width: `${Math.min(share, 100).toFixed(1)}%` }} />
-                          </div>
-                          <span className="text-xs text-slate-600 w-10 text-right">{share.toFixed(1)}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-            <tfoot>
-              {payments.length > 0 && (
-                <tr className="border-t-2 border-slate-200 bg-slate-50">
-                  <td colSpan={2} className="py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase">Total</td>
-                  <td className="py-2.5 px-4 text-right font-bold text-slate-900">{totalTransactions}</td>
-                  <td className="py-2.5 px-4 text-right font-bold text-slate-900">₹{Number(totalAmount).toFixed(2)}</td>
-                  <td className="py-2.5 px-4 text-right font-bold text-slate-900">100%</td>
-                </tr>
-              )}
-            </tfoot>
-          </table>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-// ── Shifts ─────────────────────────────────────────────────────────────────────
-
-function ShiftsReportView({ data }: { data: ShiftsReport }) {
-  // Handle: plain array, { shifts: [] }, { data: [] }, or any object with an array value
-  const shifts: any[] = Array.isArray(data)
-    ? (data as any[])
-    : (data as any).shifts
-      ?? (data as any).data
-      ?? Object.values(data as any).find((v) => Array.isArray(v))
-      ?? [];
-
-  // Real field names from API: shiftStart, shiftEnd, terminal.name, staff.name
-  const openShifts = shifts.filter((s: any) => (s.status ?? '').toUpperCase() === 'OPEN').length;
-  const totalVariance = shifts.reduce((sum: number, s: any) => sum + Number(s.variance ?? 0), 0);
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="Total Shifts"    value={shifts.length}                              icon={Clock}       color="blue"   />
-        <StatCard label="Open Shifts"     value={openShifts}                                 icon={TrendingUp}  color="green"  />
-        <StatCard label="Closed Shifts"   value={shifts.length - openShifts}                 icon={TrendingDown} color="amber" />
-        <StatCard label="Total Variance"  value={`₹${Number(totalVariance).toFixed(2)}`}     icon={IndianRupee} color="purple" />
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Terminal</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Staff</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Shift Start</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Shift End</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Opening Cash</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Closing Cash</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Expected</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Variance</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shifts.length === 0 ? (
-                <tr><td colSpan={9} className="py-8 text-center text-slate-400">No shift data</td></tr>
-              ) : (
-                shifts.map((row: any, i: number) => {
-                  const terminalName = row.terminal?.name ?? row.terminalName ?? row.terminalId ?? '—';
-                  const staffName    = row.staff?.name ?? row.staffName ?? row.openedBy ?? '—';
-                  const shiftStart   = row.shiftStart ?? row.openedAt;
-                  const shiftEnd     = row.shiftEnd   ?? row.closedAt;
-                  const variance     = Number(row.variance ?? 0);
-
-                  return (
-                    <tr key={row.id ?? i} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-4 font-medium text-slate-900">{terminalName}</td>
-                      <td className="py-3 px-4 text-sm text-slate-600">{staffName}</td>
-                      <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
-                        {shiftStart ? new Date(shiftStart).toLocaleString() : '—'}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
-                        {shiftEnd ? new Date(shiftEnd).toLocaleString() : <span className="text-slate-400 italic">Open</span>}
-                      </td>
-                      <td className="py-3 px-4 text-right text-slate-700">₹{Number(row.openingCash ?? 0).toFixed(2)}</td>
-                      <td className="py-3 px-4 text-right text-slate-700">
-                        {row.closingCash != null ? `₹${Number(row.closingCash).toFixed(2)}` : <span className="text-slate-400 italic">—</span>}
-                      </td>
-                      <td className="py-3 px-4 text-right text-slate-700">
-                        {row.expectedCash != null ? `₹${Number(row.expectedCash).toFixed(2)}` : <span className="text-slate-400 italic">—</span>}
-                      </td>
-                      <td className={`py-3 px-4 text-right font-semibold ${variance > 0 ? 'text-green-600' : variance < 0 ? 'text-red-600' : 'text-slate-600'}`}>
-                        {variance > 0 ? '+' : ''}₹{variance.toFixed(2)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          (row.status ?? '').toUpperCase() === 'OPEN'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {row.status ?? '—'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-            <tfoot>
-              {shifts.length > 0 && (
-                <tr className="border-t-2 border-slate-200 bg-slate-50">
-                  <td colSpan={6} className="py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase">Total</td>
-                  <td className="py-2.5 px-4 text-right font-bold text-slate-900">
-                    ₹{shifts.reduce((s: number, r: any) => s + Number(r.expectedCash ?? 0), 0).toFixed(2)}
-                  </td>
-                  <td className={`py-2.5 px-4 text-right font-bold ${totalVariance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {totalVariance > 0 ? '+' : ''}₹{totalVariance.toFixed(2)}
-                  </td>
-                  <td />
-                </tr>
-              )}
-            </tfoot>
-          </table>
-        </div>
-      </Card>
+            ),
+          },
+          { header: 'At start', align: 'right', cell: (s) => <span className="text-slate-700">{rupees(toNumber(s.openingCash))}</span> },
+          { header: 'Should be', align: 'right', cell: (s) => <span className="text-slate-700">{s.status === 'CLOSED' ? rupees(toNumber(s.expectedCash)) : '—'}</span> },
+          { header: 'Counted', align: 'right', cell: (s) => <span className="text-slate-700">{s.status === 'CLOSED' ? rupees(toNumber(s.closingCash)) : '—'}</span> },
+          {
+            header: 'Result',
+            cell: (s) => {
+              if (s.status === 'OPEN') return <StatusPill label="Open now" color="#15936a" />;
+              const d = cashDifference(toNumber(s.variance));
+              return <StatusPill label={d.label} color={d.color} />;
+            },
+          },
+        ]}
+      />
     </div>
   );
 }

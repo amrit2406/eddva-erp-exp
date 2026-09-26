@@ -1,321 +1,269 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2, Receipt, Clock, User, Monitor, XCircle, CheckCircle, CreditCard } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getOrder, deleteOrder, updateOrderStatus, getMembers, getPosTerminals, getMenuItems } from '../../api/canteen.api';
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, ArrowRight, Ban, ClipboardList, IndianRupee, Pencil, ShoppingBasket, Trash2, UserRound } from 'lucide-react';
+import ConfirmDialog from '../../../../components/feedback/ConfirmDialog';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { DetailHeader, DetailSkeleton, InfoCard, NextStep } from '../../../../components/premium/detail/DetailParts';
+import StatusTracker, { type TrackerStep } from '../../../../components/premium/detail/StatusTracker';
+import { StatusPill } from '../../../../components/premium/list/ListControls';
+import { btnPrimary, btnQuietDanger, btnSecondary } from '../../../../components/premium/styles';
+import { useToast } from '../../../../hooks/useToast';
+import { rupees, toNumber } from '../../../../utils/dashboardFormat';
+import { FoodMark } from '../../components/menu/FoodMark';
+import { deleteOrder, getOrder, updateOrderStatus } from '../../api/canteen.api';
 import type { Order, OrderStatus } from '../../types/canteen.types';
+import { getApiErrorMessage } from '../../utils/errors';
+import { NEXT_ORDER_STEP, ORDER_FLOW, ORDER_STATUS, dateTime, isOrderOpen, memberTypeInfo, orderStatusInfo, paymentModeLabel, paymentStatusInfo, shortRef } from '../../utils/labels';
 
-const STATUS_OPTIONS: OrderStatus[] = ['PLACED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'];
-
-const statusStyles: Record<OrderStatus, string> = {
-  PLACED: 'bg-blue-100 text-blue-700',
-  PREPARING: 'bg-yellow-100 text-yellow-700',
-  READY: 'bg-purple-100 text-purple-700',
-  COMPLETED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-red-100 text-red-700',
-};
-
-const statusIcons: Record<OrderStatus, React.ReactNode> = {
-  PLACED: <Clock className="h-4 w-4" />,
-  PREPARING: <Clock className="h-4 w-4" />,
-  READY: <CheckCircle className="h-4 w-4" />,
-  COMPLETED: <CheckCircle className="h-4 w-4" />,
-  CANCELLED: <XCircle className="h-4 w-4" />,
+const NOTE: Record<string, string> = {
+  PLACED: 'The kitchen hasn’t started yet. Press “Start preparing” when they begin.',
+  PREPARING: 'The kitchen is making it. Mark it ready once it’s waiting at the counter.',
+  READY: 'Waiting at the counter. Mark it collected when the member picks it up.',
 };
 
 export default function OrderDetailsPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [order, setOrder] = useState<Order | null>(null);
-  const [members, setMembers] = useState<any[]>([]);
-  const [terminals, setTerminals] = useState<any[]>([]);
-  const [menuItems, setMenuItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [confirm, setConfirm] = useState<'cancel' | 'delete' | null>(null);
+  const key = ['canteen', 'order', id];
+  const { data: order, isLoading, error, refetch } = useQuery({ queryKey: key, queryFn: () => getOrder(id), enabled: Boolean(id) });
 
-  useEffect(() => {
-    if (id) {
-      loadData();
-    }
-  }, [id]);
+  const move = useMutation({
+    mutationFn: (status: OrderStatus) => updateOrderStatus(id, { status }),
+    onSuccess: (_, status) => {
+      queryClient.setQueryData<Order>(key, (current) => (current ? { ...current, status } : current));
+      queryClient.invalidateQueries({ queryKey: key });
+      queryClient.invalidateQueries({ queryKey: ['canteen', 'orders'] });
+      toast.success(status === 'CANCELLED' ? 'Order cancelled' : `Order is now “${orderStatusInfo(status).label}”`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not update the order')),
+    onSettled: () => setConfirm(null),
+  });
 
-  async function loadData() {
-    if (!id) return;
-    try {
-      setLoading(true);
-      const [orderData, membersData, terminalsData, menuItemsData] = await Promise.all([
-        getOrder(id),
-        getMembers(),
-        getPosTerminals(),
-        getMenuItems(),
-      ]);
-      setOrder(orderData);
-      setMembers(membersData);
-      setTerminals(terminalsData);
-      setMenuItems(menuItemsData);
-    } catch (err: any) {
-      if (err.response?.status === 401) return;
-      setError(err instanceof Error ? err.message : 'Failed to load order details');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!id || !window.confirm('Are you sure you want to delete this order?')) return;
-    try {
-      await deleteOrder(id);
+  const remove = useMutation({
+    mutationFn: () => deleteOrder(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['canteen', 'orders'] });
+      toast.success(`${order?.orderNumber ?? 'Order'} deleted`);
       navigate('/canteen/orders');
-    } catch (err: any) {
-      if (err.response?.status === 401) return;
-      alert(err instanceof Error ? err.message : 'Failed to delete order');
-    }
-  };
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err, 'Could not delete this order'));
+      setConfirm(null);
+    },
+  });
 
-  const handleStatusChange = async (newStatus: OrderStatus) => {
-    if (!id) return;
-    try {
-      setUpdatingStatus(true);
-      const updated = await updateOrderStatus(id, { status: newStatus });
-      setOrder({ ...order!, status: updated.status });
-    } catch (err: any) {
-      if (err.response?.status === 401) return;
-      alert(err.response?.data?.error?.message || 'Failed to update status');
-    } finally {
-      setUpdatingStatus(false);
-    }
-  };
+  const back = (
+    <Link to="/canteen/orders" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+      <ArrowLeft className="h-4 w-4" /> Orders
+    </Link>
+  );
 
-  const getMemberName = (memberId: string) => {
-    const member = members.find(m => m.id === memberId);
-    return member ? member.name : memberId.slice(0, 8) + '...';
-  };
-
-  const getTerminalName = (terminalId: string) => {
-    const terminal = terminals.find(t => t.id === terminalId);
-    return terminal ? terminal.name : terminalId.slice(0, 8) + '...';
-  };
-
-  const getMenuItemName = (itemId: string) => {
-    const item = menuItems.find(i => i.id === itemId);
-    return item ? item.name : itemId.slice(0, 8) + '...';
-  };
-
-  const getMenuItemPrice = (itemId: string) => {
-    const item = menuItems.find(i => i.id === itemId);
-    return item ? item.price : 0;
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Link to="/canteen/orders">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </Link>
-        </div>
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      </div>
-    );
-  }
-
+  if (isLoading) return <DetailSkeleton />;
   if (error || !order) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Link to="/canteen/orders">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </Link>
-        </div>
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error || 'Order not found'}</div>
-        </Card>
+      <div className="space-y-5">
+        {back}
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load order')} onRetry={() => refetch()} />
       </div>
     );
   }
 
-  const subtotal = order.items.reduce((sum, item) => {
-    const price = getMenuItemPrice(item.itemId);
-    return sum + (price * item.quantity);
-  }, 0);
+  const s = orderStatusInfo(order.status);
+  const next = NEXT_ORDER_STEP[order.status];
+  const cancelled = order.status === 'CANCELLED';
+  const payments = (order.payments ?? []).filter((p) => !p.status || p.status === 'success');
+  const paid = payments.reduce((sum, p) => sum + toNumber(p.amount), 0);
+  const total = toNumber(order.totalAmount);
+  const due = Math.max(0, Math.round((total - paid) * 100) / 100);
+  const pay = paymentStatusInfo(order.paymentStatus);
+  const title = order.orderNumber ?? `Order ${shortRef(order.id)}`;
 
-  const discount = order.discountAmount || 0;
-  const total = subtotal - discount;
+  const steps: TrackerStep[] = ORDER_FLOW.map((key, i) => ({ key, ...ORDER_STATUS[key], date: i === 0 ? dateTime(order.orderDate ?? order.createdAt) : null }));
+  const current = cancelled ? 0 : Math.max(0, ORDER_FLOW.indexOf(order.status as (typeof ORDER_FLOW)[number]));
+  const stop = cancelled ? { key: 'CANCELLED', ...ORDER_STATUS.CANCELLED, date: dateTime(order.updatedAt) } : undefined;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link to="/canteen/orders">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Order Details</h1>
-            <p className="text-slate-600 mt-1">View order information</p>
-          </div>
+    <div className="space-y-5">
+      {back}
+      <DetailHeader
+        icon={ClipboardList}
+        title={title}
+        status={
+          <>
+            <StatusPill label={s.label} color={s.color} />
+            {!cancelled && <StatusPill label={pay.label} color={pay.color} />}
+          </>
+        }
+        meta={`${dateTime(order.orderDate ?? order.createdAt)}${order.terminal ? ` · ${order.terminal.name}` : ''}`}
+        accent={s.color}
+        actions={
+          <>
+            {next && (
+              <button type="button" onClick={() => move.mutate(next.status as OrderStatus)} disabled={move.isPending} className={btnPrimary}>
+                {move.isPending && !confirm ? 'Saving…' : next.label} <ArrowRight className="h-4 w-4" />
+              </button>
+            )}
+            {!cancelled && due > 0 && (
+              <Link to={`/canteen/orders/${order.id}/payments`} className={next ? btnSecondary : btnPrimary}>
+                <IndianRupee className="h-4 w-4" /> Take payment
+              </Link>
+            )}
+            {isOrderOpen(order.status) && (
+              <Link to={`/canteen/orders/${order.id}/edit`} className={btnSecondary}>
+                <Pencil className="h-4 w-4" /> Edit
+              </Link>
+            )}
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <StatusTracker steps={steps} current={current} stop={stop} />
+          {cancelled ? (
+            <NextStep tone="bad">This order was cancelled. Nothing needs to be served{paid > 0 ? `, but ${rupees(paid)} was paid — refund it to the member.` : '.'}</NextStep>
+          ) : order.status === 'COMPLETED' ? (
+            <NextStep tone={due > 0 ? 'bad' : 'good'}>{due > 0 ? `Collected, but ${rupees(due)} is still to be paid.` : 'Collected and fully paid. Nothing left to do.'}</NextStep>
+          ) : (
+            <NextStep>
+              {NOTE[order.status] ?? s.hint}
+              {due > 0 && ` ${rupees(due)} still to be paid.`}
+            </NextStep>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <Link to={`/canteen/orders/${order.id}/payments`}>
-            <Button variant="secondary" size="sm">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Payments
-            </Button>
-          </Link>
-          <Link to={`/canteen/orders/${order.id}/edit`}>
-            <Button variant="ghost" size="sm">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          </Link>
-          <Button variant="ghost" size="sm" onClick={handleDelete}>
-            <Trash2 className="h-4 w-4 text-red-600" />
-          </Button>
-        </div>
-      </div>
+      </DetailHeader>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-slate-900">Order Information</h2>
-                <div className="flex items-center gap-2">
-                  {statusIcons[order.status]}
-                  <select
-                    value={order.status}
-                    disabled={updatingStatus}
-                    onChange={(e) => handleStatusChange(e.target.value as OrderStatus)}
-                    className={`text-sm font-medium px-3 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#008BE9] disabled:opacity-50 disabled:cursor-wait ${statusStyles[order.status] ?? 'bg-gray-100 text-gray-700'}`}
-                  >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3">
-                  <Receipt className="h-5 w-5 text-slate-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-slate-500">Order ID</p>
-                    <p className="font-medium text-slate-900">{order.id}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <User className="h-5 w-5 text-slate-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-slate-500">Member</p>
-                    <p className="font-medium text-slate-900">{getMemberName(order.memberId)}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Monitor className="h-5 w-5 text-slate-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-slate-500">Terminal</p>
-                    <p className="font-medium text-slate-900">{getTerminalName(order.terminalId)}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 text-slate-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-slate-500">Created At</p>
-                    <p className="font-medium text-slate-900">{new Date(order.createdAt).toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Items</h2>
-              {order.items.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 border border-dashed border-slate-300 rounded-lg">
-                  No items in this order
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {order.items.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900">{getMenuItemName(item.itemId)}</p>
-                        <p className="text-sm text-slate-500">Quantity: {item.quantity} × ₹{getMenuItemPrice(item.itemId)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-slate-900">₹{getMenuItemPrice(item.itemId) * item.quantity}</p>
-                      </div>
-                    </div>
+      <div className="grid gap-5 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <InfoCard title={`Items · ${order.items.length}`} icon={ShoppingBasket}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <th className="py-2 pr-3">Item</th>
+                    <th className="px-3 py-2 text-right">Qty</th>
+                    <th className="px-3 py-2 text-right">Price</th>
+                    <th className="py-2 pl-3 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {order.items.map((line) => (
+                    <tr key={line.id}>
+                      <td className="py-2.5 pr-3">
+                        <span className="inline-flex items-center gap-2">
+                          {line.item && <FoodMark type={line.item.foodType} />}
+                          {line.item ? (
+                            <Link to={`/canteen/menu/items/${line.itemId}`} className="font-medium text-slate-900 hover:text-brand">
+                              {line.item.name}
+                            </Link>
+                          ) : (
+                            <span className="text-slate-500">Removed item</span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-slate-700">{line.quantity}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-slate-700">{rupees(toNumber(line.unitPrice))}</td>
+                      <td className="py-2.5 pl-3 text-right font-medium tabular-nums text-slate-900">{rupees(toNumber(line.subtotal))}</td>
+                    </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+            <dl className="ml-auto mt-3 max-w-xs space-y-1.5 border-t border-slate-100 pt-3 text-sm">
+              <div className="flex justify-between text-slate-600">
+                <dt>Items</dt>
+                <dd className="tabular-nums">{rupees(toNumber(order.subtotal))}</dd>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <dt>Tax</dt>
+                <dd className="tabular-nums">{rupees(toNumber(order.taxAmount))}</dd>
+              </div>
+              {toNumber(order.discountAmount) > 0 && (
+                <div className="flex justify-between text-emerald-700">
+                  <dt>Discount</dt>
+                  <dd className="tabular-nums">−{rupees(toNumber(order.discountAmount))}</dd>
                 </div>
               )}
-            </div>
-          </Card>
+              <div className="flex justify-between border-t border-slate-100 pt-2 text-base font-semibold text-slate-900">
+                <dt>Total</dt>
+                <dd className="tabular-nums">{rupees(total)}</dd>
+              </div>
+            </dl>
+          </InfoCard>
         </div>
 
-        <div className="space-y-6">
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Summary</h2>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Subtotal</span>
-                  <span className="font-medium text-slate-900">₹{subtotal}</span>
-                </div>
-                {discount > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Discount</span>
-                    <span className="font-medium text-red-600">-₹{discount}</span>
-                  </div>
-                )}
-                <div className="border-t border-slate-200 pt-3">
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-slate-900">Total</span>
-                    <span className="font-bold text-lg text-slate-900">₹{total}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
+        <div className="space-y-5">
+          <InfoCard
+            title="Member"
+            icon={UserRound}
+            delay={60}
+            rows={
+              order.member
+                ? [
+                    ['Name', <Link to={`/canteen/members/${order.memberId}`} className="text-brand-navy hover:text-brand">{order.member.name}</Link>],
+                    ['Type', memberTypeInfo(order.member.memberType).label],
+                    ['ID card', <span className="font-mono text-xs">{order.member.idCardBarcode}</span>],
+                  ]
+                : [['Member', '—']]
+            }
+          />
+          <InfoCard
+            title="Payment"
+            icon={IndianRupee}
+            delay={90}
+            action={
+              !cancelled && (
+                <Link to={`/canteen/orders/${order.id}/payments`} className="text-sm font-medium text-brand hover:text-brand-navy">
+                  {due > 0 ? 'Take payment' : 'Details'}
+                </Link>
+              )
+            }
+            rows={[
+              ['Paid', rupees(paid)],
+              ['Still to pay', <span className={due > 0 ? 'text-red-600' : 'text-emerald-700'}>{rupees(due)}</span>],
+            ]}
+          >
+            {payments.length > 0 && (
+              <ul className="mt-2 space-y-1 border-t border-slate-100 pt-2 text-xs text-slate-500">
+                {payments.map((p) => (
+                  <li key={p.id} className="flex justify-between">
+                    <span>
+                      {paymentModeLabel(p.paymentMode)} · {dateTime(p.paidAt ?? p.createdAt)}
+                    </span>
+                    <span className="font-medium tabular-nums text-slate-700">{rupees(toNumber(p.amount))}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </InfoCard>
 
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
-              <div className="space-y-2">
-                <Link to={`/canteen/orders/${order.id}/payments`} className="block">
-                  <Button variant="primary" className="w-full">
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Manage Payments
-                  </Button>
-                </Link>
-                <Link to={`/canteen/orders/${order.id}/edit`} className="block">
-                  <Button variant="secondary" className="w-full">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Order
-                  </Button>
-                </Link>
-                <Button variant="danger" className="w-full" onClick={handleDelete}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Order
-                </Button>
-              </div>
-            </div>
-          </Card>
+          <div className="flex flex-wrap gap-2">
+            {!cancelled && order.status !== 'COMPLETED' && (
+              <button type="button" onClick={() => setConfirm('cancel')} className={btnQuietDanger}>
+                <Ban className="h-4 w-4" /> Cancel order
+              </button>
+            )}
+            <button type="button" onClick={() => setConfirm('delete')} className={btnQuietDanger}>
+              <Trash2 className="h-4 w-4" /> Delete
+            </button>
+          </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirm !== null}
+        onClose={() => !(move.isPending || remove.isPending) && setConfirm(null)}
+        onConfirm={() => (confirm === 'cancel' ? move.mutate('CANCELLED') : remove.mutate())}
+        title={confirm === 'cancel' ? 'Cancel this order?' : 'Delete this order?'}
+        message={
+          confirm === 'cancel'
+            ? `${title} will be stopped and the kitchen won't make it.${paid > 0 ? ` ${rupees(paid)} has been paid — remember to refund it.` : ''}`
+            : `${title} will be removed for good. This can't be undone.`
+        }
+        confirmText={confirm === 'cancel' ? (move.isPending ? 'Cancelling…' : 'Cancel order') : remove.isPending ? 'Deleting…' : 'Delete order'}
+      />
     </div>
   );
 }

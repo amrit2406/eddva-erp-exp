@@ -61,12 +61,12 @@ const navItems: NavItem[] = [
       // { path: '/canteen/members/lookup', label: 'Member Lookup', icon: Search },
       { path: '/canteen/menu/categories', label: 'Menu Categories', icon: Database },
       { path: '/canteen/menu/items', label: 'Menu Items', icon: Utensils },
-      { path: '/canteen/menu/schedules', label: 'Menu Schedules', icon: Clock },
-      { path: '/canteen/pos/terminals', label: 'POS Terminals', icon: Monitor },
+      { path: '/canteen/menu/schedules', label: 'Serving Times', icon: Clock },
+      { path: '/canteen/pos/terminals', label: 'Counters', icon: Monitor },
       { path: '/canteen/pos/shifts', label: 'Shifts', icon: PlayCircle },
-      { path: '/canteen/orders', label: 'Orders', icon: Receipt },
-      { path: '/canteen/wallets', label: 'Wallets & Ledger', icon: Wallet },
-      { path: '/canteen/reports', label: 'Reports & Analytics', icon: BarChart2 },
+      { path: '/canteen/orders', label: 'Orders', icon: ClipboardList },
+      { path: '/canteen/wallets', label: 'Wallets', icon: Wallet },
+      { path: '/canteen/reports', label: 'Reports', icon: BarChart2 },
     ]
   },
   {

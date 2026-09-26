@@ -1,200 +1,65 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import ResourcePermissionsToggle from '../../components/rbac/ResourcePermissionsToggle';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { useToast } from '../../../../hooks/useToast';
 import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
-import { getPermissionsCatalog, getMyPermissions, getRole, updateRole } from '../../api/roles.api';
+import RoleForm from '../../components/rbac/RoleForm';
+import { getRole, updateRole } from '../../api/roles.api';
+import type { RoleFormData } from '../../types/canteen.types';
 import { getApiErrorMessage } from '../../utils/errors';
-import { filterGrantablePermissions, sanitizeRolePermissions, useIsInstituteAdmin } from '../../utils/rbac.utils';
-import type { PermissionResource, RolePermission } from '../../types/canteen.types';
+import { useIsInstituteAdmin } from '../../utils/rbac.utils';
 
 export default function EditRolePage() {
   const isInstituteAdmin = useIsInstituteAdmin();
+  const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
-  const [resources, setResources] = useState<PermissionResource[]>([]);
-  const [myPermissions, setMyPermissions] = useState<RolePermission[]>([]);
-  const [selectedPermissions, setSelectedPermissions] = useState<RolePermission[]>([]);
-  const [formData, setFormData] = useState({ name: '', description: '' });
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  useEffect(() => {
-    if (isInstituteAdmin) {
-      loadData();
-    } else {
-      setLoading(false);
-    }
-  }, [id, isInstituteAdmin]);
+  const { data: role, isLoading, error, refetch } = useQuery({
+    queryKey: ['canteen', 'role', id],
+    queryFn: () => getRole(id),
+    enabled: Boolean(id) && isInstituteAdmin,
+  });
 
-  async function loadData() {
-    if (!id) return;
-    try {
-      setLoading(true);
-
-      const [catalog, roleData, currentPermissions] = await Promise.all([
-        getPermissionsCatalog(),
-        getRole(id),
-        getMyPermissions().catch(() => [] as RolePermission[]),
-      ]);
-      setResources(catalog.resources);
-      setMyPermissions(currentPermissions);
-      setFormData({
-        name: roleData.name,
-        description: roleData.description,
-      });
-      setSelectedPermissions(roleData.permissions);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to load data'));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!id) return;
-
-    const permissions = sanitizeRolePermissions(selectedPermissions);
-    if (permissions.length === 0) {
-      setError('Select at least one permission for this role.');
-      return;
-    }
-
-    const grantablePermissions = filterGrantablePermissions(
-      permissions,
-      myPermissions,
-      isInstituteAdmin
-    );
-
-    if (grantablePermissions.length === 0) {
-      setError('You can only assign permissions that your account already has in the canteen module.');
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      setError(null);
-      await updateRole(id, {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        permissions: grantablePermissions,
-      });
+  const save = useMutation({
+    mutationFn: (data: RoleFormData) => updateRole(id, data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['canteen', 'roles'] });
+      queryClient.invalidateQueries({ queryKey: ['canteen', 'role', id] });
+      toast.success(`Role “${data.name}” saved`);
       navigate('/canteen/roles');
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to update role'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the role')),
+  });
 
-  if (!isInstituteAdmin) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Role</h1>
-          <p className="text-slate-600 mt-1">Update canteen role and permissions</p>
-        </div>
-        <InstituteAdminGuard section="Roles" />
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Role</h1>
-          <p className="text-slate-600 mt-1">Update canteen role and permissions</p>
-        </div>
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      </div>
-    );
-  }
+  const users = role?._count?.user_roles ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      <Link to="/canteen/roles" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+        <ArrowLeft className="h-4 w-4" /> Roles
+      </Link>
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Edit Role</h1>
-        <p className="text-slate-600 mt-1">Update canteen role and permissions</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{role ? `Edit ${role.name}` : 'Edit role'}</h1>
+        <p className="mt-0.5 text-sm text-slate-500">
+          {users > 0 ? `Changes apply straight away to the ${users} ${users === 1 ? 'person' : 'people'} with this role.` : 'Nobody has this role yet.'}
+        </p>
       </div>
 
-      <Card className="border-slate-200">
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
-                  Role Name *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-1">
-                  Description *
-                </label>
-                <input
-                  type="text"
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Permissions</h3>
-              <ResourcePermissionsToggle
-                resources={resources}
-                selectedPermissions={selectedPermissions}
-                onChange={setSelectedPermissions}
-                myPermissions={myPermissions}
-                isInstituteAdmin={isInstituteAdmin}
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => navigate('/canteen/roles')}
-                disabled={submitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" disabled={submitting}>
-                {submitting ? 'Updating...' : 'Update Role'}
-              </Button>
-            </div>
-          </form>
+      {!isInstituteAdmin ? (
+        <InstituteAdminGuard section="Roles" />
+      ) : isLoading ? (
+        <div className="space-y-5" aria-busy="true" aria-label="Loading">
+          <div className="skeleton h-32 rounded-3xl" />
+          <div className="skeleton h-96 rounded-3xl" />
         </div>
-      </Card>
+      ) : error || !role ? (
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load role')} onRetry={() => refetch()} />
+      ) : (
+        <RoleForm role={role} onSubmit={(data) => save.mutate(data)} isSubmitting={save.isPending} submitText="Save changes" />
+      )}
     </div>
   );
 }

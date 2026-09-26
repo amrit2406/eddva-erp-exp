@@ -10,7 +10,7 @@ import { btnPrimary, btnQuietDanger, btnSecondary, longDate, shortDate } from '.
 import { useToast } from '../../../../hooks/useToast';
 import { rupees, toNumber } from '../../../../utils/dashboardFormat';
 import { DocLinesCard, DocTotalsCard } from '../../components/lines/DocParts';
-import StatusTracker from '../../components/lines/StatusTracker';
+import StatusTracker from '../../../../components/premium/detail/StatusTracker';
 import { cancelSalesOrder, confirmSalesOrder, getSalesOrder } from '../../api/sales-purchase.api';
 import { getApiErrorMessage } from '../../utils/errors';
 import { SO_FLOW, SO_STATUS, soStatusInfo } from '../../utils/soStatus';

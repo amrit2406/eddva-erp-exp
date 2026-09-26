@@ -104,87 +104,68 @@ export interface ResetPasswordResponse {
   message: string;
 }
 
-// Reports Types
+// The API sends money and rates as strings ("150.00"); read them with toNumber().
+export type Num = number | string;
+
+// Reports Types (shapes as the API returns them)
+// ISO timestamps; the API filters on dateFrom <= time <= dateTo.
 export interface ReportParams {
-  startDate?: string;
-  endDate?: string;
-  [key: string]: string | undefined;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface SalesReport {
-  totalSales: number;
   totalOrders: number;
-  averageOrderValue: number;
-  topSellingItems: {
-    name: string;
-    quantitySold: number;
-    revenue: number;
-  }[];
-  salesByDate: {
-    date: string;
-    sales: number;
-    orders: number;
-  }[];
+  completedOrders: number;
+  cancelledOrders: number;
+  grossSales: number;
+  discount: number;
+  tax: number;
+  netSales: number;
+  cashSales: number;
+  cardSales: number;
+  upiSales: number;
+  walletSales: number;
 }
 
 export interface ItemSalesReportRow {
-  itemId?: string;
+  itemId: string;
   itemName: string;
-  categoryName?: string;
-  quantitySold: number;
-  revenue: number;
-  orderCount?: number;
-}
-
-export interface ItemSalesReport {
-  items: ItemSalesReportRow[];
-  totalRevenue?: number;
-  totalQuantity?: number;
-}
-
-export interface CategorySalesReportRow {
-  categoryId?: string;
   categoryName: string;
   quantitySold: number;
-  revenue: number;
-  orderCount?: number;
+  totalSales: number;
 }
 
-export interface CategorySalesReport {
-  categories: CategorySalesReportRow[];
-  totalRevenue?: number;
+export type ItemSalesReport = ItemSalesReportRow[];
+
+export interface CategorySalesReportRow {
+  categoryName: string;
+  totalItemsSold: number;
+  totalSales: number;
 }
+
+export type CategorySalesReport = CategorySalesReportRow[];
 
 export interface PaymentSummaryReportRow {
   paymentMode: string;
-  count: number;
+  status: string;
+  transactionCount: number;
   totalAmount: number;
 }
 
-export interface PaymentSummaryReport {
-  payments: PaymentSummaryReportRow[];
-  totalAmount?: number;
-  totalTransactions?: number;
-}
-
-export interface ShiftReportRow {
-  shiftId?: string;
-  terminalName?: string;
-  openedAt: string;
-  closedAt?: string;
-  openingCash: number;
-  closingCash?: number;
-  totalSales?: number;
-  totalOrders?: number;
-  status: string;
-  openedBy?: string;
-  closedBy?: string;
-}
+export type PaymentSummaryReport = PaymentSummaryReportRow[];
 
 export interface ShiftsReport {
-  shifts: ShiftReportRow[];
-  totalShifts?: number;
-  totalSales?: number;
+  summary: {
+    totalShifts: number;
+    closedShiftsCount: number;
+    openShiftsCount: number;
+    totalOpeningCash: number;
+    totalExpectedCash: number;
+    totalClosingCash: number;
+    totalVariance: number;
+  };
+  shifts: Shift[];
 }
 
 // Menu Types
@@ -196,6 +177,7 @@ export interface MenuCategory {
   displayOrder: number;
   createdAt: string;
   updatedAt?: string;
+  _count?: { items: number };
 }
 
 export interface MenuCategoryFormData {
@@ -208,14 +190,16 @@ export interface MenuItem {
   categoryId: string;
   name: string;
   description: string;
-  price: number;
-  taxRate: number;
+  price: Num;
+  taxRate: Num;
   foodType: FoodType;
   imageUrl: string;
   isAvailable: boolean;
   availableDays: string;
   createdAt: string;
   updatedAt?: string;
+  category?: Pick<MenuCategory, 'id' | 'name'>;
+  schedules?: MenuSchedule[];
 }
 
 export interface MenuItemFormData {
@@ -261,6 +245,7 @@ export interface CanteenMember {
   externalRefId: string;
   createdAt: string;
   updatedAt?: string;
+  wallet?: Wallet | null;
 }
 
 export interface CanteenMemberFormData {
@@ -277,6 +262,7 @@ export interface PosTerminal {
   location: string;
   createdAt: string;
   updatedAt?: string;
+  _count?: { shifts: number; orders: number };
 }
 
 export interface PosTerminalFormData {
@@ -287,14 +273,16 @@ export interface PosTerminalFormData {
 export interface Shift {
   id: string;
   terminalId: string;
-  terminalName?: string;
-  openingCash: number;
-  closingCash?: number;
-  openedAt: string;
-  closedAt?: string;
+  staffId?: string;
+  openingCash: Num;
+  closingCash?: Num | null;
+  expectedCash?: Num | null;
+  variance?: Num | null;
+  shiftStart: string;
+  shiftEnd?: string | null;
   status: 'OPEN' | 'CLOSED';
-  openedBy?: string;
-  closedBy?: string;
+  createdAt?: string;
+  terminal?: Pick<PosTerminal, 'id' | 'name' | 'location'>;
 }
 
 export interface OpenShiftFormData {
@@ -308,6 +296,7 @@ export interface CloseShiftFormData {
 
 // Order Types
 export type OrderStatus = 'PLACED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
+export type OrderPaymentStatus = 'UNPAID' | 'PARTIAL' | 'PAID' | string;
 
 export interface OrderItem {
   id?: string;
@@ -320,17 +309,9 @@ export interface OrderItemDetail {
   orderId: string;
   itemId: string;
   quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  menuItem?: {
-    id: string;
-    name: string;
-    price: number;
-    foodType: string;
-    imageUrl?: string;
-  };
-  createdAt: string;
-  updatedAt?: string;
+  unitPrice: Num;
+  subtotal: Num;
+  item?: Pick<MenuItem, 'id' | 'name' | 'price' | 'taxRate' | 'foodType' | 'imageUrl'>;
 }
 
 export interface AddOrderItemFormData {
@@ -344,14 +325,22 @@ export interface UpdateOrderStatusFormData {
 
 export interface Order {
   id: string;
+  orderNumber?: string;
   memberId: string;
   terminalId: string;
-  discountAmount: number;
-  items: OrderItem[];
-  totalAmount?: number;
+  orderDate?: string;
+  subtotal?: Num;
+  taxAmount?: Num;
+  discountAmount: Num;
+  totalAmount?: Num;
   status: OrderStatus;
+  paymentStatus?: OrderPaymentStatus;
   createdAt: string;
   updatedAt?: string;
+  items: OrderItemDetail[];
+  member?: Pick<CanteenMember, 'id' | 'name' | 'memberType' | 'idCardBarcode'>;
+  terminal?: Pick<PosTerminal, 'id' | 'name' | 'location'>;
+  payments?: Payment[];
 }
 
 export interface OrderFormData {
@@ -368,12 +357,13 @@ export type WalletStatus = 'ACTIVE' | 'BLOCKED';
 export interface Wallet {
   id: string;
   memberId: string;
-  balance: number;
-  dailySpendLimit: number;
+  balance: Num;
+  dailySpendLimit: Num;
   status: WalletStatus;
-  blockedReason?: string;
+  blockedReason?: string | null;
   createdAt: string;
   updatedAt?: string;
+  member?: Pick<CanteenMember, 'id' | 'name' | 'memberType' | 'idCardBarcode'>;
 }
 
 export interface WalletFormData {
@@ -394,9 +384,9 @@ export type TopupPaymentMode = 'CASH' | 'CARD' | 'UPI' | 'BANK_TRANSFER' | 'OTHE
 export interface WalletTopup {
   id: string;
   walletId: string;
-  amount: number;
+  amount: Num;
   paymentMode: TopupPaymentMode;
-  transactionRef?: string;
+  transactionRef?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -413,13 +403,14 @@ export interface WalletTransaction {
   id: string;
   walletId: string;
   type: WalletTransactionType;
-  amount: number;
-  balanceBefore: number;
-  balanceAfter: number;
-  description?: string;
-  referenceId?: string;
-  createdAt: string;
-  updatedAt?: string;
+  amount: Num;
+  balanceBefore?: Num;
+  balanceAfter: Num;
+  description?: string | null;
+  referenceType?: string | null;
+  referenceId?: string | null;
+  transactedAt?: string;
+  createdAt?: string;
 }
 
 // Payment Types
@@ -429,8 +420,10 @@ export interface Payment {
   id: string;
   orderId: string;
   paymentMode: PaymentMode;
-  amount: number;
-  transactionRef?: string;
+  amount: Num;
+  transactionRef?: string | null;
+  status?: string;
+  paidAt?: string;
   createdAt: string;
   updatedAt?: string;
 }

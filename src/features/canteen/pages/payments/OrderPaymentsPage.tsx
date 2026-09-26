@@ -1,462 +1,262 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Plus,
-  Trash2,
-  CreditCard,
-  Banknote,
-  Smartphone,
-  Wallet,
-  CircleDollarSign,
-  X,
-  Receipt,
-} from 'lucide-react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import {
-  getOrderPayments,
-  createOrderPayment,
-  deletePayment,
-  getOrder,
-  getMenuItems,
-} from '../../api/canteen.api';
-import type { Payment, PaymentFormData, PaymentMode, Order } from '../../types/canteen.types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { LucideIcon } from 'lucide-react';
+import { ArrowLeft, Banknote, CircleEllipsis, CreditCard, IndianRupee, Smartphone, Trash2, Wallet } from 'lucide-react';
+import ConfirmDialog from '../../../../components/feedback/ConfirmDialog';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { DetailHeader, DetailSkeleton, InfoCard, NextStep } from '../../../../components/premium/detail/DetailParts';
+import { Field } from '../../../../components/premium/form/FormParts';
+import IconAction from '../../../../components/premium/list/IconAction';
+import { StatusPill } from '../../../../components/premium/list/ListControls';
+import { btnPrimary, cardClass, inputClass } from '../../../../components/premium/styles';
+import { useToast } from '../../../../hooks/useToast';
+import { rupees, toNumber } from '../../../../utils/dashboardFormat';
+import { createOrderPayment, deletePayment, getMember, getOrder, getOrderPayments } from '../../api/canteen.api';
+import type { Payment, PaymentMode } from '../../types/canteen.types';
+import { getApiErrorMessage } from '../../utils/errors';
+import { dateTime, paymentModeLabel, paymentStatusInfo, shortRef } from '../../utils/labels';
 
-const PAYMENT_MODES: PaymentMode[] = ['CASH', 'CARD', 'UPI', 'WALLET', 'OTHER'];
+const MODES: { mode: PaymentMode; icon: LucideIcon }[] = [
+  { mode: 'CASH', icon: Banknote },
+  { mode: 'UPI', icon: Smartphone },
+  { mode: 'CARD', icon: CreditCard },
+  { mode: 'WALLET', icon: Wallet },
+  { mode: 'OTHER', icon: CircleEllipsis },
+];
 
-const paymentModeIcon: Record<PaymentMode, React.ElementType> = {
-  CASH: Banknote,
-  CARD: CreditCard,
-  UPI: Smartphone,
-  WALLET: Wallet,
-  OTHER: CircleDollarSign,
-};
-
-const paymentModeStyles: Record<PaymentMode, string> = {
-  CASH: 'bg-green-100 text-green-700',
-  CARD: 'bg-blue-100 text-blue-700',
-  UPI: 'bg-purple-100 text-purple-700',
-  WALLET: 'bg-orange-100 text-orange-700',
-  OTHER: 'bg-slate-100 text-slate-700',
-};
-
-const defaultForm: PaymentFormData = {
-  paymentMode: 'CASH',
-  amount: 0,
-  transactionRef: '',
+const REF_HINT: Partial<Record<PaymentMode, string>> = {
+  UPI: 'UPI reference / UTR number',
+  CARD: 'Last 4 digits or slip number',
+  OTHER: 'How it was paid',
 };
 
 export default function OrderPaymentsPage() {
-  const { orderId } = useParams<{ orderId: string }>();
+  const { orderId = '' } = useParams();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [mode, setMode] = useState<PaymentMode>('CASH');
+  const [amount, setAmount] = useState<string | null>(null);
+  const [reference, setReference] = useState('');
+  const [showErrors, setShowErrors] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Payment | null>(null);
 
-  const [order, setOrder] = useState<Order | null>(null);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [menuItems, setMenuItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const orderKey = ['canteen', 'order', orderId];
+  const paymentsKey = ['canteen', 'order-payments', orderId];
+  const { data: order, isLoading, error, refetch } = useQuery({ queryKey: orderKey, queryFn: () => getOrder(orderId), enabled: Boolean(orderId) });
+  const { data: payments = [] } = useQuery({ queryKey: paymentsKey, queryFn: () => getOrderPayments(orderId), enabled: Boolean(orderId) });
+  const { data: member } = useQuery({ queryKey: ['canteen', 'member', order?.memberId], queryFn: () => getMember(order!.memberId), enabled: Boolean(order?.memberId) });
 
-  // Modal state
-  const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState<PaymentFormData>(defaultForm);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: orderKey });
+    queryClient.invalidateQueries({ queryKey: paymentsKey });
+    queryClient.invalidateQueries({ queryKey: ['canteen', 'orders'] });
+    if (order) queryClient.invalidateQueries({ queryKey: ['canteen', 'member', order.memberId] });
+    queryClient.invalidateQueries({ queryKey: ['canteen', 'members'] });
+  };
 
-  useEffect(() => {
-    if (orderId) loadData();
-  }, [orderId]);
+  const pay = useMutation({
+    mutationFn: (value: number) => createOrderPayment(orderId, { paymentMode: mode, amount: value, transactionRef: reference.trim() || undefined }),
+    onSuccess: (_, value) => {
+      refresh();
+      toast.success(`${rupees(value)} received by ${paymentModeLabel(mode).toLowerCase()}`);
+      setAmount(null);
+      setReference('');
+      setShowErrors(false);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not record the payment')),
+  });
 
-  async function loadData() {
-    if (!orderId) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const [orderData, paymentsData, menuItemsData] = await Promise.all([
-        getOrder(orderId),
-        getOrderPayments(orderId),
-        getMenuItems(),
-      ]);
-      setOrder(orderData);
-      setPayments(paymentsData);
-      setMenuItems(menuItemsData);
-    } catch (err: any) {
-      if (err.response?.status === 401) return;
-      setError(err instanceof Error ? err.message : 'Failed to load payments');
-    } finally {
-      setLoading(false);
-    }
+  const remove = useMutation({
+    mutationFn: (p: Payment) => deletePayment(p.id),
+    onSuccess: () => {
+      refresh();
+      toast.success('Payment removed');
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not remove the payment')),
+    onSettled: () => setPendingDelete(null),
+  });
+
+  const back = (
+    <Link to={orderId ? `/canteen/orders/${orderId}` : '/canteen/orders'} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+      <ArrowLeft className="h-4 w-4" /> Back to the order
+    </Link>
+  );
+
+  if (isLoading) return <DetailSkeleton />;
+  if (error || !order) {
+    return (
+      <div className="space-y-5">
+        {back}
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load order')} onRetry={() => refetch()} />
+      </div>
+    );
   }
 
-  const openModal = () => {
-    setFormData(defaultForm);
-    setFormError(null);
-    setShowModal(true);
-  };
+  const good = payments.filter((p) => !p.status || p.status === 'success');
+  const paid = good.reduce((sum, p) => sum + toNumber(p.amount), 0);
+  const total = toNumber(order.totalAmount);
+  const due = Math.max(0, Math.round((total - paid) * 100) / 100);
+  const cancelled = order.status === 'CANCELLED';
+  const title = order.orderNumber ?? `Order ${shortRef(order.id)}`;
+  const wallet = member?.wallet;
 
-  const closeModal = () => {
-    setShowModal(false);
-    setFormError(null);
-  };
+  // The amount box starts at whatever is still due.
+  const amountText = amount ?? (due > 0 ? String(due) : '');
+  const value = Number(amountText);
+  const amountError =
+    !amountText.trim() || !(value > 0)
+      ? 'Enter an amount above ₹0'
+      : value > due + 0.001
+        ? `Only ${rupees(due)} is still due`
+        : mode === 'WALLET' && !wallet
+          ? `${member?.name ?? 'This member'} has no wallet`
+          : mode === 'WALLET' && wallet?.status === 'BLOCKED'
+            ? 'This wallet is blocked'
+            : mode === 'WALLET' && wallet && value > toNumber(wallet.balance)
+              ? `Wallet only has ${rupees(toNumber(wallet.balance))}`
+              : undefined;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePay = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!orderId) return;
-
-    if (!formData.amount || formData.amount <= 0) {
-      setFormError('Amount must be greater than 0');
+    if (amountError) {
+      setShowErrors(true);
       return;
     }
-
-    try {
-      setSubmitting(true);
-      setFormError(null);
-      const newPayment = await createOrderPayment(orderId, {
-        paymentMode: formData.paymentMode,
-        amount: Number(formData.amount),
-        transactionRef: formData.transactionRef?.trim() || undefined,
-      });
-      setPayments((prev) => [newPayment, ...prev]);
-      closeModal();
-    } catch (err: any) {
-      if (err.response?.status === 401) return;
-      const msg =
-        err.response?.data?.error?.message ||
-        err.response?.data?.message ||
-        'Failed to record payment';
-      setFormError(typeof msg === 'string' ? msg : 'Failed to record payment');
-    } finally {
-      setSubmitting(false);
-    }
+    pay.mutate(value);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this payment? This action cannot be undone.')) return;
-    try {
-      setDeletingId(id);
-      await deletePayment(id);
-      setPayments((prev) => prev.filter((p) => p.id !== id));
-    } catch (err: any) {
-      if (err.response?.status === 401) return;
-      alert(err instanceof Error ? err.message : 'Failed to delete payment');
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const totalPaid = Number(payments.reduce((sum, p) => sum + Number(p.amount), 0));
-  
-  // Use backend's totalAmount which includes taxes
-  const orderTotal = Number(order?.totalAmount) ?? 0;
-  const balance = Number(orderTotal - totalPaid);
+  const status = paymentStatusInfo(order.paymentStatus);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link to="/canteen/orders">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Payments</h1>
-            <p className="text-slate-600 mt-1">
-              {orderId ? (
-                <>
-                  Order:{' '}
-                  <Link
-                    to={`/canteen/orders/${orderId}`}
-                    className="text-[#008BE9] hover:underline font-medium"
-                  >
-                    {orderId.slice(0, 8)}…
-                  </Link>
-                </>
-              ) : (
-                'Manage order payments'
-              )}
-            </p>
-          </div>
+    <div className="space-y-5">
+      {back}
+      <DetailHeader
+        icon={IndianRupee}
+        title={`Payments · ${title}`}
+        status={!cancelled && <StatusPill label={status.label} color={status.color} />}
+        meta={order.member ? `For ${order.member.name}` : undefined}
+      >
+        <div className="grid grid-cols-3 gap-3 sm:max-w-lg">
+          {[
+            ['Bill', rupees(total), 'text-slate-900'],
+            ['Paid', rupees(paid), 'text-emerald-700'],
+            ['Still to pay', rupees(due), due > 0 ? 'text-red-600' : 'text-slate-400'],
+          ].map(([label, amountLabel, tone]) => (
+            <div key={label} className="rounded-2xl bg-slate-50 px-4 py-3">
+              <p className="text-xs font-medium text-slate-500">{label}</p>
+              <p className={`text-lg font-semibold tabular-nums ${tone}`}>{amountLabel}</p>
+            </div>
+          ))}
         </div>
-        <Button variant="primary" onClick={openModal}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Payment
-        </Button>
-      </div>
+      </DetailHeader>
 
-      {/* Summary cards */}
-      {order && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="border-slate-200">
-            <div className="p-5 flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
-                <Receipt className="h-5 w-5 text-slate-600" />
-              </div>
+      <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
+        <div>
+          {cancelled ? (
+            <NextStep tone="bad">This order was cancelled, so no payment is needed.{paid > 0 && ' Remove or refund the payments below.'}</NextStep>
+          ) : due <= 0 ? (
+            <NextStep tone="good">Fully paid — nothing more to collect.</NextStep>
+          ) : (
+            <form onSubmit={handlePay} noValidate className={`${cardClass} animate-rise space-y-4`}>
+              <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">Take payment</h2>
               <div>
-                <p className="text-sm text-slate-500">Order Total</p>
-                <p className="text-xl font-bold text-slate-900">₹{orderTotal.toFixed(2)}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-slate-200">
-            <div className="p-5 flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                <Banknote className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Total Paid</p>
-                <p className="text-xl font-bold text-green-700">₹{totalPaid.toFixed(2)}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className={`border-slate-200 ${balance > 0 ? 'border-red-200' : 'border-green-200'}`}>
-            <div className="p-5 flex items-center gap-4">
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                  balance > 0 ? 'bg-red-100' : 'bg-green-100'
-                }`}
-              >
-                <CircleDollarSign
-                  className={`h-5 w-5 ${balance > 0 ? 'text-red-600' : 'text-green-600'}`}
-                />
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Balance Due</p>
-                <p
-                  className={`text-xl font-bold ${
-                    balance > 0 ? 'text-red-600' : 'text-green-700'
-                  }`}
-                >
-                  ₹{balance.toFixed(2)}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Payments table */}
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading payments…</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
-      ) : (
-        <Card className="border-slate-200">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Payment ID</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Mode</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Amount</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Transaction Ref</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Date</th>
-                  <th className="text-right py-3 px-4 font-semibold text-slate-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payments.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-10 text-slate-500">
-                      <div className="flex flex-col items-center gap-2">
-                        <CreditCard className="h-8 w-8 text-slate-300" />
-                        <span>No payments recorded yet</span>
-                        <button
-                          onClick={openModal}
-                          className="text-sm text-[#008BE9] hover:underline mt-1"
-                        >
-                          Add the first payment
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  payments.map((payment) => {
-                    const ModeIcon = paymentModeIcon[payment.paymentMode] ?? CircleDollarSign;
-                    return (
-                      <tr key={payment.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="py-3 px-4">
-                          <span className="font-mono text-sm text-slate-700">
-                            {payment.id.slice(0, 8)}…
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
-                              paymentModeStyles[payment.paymentMode] ?? 'bg-slate-100 text-slate-700'
-                            }`}
-                          >
-                            <ModeIcon className="h-3.5 w-3.5" />
-                            {payment.paymentMode}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 font-semibold text-slate-900">
-                          ₹{Number(payment.amount).toFixed(2)}
-                        </td>
-                        <td className="py-3 px-4 text-slate-600 font-mono text-sm">
-                          {payment.transactionRef || (
-                            <span className="text-slate-400 italic">—</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-slate-600 text-sm">
-                          {new Date(payment.createdAt).toLocaleString()}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(payment.id)}
-                            disabled={deletingId === payment.id}
-                          >
-                            {deletingId === payment.id ? (
-                              <span className="text-xs text-slate-400">Deleting…</span>
-                            ) : (
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            )}
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
-
-      {/* Add Payment Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={closeModal}
-          />
-
-          {/* Dialog */}
-          <div className="relative w-full max-w-md bg-white rounded-xl shadow-xl z-10">
-            {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-              <h2 className="text-lg font-semibold text-slate-900">Add Payment</h2>
-              <button
-                onClick={closeModal}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Modal body */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {formError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                  {formError}
-                </div>
-              )}
-
-              {/* Payment mode */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Payment Mode *
-                </label>
-                <div className="grid grid-cols-5 gap-2">
-                  {PAYMENT_MODES.map((mode) => {
-                    const Icon = paymentModeIcon[mode];
-                    const isSelected = formData.paymentMode === mode;
-                    return (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, paymentMode: mode })}
-                        className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border-2 text-xs font-medium transition-all ${
-                          isSelected
-                            ? 'border-[#008BE9] bg-[#008BE9]/5 text-[#008BE9]'
-                            : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                        {mode}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Amount */}
-              <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-slate-700 mb-1">
-                  Amount (₹) *
-                </label>
-                <input
-                  id="amount"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={formData.amount === 0 ? '' : formData.amount}
-                  onChange={(e) =>
-                    setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })
-                  }
-                  placeholder="Enter amount"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
-                  required
-                />
-                {order && balance > 0 && (
-                  <p className="text-xs text-slate-500 mt-1">
-                    Balance due:{' '}
+                <span className="mb-1.5 block text-sm font-medium text-slate-700">Paid by</span>
+                <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Payment mode">
+                  {MODES.map(({ mode: m, icon: Icon }) => (
                     <button
+                      key={m}
                       type="button"
-                      onClick={() => setFormData({ ...formData, amount: balance })}
-                      className="text-[#008BE9] hover:underline font-medium"
+                      role="radio"
+                      aria-checked={mode === m}
+                      onClick={() => setMode(m)}
+                      className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-xs font-medium ring-1 transition ${mode === m ? 'bg-brand/5 text-brand-navy ring-2 ring-brand' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'}`}
                     >
-                      ₹{balance.toFixed(2)}
+                      <Icon className="h-4 w-4" />
+                      {m === 'WALLET' ? 'Wallet' : paymentModeLabel(m)}
                     </button>
+                  ))}
+                </div>
+                {mode === 'WALLET' && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    {wallet ? (
+                      <>
+                        Wallet balance: <span className="font-medium text-slate-700">{rupees(toNumber(wallet.balance))}</span>
+                        {wallet.status === 'BLOCKED' && <span className="font-medium text-red-600"> · blocked</span>}
+                      </>
+                    ) : (
+                      <>
+                        No wallet yet.{' '}
+                        <Link to={`/canteen/members/${order.memberId}/wallet`} className="font-medium text-brand hover:text-brand-navy">
+                          Set one up
+                        </Link>
+                      </>
+                    )}
                   </p>
                 )}
               </div>
-
-              {/* Transaction Ref */}
-              <div>
-                <label
-                  htmlFor="transactionRef"
-                  className="block text-sm font-medium text-slate-700 mb-1"
-                >
-                  Transaction Reference{' '}
-                  <span className="text-slate-400 font-normal">(optional)</span>
-                </label>
-                <input
-                  id="transactionRef"
-                  type="text"
-                  value={formData.transactionRef ?? ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, transactionRef: e.target.value })
-                  }
-                  placeholder="e.g. UPI-TXN-99882233"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
-                />
-              </div>
-
-              {/* Footer buttons */}
-              <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="ghost" onClick={closeModal} disabled={submitting}>
-                  Cancel
-                </Button>
-                <Button type="submit" variant="primary" disabled={submitting}>
-                  {submitting ? 'Saving…' : 'Save Payment'}
-                </Button>
-              </div>
+              <Field label="Amount (₹)" error={showErrors || amount !== null ? amountError : undefined}>
+                <input type="number" min={0} step="0.01" value={amountText} onChange={(e) => setAmount(e.target.value)} className={`${inputClass} text-base`} />
+              </Field>
+              {REF_HINT[mode] && (
+                <Field label={`${REF_HINT[mode]} (optional)`}>
+                  <input value={reference} onChange={(e) => setReference(e.target.value)} autoComplete="off" className={inputClass} />
+                </Field>
+              )}
+              <button type="submit" disabled={pay.isPending} className={`${btnPrimary} w-full`}>
+                {pay.isPending ? 'Saving…' : `Receive ${Number.isFinite(value) && value > 0 ? rupees(value) : 'payment'}`}
+              </button>
             </form>
-          </div>
+          )}
         </div>
-      )}
+
+        <InfoCard title={`Payments received · ${payments.length}`} icon={IndianRupee} delay={60}>
+          {payments.length === 0 ? (
+            <p className="text-sm text-slate-500">No payments yet.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {[...payments]
+                .sort((a, b) => (b.paidAt ?? b.createdAt).localeCompare(a.paidAt ?? a.createdAt))
+                .map((p) => {
+                  const Icon = MODES.find((m) => m.mode === p.paymentMode)?.icon ?? CircleEllipsis;
+                  const failed = p.status && p.status !== 'success';
+                  return (
+                    <li key={p.id} className="flex items-center gap-3 py-2.5 text-sm">
+                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-900">
+                          {paymentModeLabel(p.paymentMode)}
+                          {failed && <span className="ml-2 text-xs font-medium text-red-600">{p.status}</span>}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                          {dateTime(p.paidAt ?? p.createdAt)}
+                          {p.transactionRef ? ` · Ref ${p.transactionRef}` : ''}
+                        </p>
+                      </div>
+                      <span className={`ml-auto whitespace-nowrap font-semibold tabular-nums ${failed ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{rupees(toNumber(p.amount))}</span>
+                      <IconAction icon={Trash2} label="Remove payment" tone="danger" onClick={() => setPendingDelete(p)} />
+                    </li>
+                  );
+                })}
+            </ul>
+          )}
+        </InfoCard>
+      </div>
+
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        onClose={() => !remove.isPending && setPendingDelete(null)}
+        onConfirm={() => pendingDelete && remove.mutate(pendingDelete)}
+        title="Remove this payment?"
+        message={
+          pendingDelete
+            ? `The ${paymentModeLabel(pendingDelete.paymentMode).toLowerCase()} payment of ${rupees(toNumber(pendingDelete.amount))} will be removed and the order will show it as unpaid again. Only do this if it was entered by mistake.`
+            : ''
+        }
+        confirmText={remove.isPending ? 'Removing…' : 'Remove payment'}
+      />
     </div>
   );
 }
