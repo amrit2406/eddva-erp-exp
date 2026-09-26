@@ -1,38 +1,44 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import type { LucideIcon } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Users,
-  UserCheck,
-  LogOut,
-  Calendar,
-  MessageSquare,
-  Clock,
   AlertTriangle,
-  ChevronRight,
-  Plus,
-  CircleDot,
+  Bell,
+  CalendarCheck,
+  CalendarClock,
+  CalendarPlus,
+  CalendarX,
   CheckCheck,
-  XCircle,
-  UserX,
+  CircleDot,
   Flag,
+  Footprints,
+  Inbox,
+  MessageSquare,
+  MessageSquarePlus,
+  PieChart as PieIcon,
   Timer,
+  UserCheck,
+  UserPlus,
+  UserRoundCheck,
+  UserX,
+  Users,
 } from 'lucide-react';
-import Button from '../../../components/ui/Button';
-import Card from '../../../components/ui/Card';
-import DashboardStatCard from '../components/dashboard/DashboardStatCard';
-import RankedBarList from '../components/dashboard/RankedBarList';
-import DailyTrendChart from '../components/dashboard/DailyTrendChart';
+import ErrorState from '../../../components/feedback/ErrorState';
+import AttentionList, { type AttentionItem } from '../../../components/premium/AttentionList';
+import { ChartCard, DonutChart, Gauge, GradientArea, GroupedColumns, Leaderboard } from '../../../components/premium/charts';
+import DashboardSkeleton from '../../../components/premium/DashboardSkeleton';
+import HeroAction from '../../../components/premium/HeroAction';
+import KpiTile from '../../../components/premium/KpiTile';
+import PageHero from '../../../components/premium/PageHero';
+import SectionHeading from '../../../components/premium/SectionHeading';
+import { humanize, rangeLabel } from '../../../utils/dashboardFormat';
 import { getDashboardSummary } from '../api/dashboard.api';
 import { getEmployees } from '../api/employees.api';
-import { getApiErrorMessage } from '../utils/rbac.utils';
 import type { FrontOfficeDashboardSummary } from '../types/dashboardRecord.types';
+import { getApiErrorMessage } from '../utils/rbac.utils';
 
-const PRIORITY_COLOR: Record<string, string> = {
-  low: '#94a3b8',
-  medium: '#eab308',
-  high: '#f97316',
-  critical: '#ef4444',
-};
+const stagger = (index: number) => ({ animationDelay: `${Math.min(index, 10) * 50}ms` });
+
+const pct = (part: number, whole: number) => (whole > 0 ? Math.min(100, (part / whole) * 100) : 0);
 
 function formatResolutionTime(hours: number): string {
   if (!hours || hours <= 0) return '—';
@@ -41,244 +47,278 @@ function formatResolutionTime(hours: number): string {
   return `${(hours / 24).toFixed(1)}d`;
 }
 
-interface SectionHeaderProps {
-  icon: React.ElementType;
-  title: string;
-  viewAllHref: string;
+function shortDay(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-function SectionHeader({ icon: Icon, title, viewAllHref }: SectionHeaderProps) {
+// Visitors still checked in who didn't arrive today — likely missed check-outs.
+function staleCheckIns({ visitors }: FrontOfficeDashboardSummary): number {
+  const stillInFromToday = Math.max(0, visitors.today_visitors - visitors.checked_out_today);
+  return Math.max(0, visitors.currently_checked_in - stillInFromToday);
+}
+
+interface Kpi {
+  label: string;
+  value: string | number;
+  icon: LucideIcon;
+  hint?: string;
+  accent: string;
+}
+
+function buildKpis({ visitors, enquiries, appointments, complaints }: FrontOfficeDashboardSummary): Kpi[] {
+  return [
+    { label: 'On campus now', value: visitors.currently_checked_in, icon: UserCheck, hint: 'Visitors checked in', accent: '#008BE9' },
+    { label: 'Visitors today', value: visitors.today_visitors, icon: Footprints, hint: `${visitors.checked_out_today} checked out`, accent: '#eb6834' },
+    { label: 'Enquiries', value: enquiries.total, icon: MessageSquare, hint: `${enquiries.in_progress} in progress`, accent: '#15936a' },
+    { label: 'Appointments today', value: appointments.today, icon: CalendarClock, hint: `${appointments.upcoming} upcoming`, accent: '#d55181' },
+    { label: 'Appointments done', value: appointments.completed, icon: CalendarCheck, hint: `${appointments.no_show} no-show · ${appointments.cancelled} cancelled`, accent: '#4a3aa7' },
+    { label: 'Complaints', value: complaints.total, icon: AlertTriangle, hint: `${complaints.open + complaints.in_progress} still open`, accent: '#7c3aed' },
+    { label: 'High priority', value: complaints.critical_or_high, icon: Flag, hint: 'Critical or high complaints', accent: '#c98500' },
+    { label: 'Avg. resolution', value: formatResolutionTime(complaints.average_resolution_hours), icon: Timer, hint: 'Time to resolve a complaint', accent: '#0891b2' },
+  ];
+}
+
+function buildAttention(summary: FrontOfficeDashboardSummary): AttentionItem[] {
+  const { enquiries, complaints, appointments } = summary;
+  const items: AttentionItem[] = [
+    { module: 'Enquiries', label: 'Overdue follow-ups', count: enquiries.overdue_followups, severity: 'critical', to: '/front-office/enquiries/followups' },
+    { module: 'Complaints', label: 'Open complaints', count: complaints.open + complaints.in_progress, severity: 'warning', to: '/front-office/complaints' },
+    { module: 'Visitors', label: 'Not checked out from earlier days', count: staleCheckIns(summary), severity: 'warning', to: '/front-office/visitors' },
+    { module: 'Enquiries', label: 'Follow-ups due', count: enquiries.pending_followups, severity: 'warning', to: '/front-office/enquiries/followups' },
+    { module: 'Enquiries', label: 'Open enquiries not yet picked up', count: enquiries.open, severity: 'warning', to: '/front-office/enquiries' },
+    { module: 'Appointments', label: 'No-shows', count: appointments.no_show, severity: 'warning', to: '/front-office/appointments' },
+  ];
+  return items.filter((item) => item.count > 0);
+}
+
+// Enquiry closure and complaint resolution, pinned under the attention list.
+function HealthFooter({ summary }: { summary: FrontOfficeDashboardSummary }) {
+  const { enquiries, complaints } = summary;
+  const bars = [
+    { label: 'Enquiries closed', value: pct(enquiries.closed, enquiries.total) },
+    { label: 'Complaints resolved or closed', value: pct(complaints.resolved + complaints.closed, complaints.total) },
+  ];
   return (
-    <div className="flex items-center justify-between mb-4">
-      <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-        <Icon className="h-5 w-5 text-[#008BE9]" />
-        {title}
-      </h2>
-      <Link to={viewAllHref} className="text-[#008BE9] hover:text-[#002C6D] text-sm font-medium flex items-center">
-        View All <ChevronRight className="h-4 w-4 ml-1" />
-      </Link>
+    <div className="mt-4 space-y-3 rounded-2xl bg-slate-50/80 px-4 py-3 ring-1 ring-slate-100">
+      {bars.map((bar) => (
+        <div key={bar.label}>
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="font-medium text-slate-600">{bar.label}</span>
+            <span className="font-semibold text-slate-900 tabular-nums">{Math.round(bar.value)}%</span>
+          </div>
+          <div
+            className="mt-1.5 h-2 rounded-full bg-slate-200/70 overflow-hidden"
+            role="meter"
+            aria-label={bar.label}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(bar.value)}
+          >
+            <div className="h-full rounded-full bg-gradient-to-r from-brand-navy to-brand transition-[width] duration-700 ease-out" style={{ width: `${bar.value}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface MiniStat {
+  label: string;
+  value: string | number;
+  icon: LucideIcon;
+  color: string;
+}
+
+function MiniStats({ stats }: { stats: MiniStat[] }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {stats.map(({ label, value, icon: Icon, color }) => (
+        <div key={label} className="rounded-2xl bg-slate-50/80 px-3 py-3 ring-1 ring-slate-100">
+          <Icon className="h-4 w-4" style={{ color }} />
+          <p className="mt-1.5 text-lg font-semibold tracking-tight text-slate-900 tabular-nums">{value}</p>
+          <p className="text-[11px] text-slate-500 leading-tight">{label}</p>
+        </div>
+      ))}
     </div>
   );
 }
 
 export default function FrontOfficeDashboardPage() {
-  const [summary, setSummary] = useState<FrontOfficeDashboardSummary | null>(null);
-  const [employeeMap, setEmployeeMap] = useState<Map<number, string>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery({
+    queryKey: ['front-office', 'dashboard'],
+    queryFn: getDashboardSummary,
+  });
+  // Assignees arrive as employee ids; names are a nice-to-have, so failures fall back to "#id".
+  const { data: employees } = useQuery({
+    queryKey: ['front-office', 'employees', 'lookup'],
+    queryFn: () => getEmployees({ limit: 100 }),
+  });
 
-  useEffect(() => {
-    load();
-  }, []);
+  if (isLoading) return <DashboardSkeleton />;
+  if (error) return <ErrorState message={getApiErrorMessage(error, 'Failed to load dashboard')} onRetry={() => refetch()} />;
+  if (!data) return null;
 
-  async function load() {
-    try {
-      setLoading(true);
-      setError(null);
-      const [summaryData, employeesData] = await Promise.all([
-        getDashboardSummary(),
-        getEmployees({ limit: 100 }).catch(() => ({ data: [], pagination: { page: 1, limit: 100, total: 0, totalPages: 0 } })),
-      ]);
-      setSummary(summaryData);
-      setEmployeeMap(new Map(employeesData.data.map((e) => [e.employee_id, e.name])));
-    } catch (err: any) {
-      if (err.response?.status === 401) return;
-      setError(getApiErrorMessage(err, 'Failed to load dashboard'));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (loading) {
-    return <div className="text-center py-8 text-slate-500">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center py-8 text-red-500">{error}</div>;
-  }
-
-  if (!summary) {
-    return <div className="text-center py-8 text-slate-500">No dashboard data available.</div>;
-  }
-
-  const { visitors, enquiries, appointments, complaints } = summary;
-
-  const enquiriesBySource = enquiries.by_source.map((s) => ({ label: s.source.replace(/_/g, ' '), count: s.count }));
-  const enquiriesByCategory = enquiries.by_category.map((c) => ({ label: c.category.replace(/_/g, ' '), count: c.count }));
-  const enquiriesByAssignee = enquiries.by_assignee.map((a) => ({
-    label: employeeMap.get(a.assigned_to) ?? `Employee #${a.assigned_to}`,
-    count: a.count,
-  }));
-
-  const visitorsByHost = visitors.by_host.map((h) => ({ label: `${h.host_name} (${h.department})`, count: h.count }));
-
-  const appointmentsByDepartment = appointments.by_department.map((d) => ({ label: d.department, count: d.count }));
-  const appointmentsByEmployee = appointments.by_employee.map((e) => ({ label: e.employee, count: e.count }));
-
-  const complaintsByPriority = complaints.by_priority.map((p) => ({
-    label: p.priority,
-    count: p.count,
-    color: PRIORITY_COLOR[p.priority] ?? PRIORITY_COLOR.low,
-  }));
-  const complaintsByCategory = complaints.by_category.map((c) => ({ label: c.category.replace(/_/g, ' '), count: c.count }));
-  const complaintsByAssignee = complaints.by_assignee.map((a) => ({
-    label: employeeMap.get(a.assigned_to) ?? `Employee #${a.assigned_to}`,
-    count: a.count,
-  }));
+  const employeeName = (id: number) => employees?.data.find((e) => e.employee_id === id)?.name ?? `Employee #${id}`;
+  const { visitors, enquiries, appointments, complaints } = data;
+  const kpis = buildKpis(data);
+  const attention = buildAttention(data);
+  const settledAppointments = appointments.completed + appointments.cancelled + appointments.no_show;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Front Office Overview</h1>
-          <p className="text-slate-600 mt-1 text-sm sm:text-base">Manage visitors, enquiries, appointments, and complaints</p>
+    <div className="space-y-8">
+      <div className="grid gap-5 grid-cols-1 lg:grid-cols-12">
+        <div className="lg:col-span-8 space-y-5">
+          <PageHero
+            eyebrow="Front office"
+            title="Front office overview"
+            subtitle="Visitors, enquiries, appointments and complaints at the front desk."
+            highlights={[
+              { icon: UserCheck, label: `${visitors.currently_checked_in} visitor${visitors.currently_checked_in === 1 ? '' : 's'} on campus` },
+              { icon: MessageSquare, label: `${enquiries.in_progress} enquiries in progress` },
+              { icon: CalendarClock, label: rangeLabel(data.range) },
+            ]}
+            actions={
+              <>
+                <HeroAction to="/front-office/visitors/new" icon={UserPlus} label="Check in visitor" primary />
+                <HeroAction to="/front-office/enquiries/new" icon={MessageSquarePlus} label="New enquiry" />
+                <HeroAction to="/front-office/appointments/new" icon={CalendarPlus} label="New appointment" />
+                <HeroAction to="/front-office/complaints/new" icon={AlertTriangle} label="New complaint" />
+              </>
+            }
+            updatedAt={dataUpdatedAt}
+            refreshing={isFetching}
+            onRefresh={() => refetch()}
+          />
+          <div className="grid gap-4 grid-cols-2 xl:grid-cols-4">
+            {kpis.map((kpi, index) => (
+              <KpiTile key={kpi.label} {...kpi} style={stagger(index)} />
+            ))}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link to="/front-office/visitors/new">
-            <Button variant="primary" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Visitor
-            </Button>
-          </Link>
-          <Link to="/front-office/enquiries/new">
-            <Button variant="secondary" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Enquiry
-            </Button>
-          </Link>
-          <Link to="/front-office/appointments/new">
-            <Button variant="secondary" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Appointment
-            </Button>
-          </Link>
-          <Link to="/front-office/complaints/new">
-            <Button variant="secondary" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Complaint
-            </Button>
-          </Link>
-        </div>
+
+        <ChartCard title="Needs attention" subtitle="Follow-ups and open items at the desk" icon={Bell} className="lg:col-span-4" style={stagger(2)} fill>
+          <AttentionList items={attention} footer={<HealthFooter summary={data} />} />
+        </ChartCard>
       </div>
 
-      {/* Visitors */}
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <SectionHeader icon={Users} title="Visitors" viewAllHref="/front-office/visitors" />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <DashboardStatCard label="Today's Visitors" value={visitors.today_visitors} icon={Users} color="blue" />
-            <DashboardStatCard label="Currently Checked In" value={visitors.currently_checked_in} icon={UserCheck} color="green" />
-            <DashboardStatCard label="Checked Out Today" value={visitors.checked_out_today} icon={LogOut} color="slate" />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">Visits (last few days)</h3>
-              <DailyTrendChart data={visitors.by_day} />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">Top Hosts</h3>
-              <RankedBarList items={visitorsByHost} />
-            </div>
-          </div>
-        </div>
-      </Card>
+      <div className="grid gap-5 grid-cols-1 lg:grid-cols-12">
+        <SectionHeading eyebrow="Visitors" title="Who's coming in" />
 
-      {/* Enquiries */}
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <SectionHeader icon={MessageSquare} title="Enquiries" viewAllHref="/front-office/enquiries" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-            <DashboardStatCard label="Total" value={enquiries.total} icon={MessageSquare} color="blue" />
-            <DashboardStatCard label="Open" value={enquiries.open} icon={CircleDot} color="slate" />
-            <DashboardStatCard label="In Progress" value={enquiries.in_progress} icon={Clock} color="amber" />
-            <DashboardStatCard label="Closed" value={enquiries.closed} icon={CheckCheck} color="green" />
-            <DashboardStatCard label="Pending Follow-ups" value={enquiries.pending_followups} icon={Clock} color="purple" />
-            <Link to="/front-office/enquiries/followups">
-              <DashboardStatCard
-                label="Overdue Follow-ups"
-                value={enquiries.overdue_followups}
-                icon={AlertTriangle}
-                color={enquiries.overdue_followups > 0 ? 'red' : 'slate'}
-                className="cursor-pointer hover:border-red-200 transition-colors"
-              />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">By Source</h3>
-              <RankedBarList items={enquiriesBySource} />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">By Category</h3>
-              <RankedBarList items={enquiriesByCategory} />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">By Assignee</h3>
-            <RankedBarList items={enquiriesByAssignee} />
-          </div>
-        </div>
-      </Card>
+        <ChartCard title="Visitors by day" subtitle={`${visitors.currently_checked_in} on campus now · ${rangeLabel(data.range)}`} icon={Footprints} className="lg:col-span-7">
+          <GradientArea name="Visitors" rows={visitors.by_day.map((d) => ({ label: shortDay(d.day), value: d.count }))} />
+        </ChartCard>
+        <ChartCard title="Top hosts" subtitle="Staff receiving the most visitors" icon={Users} className="lg:col-span-5" style={stagger(1)}>
+          <Leaderboard
+            rows={[...visitors.by_host]
+              .sort((a, b) => b.count - a.count)
+              .map((h) => ({ label: h.host_name, value: h.count, detail: h.department }))}
+          />
+        </ChartCard>
+      </div>
 
-      {/* Appointments */}
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <SectionHeader icon={Calendar} title="Appointments" viewAllHref="/front-office/appointments" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-            <DashboardStatCard label="Today" value={appointments.today} icon={Calendar} color="blue" />
-            <DashboardStatCard label="Upcoming" value={appointments.upcoming} icon={Clock} color="purple" />
-            <DashboardStatCard label="Completed" value={appointments.completed} icon={CheckCheck} color="green" />
-            <DashboardStatCard label="Cancelled" value={appointments.cancelled} icon={XCircle} color="red" />
-            <DashboardStatCard label="No Show" value={appointments.no_show} icon={UserX} color="amber" />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">By Department</h3>
-              <RankedBarList items={appointmentsByDepartment} />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">By Employee</h3>
-              <RankedBarList items={appointmentsByEmployee} />
-            </div>
-          </div>
-        </div>
-      </Card>
+      <div className="grid gap-5 grid-cols-1 lg:grid-cols-12">
+        <SectionHeading eyebrow="Enquiries" title="Enquiry pipeline" />
 
-      {/* Complaints */}
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <SectionHeader icon={AlertTriangle} title="Complaints" viewAllHref="/front-office/complaints" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-            <DashboardStatCard label="Total" value={complaints.total} icon={AlertTriangle} color="blue" />
-            <DashboardStatCard label="Open" value={complaints.open} icon={CircleDot} color="slate" />
-            <DashboardStatCard label="In Progress" value={complaints.in_progress} icon={Clock} color="amber" />
-            <DashboardStatCard label="Resolved" value={complaints.resolved} icon={CheckCheck} color="green" />
-            <DashboardStatCard label="Closed" value={complaints.closed} icon={CheckCheck} color="slate" />
-            <DashboardStatCard
-              label="Critical/High"
-              value={complaints.critical_or_high}
-              icon={Flag}
-              color={complaints.critical_or_high > 0 ? 'red' : 'slate'}
+        <ChartCard tone="dark" title="Enquiry status" subtitle={`${enquiries.total} enquiries · ${rangeLabel(data.range)}`} icon={Inbox} className="lg:col-span-7">
+          <div className="mb-4 grid grid-cols-3 gap-3">
+            {[
+              { name: 'Total', value: enquiries.total },
+              { name: 'Follow-ups overdue', value: enquiries.overdue_followups },
+              { name: 'Follow-ups due', value: enquiries.pending_followups },
+            ].map((s) => (
+              <div key={s.name} className="rounded-2xl bg-white/[0.06] px-4 py-3 ring-1 ring-white/10">
+                <p className="text-xs text-sky-100/75">{s.name}</p>
+                <p className="mt-1 text-xl font-semibold tracking-tight tabular-nums">{s.value}</p>
+              </div>
+            ))}
+          </div>
+          <GroupedColumns
+            tone="dark"
+            rows={[
+              { label: 'Open', enquiries: enquiries.open },
+              { label: 'In progress', enquiries: enquiries.in_progress },
+              { label: 'Closed', enquiries: enquiries.closed },
+            ]}
+            series={[{ key: 'enquiries', name: 'Enquiries' }]}
+            height={200}
+            showValues
+          />
+        </ChartCard>
+        <ChartCard title="By assignee" subtitle="Enquiries each staff member owns" icon={UserRoundCheck} className="lg:col-span-5" style={stagger(1)}>
+          <Leaderboard
+            rows={[...enquiries.by_assignee]
+              .sort((a, b) => b.count - a.count)
+              .map((a) => ({ label: employeeName(a.assigned_to), value: a.count }))}
+          />
+        </ChartCard>
+        <ChartCard title="By category" subtitle="What people ask about" icon={PieIcon} className="lg:col-span-6">
+          <DonutChart totalLabel="enquiries" rows={enquiries.by_category.map((c) => ({ label: humanize(c.category), value: c.count }))} />
+        </ChartCard>
+        <ChartCard title="By source" subtitle="How enquiries reach us" icon={PieIcon} className="lg:col-span-6" style={stagger(1)}>
+          <DonutChart totalLabel="enquiries" rows={enquiries.by_source.map((s) => ({ label: humanize(s.source), value: s.count }))} />
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-5 grid-cols-1 lg:grid-cols-12">
+        <SectionHeading eyebrow="Appointments" title="Meetings at the desk" />
+
+        <ChartCard title="Outcomes" subtitle={`${settledAppointments} appointments settled`} icon={CalendarCheck} className="lg:col-span-4">
+          <Gauge
+            label="Attended"
+            value={appointments.completed}
+            max={settledAppointments}
+            caption={`${appointments.completed} of ${settledAppointments} completed`}
+            color="#1baf7a"
+          />
+          <div className="mt-4">
+            <MiniStats
+              stats={[
+                { label: 'Today', value: appointments.today, icon: CalendarClock, color: '#008BE9' },
+                { label: 'Upcoming', value: appointments.upcoming, icon: CircleDot, color: '#4a3aa7' },
+                { label: 'Completed', value: appointments.completed, icon: CheckCheck, color: '#15936a' },
+                { label: 'Cancelled', value: appointments.cancelled, icon: CalendarX, color: '#64748b' },
+                { label: 'No-show', value: appointments.no_show, icon: UserX, color: '#d55181' },
+              ]}
             />
-            <DashboardStatCard label="Avg Resolution" value={formatResolutionTime(complaints.average_resolution_hours)} icon={Timer} color="purple" />
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">By Priority</h3>
-              <RankedBarList items={complaintsByPriority} />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">By Category</h3>
-              <RankedBarList items={complaintsByCategory} />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">By Assignee</h3>
-            <RankedBarList items={complaintsByAssignee} />
-          </div>
-        </div>
-      </Card>
+        </ChartCard>
+        <ChartCard title="By department" subtitle="Where appointments are booked" icon={Users} className="lg:col-span-4" style={stagger(1)}>
+          <Leaderboard
+            rows={[...appointments.by_department]
+              .sort((a, b) => b.count - a.count)
+              .map((d) => ({ label: d.department, value: d.count }))}
+          />
+        </ChartCard>
+        <ChartCard title="By employee" subtitle="Staff with the most appointments" icon={UserRoundCheck} className="lg:col-span-4" style={stagger(2)}>
+          <Leaderboard
+            rows={[...appointments.by_employee]
+              .sort((a, b) => b.count - a.count)
+              .map((e) => ({ label: e.employee, value: e.count }))}
+          />
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-5 grid-cols-1 lg:grid-cols-12">
+        <SectionHeading eyebrow="Complaints" title="Issues raised" />
+
+        <ChartCard title="Status" subtitle={`Avg. resolution ${formatResolutionTime(complaints.average_resolution_hours)}`} icon={CircleDot} className="lg:col-span-4">
+          <DonutChart
+            totalLabel="complaints"
+            rows={[
+              { label: 'Open', value: complaints.open },
+              { label: 'In progress', value: complaints.in_progress },
+              { label: 'Resolved', value: complaints.resolved },
+              { label: 'Closed', value: complaints.closed },
+            ]}
+          />
+        </ChartCard>
+        <ChartCard title="By priority" subtitle={`${complaints.critical_or_high} critical or high`} icon={Flag} className="lg:col-span-4" style={stagger(1)}>
+          <DonutChart totalLabel="complaints" rows={complaints.by_priority.map((p) => ({ label: humanize(p.priority), value: p.count }))} />
+        </ChartCard>
+        <ChartCard title="By category" subtitle="What complaints are about" icon={PieIcon} className="lg:col-span-4" style={stagger(2)}>
+          <DonutChart totalLabel="complaints" rows={complaints.by_category.map((c) => ({ label: humanize(c.category), value: c.count }))} />
+        </ChartCard>
+      </div>
     </div>
   );
 }

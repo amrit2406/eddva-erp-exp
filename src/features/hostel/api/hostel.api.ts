@@ -967,12 +967,77 @@ export async function getAlerts(view: AlertView, params: ListParams = {}): Promi
   return unwrapRecord(response.data);
 }
 
-// Dashboard
-export type DashboardSectionKey = 'summary' | 'occupancy' | 'gate-status' | 'attendance' | 'complaints' | 'fees' | 'mess';
+// Dashboard — GET /hostel/dashboard/summary. Money fields arrive as strings ("5000.00").
+interface SessionAttendance {
+  present: number;
+  absent: number;
+  on_leave: number;
+}
 
-export async function getDashboardSection(section: DashboardSectionKey): Promise<RecordResult> {
-  const response = await axiosInstance.get(`/hostel/dashboard/${section}`);
-  return unwrapRecord(response.data);
+export interface HostelDashboardSummary {
+  occupancy: {
+    total_blocks: number;
+    active_blocks: number;
+    total_rooms: number;
+    rooms_available: number;
+    rooms_full: number;
+    rooms_under_maintenance: number;
+    total_capacity: number;
+    occupied_places: number;
+    vacant_places: number;
+    occupancy_percentage: number;
+    beds: { total_beds: number; occupied_beds: number; vacant_beds: number };
+    residents: { total_residents: number; active: number; vacated: number; suspended: number };
+  };
+  gate: {
+    currently_out: number;
+    expected_returns_today: number;
+    overdue_passes: number;
+    todays_outings: number;
+    todays_returns: number;
+    pending_approvals: number;
+  };
+  attendance: {
+    date: string;
+    present: number;
+    absent: number;
+    on_leave: number;
+    unaccounted_absences: number;
+    by_session: Record<string, SessionAttendance>;
+    unmarked: Record<string, number>;
+  };
+  complaints: { open: number; in_progress: number; urgent: number; unassigned: number; resolved: number; closed: number };
+  fees: {
+    total_invoices: number;
+    total_due: string;
+    total_paid: string;
+    outstanding: string;
+    outstanding_invoices: number;
+    overdue_invoices: number;
+    overdue_amount: string;
+  };
+  mess: {
+    date: string;
+    expected_meals: number;
+    opted_in: number;
+    opted_out: number;
+    consumed: number;
+    missed: number;
+    by_meal: {
+      meal_type: string;
+      opted_in: number;
+      opted_out: number;
+      consumed: number;
+      missed: number;
+      expected_meals: number;
+      consumption_rate: number | null;
+    }[];
+  };
+}
+
+export async function getDashboardSummary(): Promise<HostelDashboardSummary> {
+  const response = await axiosInstance.get('/hostel/dashboard/summary');
+  return response.data.data ?? response.data;
 }
 
 // Reports

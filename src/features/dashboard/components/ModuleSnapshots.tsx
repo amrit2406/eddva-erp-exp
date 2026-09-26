@@ -15,7 +15,7 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import type { DashboardData } from '../types/dashboard.types';
-import { rupees, toNumber } from '../utils/format';
+import { rupees, toNumber } from '../../../utils/dashboardFormat';
 
 interface Snapshot {
   title: string;
@@ -35,10 +35,10 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
       icon: Calculator,
       to: '/accounts/dashboard',
       lines: [
-        ['Financial year', accounts.open_financial_year ? `FY ${accounts.open_financial_year.fyLabel}` : 'None open'],
-        ['Vouchers this month', accounts.vouchers_posted_this_month],
-        ['Ledger accounts', accounts.active_ledger_accounts],
-        ['Cost centers', accounts.active_cost_centers],
+        ['Financial year', accounts.overview.open_financial_year ? `FY ${accounts.overview.open_financial_year.fyLabel}` : 'None open'],
+        ['Vouchers posted', accounts.vouchers.by_status.find((s) => s.status === 'POSTED')?.count ?? 0],
+        ['Drafts pending', accounts.vouchers.draft_pending],
+        ['Ledger accounts', accounts.overview.active_ledger_accounts],
       ],
     },
     sp && {
@@ -95,10 +95,10 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
       icon: UtensilsCrossed,
       to: '/canteen/dashboard',
       lines: [
-        ["Today's orders", canteen.todays_order_count],
-        ["Today's revenue", rupees(canteen.todays_revenue)],
-        ['Open POS shifts', canteen.active_pos_shifts],
-        ['Members', canteen.total_members],
+        ["Today's orders", canteen.today.order_count],
+        ["Today's revenue", rupees(canteen.today.revenue)],
+        ['Net sales', rupees(canteen.orders.netSales)],
+        ['Open POS shifts', canteen.pos.active_shifts],
       ],
     },
     library && {
@@ -107,10 +107,10 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
       icon: BookOpen,
       to: '/library/dashboard',
       lines: [
-        ['Books', library.total_books],
-        ['Currently issued', library.currently_issued],
-        ['Overdue', library.overdue],
-        ['Members', library.total_members],
+        ['Titles', library.catalog.total_books],
+        ['On the shelf', `${library.catalog.available_copies} of ${library.catalog.total_copies}`],
+        ['Currently issued', library.issues.currently_issued],
+        ['Overdue', library.issues.overdue],
       ],
     },
     transport && {
@@ -119,10 +119,10 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
       icon: Bus,
       to: '/transport/dashboard',
       lines: [
-        ['Active vehicles', transport.active_vehicles],
-        ['Routes', transport.total_routes],
-        ['Passengers', transport.active_passengers],
-        ['Fees this month', rupees(transport.fee_collection_this_month)],
+        ['Active vehicles', transport.fleet.active_vehicles],
+        ['Routes', transport.fleet.total_routes],
+        ['Passengers', transport.passengers.active],
+        ['Fees collected', rupees(transport.fees.collection_in_range)],
       ],
     },
     sports && {
@@ -131,10 +131,10 @@ function buildSnapshots(data: DashboardData): Snapshot[] {
       icon: Trophy,
       to: '/sports/dashboard',
       lines: [
-        ['Ongoing tournaments', sports.ongoing_tournaments],
-        ['Upcoming fixtures', sports.upcoming_fixtures],
-        ['Participants', sports.total_participants],
-        ['Houses', sports.total_houses],
+        ['Ongoing tournaments', sports.tournaments.ongoing],
+        ['Upcoming tournaments', sports.tournaments.upcoming],
+        ['Participants', sports.participants.total],
+        ['Houses', sports.houses.total],
       ],
     },
     fo && {

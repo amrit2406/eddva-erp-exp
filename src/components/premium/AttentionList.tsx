@@ -1,6 +1,19 @@
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertOctagon, AlertTriangle, ArrowUpRight, ShieldCheck } from 'lucide-react';
-import type { AttentionItem, Severity } from '../utils/attention';
+
+export type Severity = 'critical' | 'warning';
+
+export interface AttentionItem {
+  module: string;
+  label: string;
+  count: number;
+  detail?: string;
+  // For amounts where the count is just a 0/1 flag.
+  hideCount?: boolean;
+  severity: Severity;
+  to: string;
+}
 
 // Status colors are reserved for state and always paired with an icon + text.
 const SEVERITY: Record<Severity, { color: string; tint: string; label: string; icon: typeof AlertTriangle }> = {
@@ -8,29 +21,8 @@ const SEVERITY: Record<Severity, { color: string; tint: string; label: string; i
   warning: { color: '#c98500', tint: 'rgb(250 178 25 / 0.12)', label: 'Warning', icon: AlertTriangle },
 };
 
-// How many modules are free of open items — pinned to the bottom of the card.
-function HealthFooter({ items, moduleCount }: { items: AttentionItem[]; moduleCount: number }) {
-  if (moduleCount === 0) return null;
-  const flagged = new Set(items.map((item) => item.module.replace(/^(Sales|Purchase)$/, 'Sales & Purchase'))).size;
-  const healthy = Math.max(0, moduleCount - flagged);
-  const pct = (healthy / moduleCount) * 100;
-
-  return (
-    <div className="mt-4 rounded-2xl bg-slate-50/80 px-4 py-3 ring-1 ring-slate-100">
-      <div className="flex items-baseline justify-between text-xs">
-        <span className="font-medium text-slate-600">Module health</span>
-        <span className="text-slate-500">
-          <span className="font-semibold text-slate-900 tabular-nums">{healthy}</span> of {moduleCount} with no open items
-        </span>
-      </div>
-      <div className="mt-2 h-2 rounded-full bg-slate-200/70 overflow-hidden" role="meter" aria-label="Module health" aria-valuemin={0} aria-valuemax={moduleCount} aria-valuenow={healthy}>
-        <div className="h-full rounded-full bg-gradient-to-r from-brand-navy to-brand transition-[width] duration-700 ease-out" style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
-
-export default function AttentionList({ items, moduleCount }: { items: AttentionItem[]; moduleCount: number }) {
+// Pinned below the list, e.g. a health summary.
+export default function AttentionList({ items, footer }: { items: AttentionItem[]; footer?: ReactNode }) {
   if (items.length === 0) {
     return (
       <div className="flex flex-1 flex-col">
@@ -43,7 +35,7 @@ export default function AttentionList({ items, moduleCount }: { items: Attention
             <p className="text-xs text-slate-500">Nothing needs attention right now</p>
           </div>
         </div>
-        <HealthFooter items={items} moduleCount={moduleCount} />
+        {footer}
       </div>
     );
   }
@@ -106,7 +98,7 @@ export default function AttentionList({ items, moduleCount }: { items: Attention
         </ul>
       </div>
 
-      <HealthFooter items={items} moduleCount={moduleCount} />
+      {footer}
     </div>
   );
 }

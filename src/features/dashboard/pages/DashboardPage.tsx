@@ -18,15 +18,17 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
 import ErrorState from '../../../components/feedback/ErrorState';
-import { ChartCard, DonutChart, Funnel, Gauge, GradientArea, GroupedColumns, Leaderboard, StockTreemap } from '../components/charts';
-import AttentionList from '../components/AttentionList';
-import DashboardSkeleton from '../components/DashboardSkeleton';
+import { ChartCard, DonutChart, Funnel, Gauge, GradientArea, GroupedColumns, Leaderboard, StockTreemap } from '../../../components/premium/charts';
+import AttentionList from '../../../components/premium/AttentionList';
+import DashboardSkeleton from '../../../components/premium/DashboardSkeleton';
+import KpiTile from '../../../components/premium/KpiTile';
+import SectionHeading from '../../../components/premium/SectionHeading';
 import HeroBanner from '../components/HeroBanner';
-import KpiTile from '../components/KpiTile';
+import ModuleHealth from '../components/ModuleHealth';
 import ModuleSnapshots from '../components/ModuleSnapshots';
 import type { DashboardData, DateRange } from '../types/dashboard.types';
 import { collectAttentionItems } from '../utils/attention';
-import { compactRupees, humanize, rupees, toNumber } from '../utils/format';
+import { compactRupees, humanize, rupees, toNumber } from '../../../utils/dashboardFormat';
 import { formatDate } from '../../../utils/formatDate';
 
 function rangeLabel(range?: DateRange): string {
@@ -43,15 +45,6 @@ const stagger = (index: number) => ({ animationDelay: `${Math.min(index, 10) * 5
 
 // Bento pairs: when a partner card is missing, the survivor takes the full row.
 const span = (partnerPresent: unknown, cols: string) => (partnerPresent ? cols : 'lg:col-span-12');
-
-function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
-  return (
-    <div className="lg:col-span-12 pt-2">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">{eyebrow}</p>
-      <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-900">{title}</h2>
-    </div>
-  );
-}
 
 interface Kpi {
   label: string;
@@ -107,16 +100,16 @@ function buildKpis({ sales_purchase: sp, inventory, hostel, front_office: fo, ad
     },
     canteen && {
       label: 'Canteen wallets',
-      value: rupees(canteen.total_active_wallet_balance),
+      value: rupees(canteen.members.total_active_wallet_balance),
       icon: Wallet,
-      hint: `${canteen.total_members} members`,
+      hint: `${canteen.members.total_members} members · ${canteen.members.active_wallets} wallets`,
       accent: '#c98500',
     },
     transport && {
       label: 'Transport fees',
-      value: rupees(transport.fee_collection_this_month),
+      value: rupees(transport.fees.collection_in_range),
       icon: Bus,
-      hint: 'Collected this month',
+      hint: `${transport.fees.payments_in_range} payment${transport.fees.payments_in_range === 1 ? '' : 's'} · ${rangeLabel(transport.range)}`,
       accent: '#0891b2',
     },
   ];
@@ -141,7 +134,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-8 space-y-5">
           <HeroBanner
             attentionCount={attention.length}
-            financialYear={accounts?.open_financial_year?.fyLabel}
+            financialYear={accounts?.overview.open_financial_year?.fyLabel}
             visitorsOnCampus={fo?.visitors.currently_checked_in}
             updatedAt={dataUpdatedAt}
             refreshing={isFetching}
@@ -157,7 +150,10 @@ export default function DashboardPage() {
         </div>
 
         <ChartCard title="Needs attention" subtitle="Open items across modules" icon={Bell} className="lg:col-span-4" style={stagger(2)} fill>
-          <AttentionList items={attention} moduleCount={Object.values(data).filter(Boolean).length} />
+          <AttentionList
+            items={attention}
+            footer={<ModuleHealth items={attention} moduleCount={Object.values(data).filter(Boolean).length} />}
+          />
         </ChartCard>
       </div>
 

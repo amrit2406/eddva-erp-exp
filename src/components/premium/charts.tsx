@@ -1,4 +1,5 @@
 import { useId, type CSSProperties, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
   Area,
@@ -172,6 +173,8 @@ interface Row {
   label: string;
   value: number;
   detail?: string;
+  // Makes the row a link (leaderboards).
+  to?: string;
 }
 
 // Donut with the total in the middle and a valued legend beside it.
@@ -219,6 +222,16 @@ export function DonutChart({ rows, totalLabel, format = plain }: { rows: Row[]; 
   );
 }
 
+function LeaderboardRow({ to, children }: { to?: string; children: ReactNode }) {
+  const className = 'flex items-center gap-3';
+  if (!to) return <div className={className}>{children}</div>;
+  return (
+    <Link to={to} className={`${className} -mx-2 rounded-xl px-2 py-1 transition-colors hover:bg-slate-50`}>
+      {children}
+    </Link>
+  );
+}
+
 // Ranked list with a rank badge, colored progress bar and the value.
 export function Leaderboard({ rows, format = plain }: { rows: Row[]; format?: ValueFormatter }) {
   if (rows.length === 0) return <EmptyChart />;
@@ -230,7 +243,7 @@ export function Leaderboard({ rows, format = plain }: { rows: Row[]; format?: Va
         const color = colorAt(index);
         return (
           <li key={`${row.label}-${index}`} className="group" title={row.detail}>
-            <div className="flex items-center gap-3">
+            <LeaderboardRow to={row.to}>
               <span
                 className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold"
                 style={{ background: `${color}1f`, color: LIGHT_FILLS.has(color) ? '#334155' : color }}
@@ -250,7 +263,7 @@ export function Leaderboard({ rows, format = plain }: { rows: Row[]; format?: Va
                 </div>
                 {row.detail && <p className="mt-1 text-[11px] text-slate-400 truncate">{row.detail}</p>}
               </div>
-            </div>
+            </LeaderboardRow>
           </li>
         );
       })}

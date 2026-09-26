@@ -1,25 +1,22 @@
+import type { AttentionItem } from '../../../components/premium/AttentionList';
 import type { DashboardData } from '../types/dashboard.types';
-import { rupees, toNumber } from './format';
-
-export type Severity = 'critical' | 'warning';
-
-export interface AttentionItem {
-  module: string;
-  label: string;
-  count: number;
-  detail?: string;
-  // For amounts where the count is just a 0/1 flag.
-  hideCount?: boolean;
-  severity: Severity;
-  to: string;
-}
+import { rupees, toNumber } from '../../../utils/dashboardFormat';
 
 // Everything across modules that someone should act on. Zero counts are dropped.
 export function collectAttentionItems(data: DashboardData): AttentionItem[] {
   const { accounts, sales_purchase: sp, canteen, library, transport, front_office: fo, inventory, admission, hostel, alumni } = data;
   const items: (AttentionItem | false | undefined)[] = [
-    transport && { module: 'Transport', label: 'Unresolved alerts', count: transport.unresolved_alerts, severity: 'critical', to: '/transport/dashboard' },
-    library && { module: 'Library', label: 'Overdue books', count: library.overdue, severity: 'critical', to: '/library/dashboard' },
+    transport && { module: 'Transport', label: 'Unresolved alerts', count: transport.alerts.unresolved, severity: 'critical', to: '/transport/dashboard' },
+    library && { module: 'Library', label: 'Overdue books', count: library.issues.overdue, severity: 'critical', to: '/library/dashboard' },
+    canteen && {
+      module: 'Canteen',
+      label: 'POS cash variance',
+      count: canteen.pos.totalVariance !== 0 ? 1 : 0,
+      detail: `${rupees(Math.abs(canteen.pos.totalVariance))} ${canteen.pos.totalVariance > 0 ? 'over' : 'short'} expected`,
+      hideCount: true,
+      severity: 'critical',
+      to: '/canteen/dashboard',
+    },
     hostel && { module: 'Hostel', label: 'Overdue gate passes', count: hostel.gate.overdue_passes, severity: 'critical', to: '/hostel/dashboard' },
     hostel && { module: 'Hostel', label: 'Urgent complaints', count: hostel.complaints.urgent, severity: 'critical', to: '/hostel/dashboard' },
     fo && { module: 'Front office', label: 'Overdue follow-ups', count: fo.enquiries.overdue_followups, severity: 'critical', to: '/front-office' },
@@ -56,8 +53,8 @@ export function collectAttentionItems(data: DashboardData): AttentionItem[] {
       severity: 'warning',
       to: '/sales-purchase/dashboard',
     },
-    accounts && { module: 'Accounts', label: 'Draft vouchers pending', count: accounts.draft_vouchers_pending, severity: 'warning', to: '/accounts/dashboard' },
-    canteen && { module: 'Canteen', label: 'Unpaid orders', count: canteen.unpaid_orders, severity: 'warning', to: '/canteen/dashboard' },
+    accounts && { module: 'Accounts', label: 'Draft vouchers pending', count: accounts.vouchers.draft_pending, severity: 'warning', to: '/accounts/dashboard' },
+    canteen && { module: 'Canteen', label: 'Unpaid orders today', count: canteen.today.unpaid_orders, severity: 'warning', to: '/canteen/dashboard' },
     inventory && { module: 'Inventory', label: 'Low-stock items', count: inventory.low_stock_items, severity: 'warning', to: '/inventory' },
     admission && { module: 'Admission', label: 'Enquiry follow-ups due', count: admission.kpis.enquiry_followups_due, severity: 'warning', to: '/admission/dashboard' },
     hostel && { module: 'Hostel', label: 'Gate passes to approve', count: hostel.gate.pending_approvals, severity: 'warning', to: '/hostel/dashboard' },
@@ -73,8 +70,8 @@ export function collectAttentionItems(data: DashboardData): AttentionItem[] {
     library && {
       module: 'Library',
       label: 'Pending fines',
-      count: library.pending_fines_total > 0 ? 1 : 0,
-      detail: rupees(library.pending_fines_total),
+      count: library.fines.pending_total > 0 ? 1 : 0,
+      detail: rupees(library.fines.pending_total),
       hideCount: true,
       severity: 'warning',
       to: '/library/dashboard',

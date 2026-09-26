@@ -751,7 +751,47 @@ export async function getNotifications(
   return { data: Array.isArray(rows) ? rows : [], pagination: response.data.pagination };
 }
 
-export async function getDashboardSummary(): Promise<unknown> {
+// Shape of GET /admission/dashboard/summary (same block the main dashboard embeds).
+export interface AdmissionDashboardSummary {
+  filters?: Record<string, unknown>;
+  kpis: {
+    total_enquiries: number;
+    new_enquiries: number;
+    enquiry_followups_due: number;
+    applications: number;
+    applications_under_review: number;
+    tests_scheduled: number;
+    interviews_scheduled: number;
+    shortlisted: number;
+    offers_issued: number;
+    offers_accepted: number;
+    admission_fees_paid: {
+      applications_fully_paid: number;
+      payments_recorded: number;
+      // Arrives as a string, e.g. "0".
+      amount_collected: number | string;
+    };
+    confirmed_admissions: number;
+    available_seats: number;
+  };
+  funnel: { stage: string; count: number }[];
+  applications_by_status: Record<string, number>;
+  seats: { total_seats: number; offered: number; accepted: number; confirmed: number; available: number };
+  recent?: {
+    applications?: {
+      application_id: number;
+      application_number: string;
+      status: string;
+      application_date: string;
+      applicant?: { name?: string };
+      program?: { name?: string };
+    }[];
+    // Item shape not seen yet; rendered defensively.
+    confirmations?: Record<string, unknown>[];
+  };
+}
+
+export async function getDashboardSummary(): Promise<AdmissionDashboardSummary> {
   const response = await axiosInstance.get('/admission/dashboard/summary');
   return response.data.data ?? response.data;
 }
