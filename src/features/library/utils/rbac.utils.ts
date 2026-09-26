@@ -1,4 +1,18 @@
+import { config } from '../../../config/env';
+import { isInstituteAdminToken } from '../../../utils/jwt';
 import type { RolePermission } from '../types/library.types';
+
+// Library has no separate admin login: the signed-in ERP token says whether
+// this is the Institute Admin, which decides what a new role may be given.
+export function useIsInstituteAdmin(): boolean {
+  return isInstituteAdminToken(config.apiToken?.trim() || localStorage.getItem('accessToken') || '');
+}
+
+// Roles, permissions and users stay open to anyone who can reach them —
+// the backend refuses what a person isn't allowed to do (as before).
+export function useCanManageAccess(): boolean {
+  return true;
+}
 
 export function sanitizeRolePermissions(permissions: RolePermission[]): RolePermission[] {
   // Remove duplicate resources and merge actions
@@ -36,17 +50,4 @@ export function filterGrantablePermissions(
     
     return perm.actions.every((action) => myActions.has(action));
   });
-}
-
-export function getApiErrorMessage(error: any, defaultMessage: string): string {
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-  if (error.response?.data?.error) {
-    return error.response.data.error;
-  }
-  if (error.message) {
-    return error.message;
-  }
-  return defaultMessage;
 }

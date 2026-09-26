@@ -1,96 +1,154 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, BookOpen, Clock } from 'lucide-react';
-import Card from '../../../../components/ui/Card';
-import EmptyState from '../../../../components/ui/EmptyState';
-import { useToast } from '../../../../hooks/useToast';
-import { getOverdueIssues } from '../../api/issues.api';
-import { getApiErrorMessage } from '../../utils/apiError';
-import IssuesTabs from '../../components/issues/IssuesTabs';
-import type { IssueDetail } from '../../types/library.types';
-
-function daysOverdue(dueDate: string): number {
-  const diff = Date.now() - new Date(dueDate).getTime();
-  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-}
-
-function totalFine(issue: IssueDetail): number {
-  return (issue.fines ?? []).reduce((sum, fine) => sum + Number(fine.amount ?? 0), 0);
-}
+import { useQuery } from '@tanstack/react-query';
+import { Eye, RefreshCw, TriangleAlert, Undo2 } from 'lucide-react';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import IconAction from '../../../../components/premium/list/IconAction';
+import { SearchBox } from '../../../../components/premium/list/ListControls';
+import ListHeader from '../../../../components/premium/list/ListHeader';
+import { EmptyState, ListSkeleton, NoResults } from '../../../../components/premium/list/ListStates';
+import PagedTable from '../../../../components/premium/list/PagedTable';
+import { shortDate } from '../../../../components/premium/styles';
+import { rupees } from '../../../../utils/dashboardFormat';
+import LoanTabs from '../../components/issues/LoanTabs';
+import { RenewDialog, ReturnDialog } from '../../components/loans/LoanDialogs';
+import { getIssues } from '../../api/issues.api';
+import { useToday } from '../../hooks/useToday';
+import type { BookIssue } from '../../types/library.types';
+import { getApiErrorMessage } from '../../utils/errors';
+import { MAX_RENEWALS, daysBetween, fineIfReturnedToday, loanState, memberTypeInfo } from '../../utils/labels';
 
 export default function OverdueDashboardPage() {
-  const { toast } = useToast();
-  const [issues, setIssues] = useState<IssueDetail[]>([]);
-  const [loading, setLoading] = useState(true);
+  const today = useToday();
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [returning, setReturning] = useState<BookIssue | null>(null);
+  const [renewing, setRenewing] = useState<BookIssue | null>(null);
+  // Worked out from due dates, so it's right even before the nightly overdue job runs.
+  const { data: issues = [], isLoading, error, refetch } = useQuery({ queryKey: ['library', 'issues'], queryFn: () => getIssues() });
 
-  useEffect(() => {
-    load();
-  }, []);
+  const overdue = useMemo(() => issues.filter((i) => loanState(i, today) === 'overdue').sort((a, b) => a.due_date.localeCompare(b.due_date)), [issues, today]);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return overdue.filter((i) => !q || [i.copy?.book?.title, i.member?.name, i.member?.library_card_number].some((v) => v?.toLowerCase().includes(q)));
+  }, [overdue, search]);
 
-  async function load() {
-    try {
-      setLoading(true);
-      const data = await getOverdueIssues();
-      setIssues(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) return;
-      toast.error(getApiErrorMessage(err, 'Failed to load overdue issues'));
-    } finally {
-      setLoading(false);
-    }
-  }
+  const people = new Set(overdue.map((i) => i.member_id)).size;
+  const finesDue = overdue.reduce((s, i) => s + fineIfReturnedToday(i, today), 0);
+
+  if (error) return <ErrorState message={getApiErrorMessage(error, 'Failed to load overdue books')} onRetry={() => refetch()} />;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Overdue Dashboard</h1>
-        <p className="text-slate-600 mt-1">Books past their due date, with fines accrued so far</p>
-      </div>
+    <div className="space-y-5">
+      <ListHeader icon={TriangleAlert} title="Overdue books" description="Books past their due date — the longest late first. Remind these members to bring them back.">
+        <div className="space-y-4">
+          <LoanTabs overdue={overdue.length} />
+          {overdue.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 sm:max-w-xl">
+              {[
+                ['Books late', `${overdue.length}`],
+                ['Members', `${people}`],
+                ['Fines if back today', rupees(finesDue)],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl bg-white/70 px-4 py-3 ring-1 ring-slate-200/70">
+                  <p className="text-xs font-medium text-slate-500">{label}</p>
+                  <p className="text-lg font-semibold tabular-nums text-slate-900">{value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </ListHeader>
 
-      <IssuesTabs />
-
-      {loading ? (
-        <div className="text-center py-8 text-slate-500">Loading...</div>
-      ) : issues.length === 0 ? (
-        <Card className="border-slate-200">
-          <EmptyState
-            icon={AlertTriangle}
-            title="No overdue books"
-            description="All active loans are within their due date."
-          />
-        </Card>
+      {isLoading ? (
+        <ListSkeleton />
+      ) : overdue.length === 0 ? (
+        <EmptyState icon={TriangleAlert} title="Nothing is overdue" message="Every lent book is still within its due date." />
       ) : (
-        <div className="space-y-3">
-          {issues.map((issue) => (
-            <Link key={issue.issue_id} to={`/library/issues/${issue.issue_id}`}>
-              <Card className="border-red-200 bg-red-50 hover:bg-red-100 transition-colors">
-                <div className="p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
+        <>
+          <SearchBox
+            value={search}
+            onChange={(v) => {
+              setSearch(v);
+              setPage(1);
+            }}
+            placeholder="Search by book, member or card"
+          />
+          {filtered.length === 0 ? (
+            <NoResults onClear={() => setSearch('')} />
+          ) : (
+            <PagedTable
+              rows={filtered}
+              rowKey={(i) => i.issue_id}
+              page={page}
+              onPage={setPage}
+              noun="books"
+              minWidth={780}
+              columns={[
+                {
+                  header: 'Late by',
+                  cell: (i) => {
+                    const days = daysBetween(i.due_date, today);
+                    return (
+                      <span className="inline-flex h-10 w-14 flex-col items-center justify-center rounded-xl bg-red-50 text-red-700">
+                        <span className="text-base font-bold leading-none">{days}</span>
+                        <span className="text-[10px]">day{days === 1 ? '' : 's'}</span>
+                      </span>
+                    );
+                  },
+                },
+                {
+                  header: 'Book',
+                  cell: (i) => (
                     <div>
-                      <p className="font-medium text-slate-900">
-                        {issue.member?.name ?? `Member #${issue.member_id}`}
-                        <span className="text-slate-500 font-normal"> — {issue.member?.library_card_number}</span>
-                      </p>
-                      <p className="text-sm text-slate-600 flex items-center gap-1 mt-0.5">
-                        <BookOpen className="h-3.5 w-3.5" />
-                        {issue.copy?.book?.title ?? issue.book_title}
+                      <Link to={`/library/issues/${i.issue_id}`} className="font-semibold text-brand-navy hover:text-brand hover:underline">
+                        {i.copy?.book?.title ?? `Copy #${i.copy_id}`}
+                      </Link>
+                      <p className="text-xs text-slate-500">Was due {shortDate(i.due_date)}</p>
+                    </div>
+                  ),
+                },
+                {
+                  header: 'Member',
+                  cell: (i) => (
+                    <div>
+                      <Link to={`/library/members/${i.member_id}`} className="text-slate-800 hover:text-brand">
+                        {i.member?.name ?? `Member #${i.member_id}`}
+                      </Link>
+                      <p className="text-xs text-slate-500">
+                        {memberTypeInfo(i.member?.member_type).label} · {i.member?.library_card_number}
                       </p>
                     </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-medium text-red-700 flex items-center gap-1 justify-end">
-                      <Clock className="h-3.5 w-3.5" />
-                      {daysOverdue(issue.due_date)} day(s) overdue
-                    </p>
-                    <p className="text-sm text-slate-600 mt-0.5">Fine so far: ₹{totalFine(issue).toFixed(2)}</p>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                  ),
+                },
+                {
+                  header: 'Fine if back today',
+                  align: 'right',
+                  cell: (i) => {
+                    const fine = fineIfReturnedToday(i, today);
+                    return <span className={fine > 0 ? 'font-semibold text-red-600' : 'text-slate-400'}>{fine > 0 ? rupees(fine) : 'In free days'}</span>;
+                  },
+                },
+              ]}
+              actions={(i) => (
+                <>
+                  <IconAction icon={Eye} label="View loan" to={`/library/issues/${i.issue_id}`} tone="brand" />
+                  <IconAction
+                    icon={RefreshCw}
+                    label={i.renewal_count >= MAX_RENEWALS ? `Already renewed ${MAX_RENEWALS} times` : 'Renew'}
+                    disabled={i.renewal_count >= MAX_RENEWALS}
+                    onClick={() => setRenewing(i)}
+                  />
+                  <IconAction icon={Undo2} label="Take back" onClick={() => setReturning(i)} />
+                </>
+              )}
+            />
+          )}
+        </>
       )}
+
+      <ReturnDialog issue={returning} onClose={() => setReturning(null)} />
+      <RenewDialog issue={renewing} onClose={() => setRenewing(null)} />
     </div>
   );
 }

@@ -1,261 +1,242 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Users, Shield, Trash2, KeyRound } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CheckCircle2, KeyRound, Search, Shield, UserPlus, Users, UserX, X } from 'lucide-react';
+import ConfirmDialog from '../../../../components/feedback/ConfirmDialog';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import PasswordInput from '../../../../components/premium/form/PasswordInput';
+import IconAction from '../../../../components/premium/list/IconAction';
+import ListHeader from '../../../../components/premium/list/ListHeader';
+import { EmptyState, ListSkeleton, NoResults } from '../../../../components/premium/list/ListStates';
+import Pagination from '../../../../components/premium/list/Pagination';
 import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
 import Modal from '../../../../components/ui/Modal';
-import {
-  getUserAssignments,
-  revokeUserAssignment,
-  resetUserAssignmentPassword,
-} from '../../api/library.api';
+import { useToast } from '../../../../hooks/useToast';
+import InstituteAdminGuard from '../../components/rbac/InstituteAdminGuard';
+import { getUserAssignments, resetUserAssignmentPassword, revokeUserAssignment } from '../../api/library.api';
 import type { UserAssignment } from '../../types/library.types';
+import { getApiErrorMessage } from '../../utils/errors';
+import { useCanManageAccess } from '../../utils/rbac.utils';
 
-export default function UsersPage() {
-  const [assignments, setAssignments] = useState<UserAssignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [resetTarget, setResetTarget] = useState<UserAssignment | null>(null);
-  const [newPassword, setNewPassword] = useState('');
-  const [resetting, setResetting] = useState(false);
-  const [resetError, setResetError] = useState<string | null>(null);
-  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+const PAGE_SIZE = 10;
+const MIN_PASSWORD = 8;
 
-  useEffect(() => {
-    loadAssignments();
-  }, []);
+const shortDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
-  async function loadAssignments() {
-    try {
-      setLoading(true);
-      const data = await getUserAssignments();
-      setAssignments(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(err instanceof Error ? err.message : 'Failed to load user assignments');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const filteredAssignments = assignments.filter((assignment) => {
-    const query = search.toLowerCase();
-    return (
-      assignment.user_name.toLowerCase().includes(query) ||
-      assignment.user_email.toLowerCase().includes(query) ||
-      assignment.username.toLowerCase().includes(query) ||
-      (assignment.role?.name ?? '').toLowerCase().includes(query)
-    );
+// Change a person's login password, with a show/hide eye so it can be checked before saving.
+function ResetPasswordDialog({ user, onClose }: { user: UserAssignment; onClose: () => void }) {
+  const [password, setPassword] = useState('');
+  const [done, setDone] = useState<string | null>(null);
+  const reset = useMutation({
+    mutationFn: () => resetUserAssignmentPassword(user.id, { new_password: password }),
+    onSuccess: (result) => {
+      setDone(result?.message || 'Password changed.');
+      setPassword('');
+    },
   });
-
-  const handleRevoke = async (id: number, userName: string) => {
-    if (!window.confirm(`Revoke library access for "${userName}"?`)) {
-      return;
-    }
-    try {
-      await revokeUserAssignment(id);
-      setAssignments(assignments.filter((a) => a.id !== id));
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      alert(err.response?.data?.message || (err instanceof Error ? err.message : 'Failed to revoke assignment'));
-    }
-  };
-
-  const openResetModal = (assignment: UserAssignment) => {
-    setResetTarget(assignment);
-    setNewPassword('');
-    setResetError(null);
-    setResetSuccess(null);
-  };
-
-  const closeResetModal = () => {
-    setResetTarget(null);
-    setNewPassword('');
-    setResetError(null);
-    setResetSuccess(null);
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!resetTarget) return;
-
-    try {
-      setResetting(true);
-      setResetError(null);
-      const result = await resetUserAssignmentPassword(resetTarget.id, {
-        new_password: newPassword,
-      });
-      setResetSuccess(result.message);
-      setNewPassword('');
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setResetError(err.response?.data?.message || 'Failed to reset password');
-    } finally {
-      setResetting(false);
-    }
-  };
+  const tooShort = password.length > 0 && password.length < MIN_PASSWORD;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Users</h1>
-          <p className="text-slate-600 mt-1">Manage library user role assignments</p>
+    <Modal isOpen onClose={() => !reset.isPending && onClose()} title="Reset password" size="md">
+      {done ? (
+        <div className="space-y-4">
+          <p className="flex items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" /> {done} Share the new password with {user.user_name} privately.
+          </p>
+          <div className="flex justify-end">
+            <Button onClick={onClose}>Done</Button>
+          </div>
         </div>
-        <Link to="/library/users/new">
-          <Button variant="primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Assign User
-          </Button>
-        </Link>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (password.length >= MIN_PASSWORD) reset.mutate();
+          }}
+          className="space-y-4"
+        >
+          <p className="text-sm text-slate-600">
+            Set a new password for <span className="font-medium text-slate-900">{user.user_name}</span> ({user.username}).
+          </p>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-slate-700">New password</span>
+            <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoFocus />
+            <span className={`mt-1 block text-xs ${tooShort ? 'text-red-600' : 'text-slate-500'}`}>
+              {tooShort ? `${MIN_PASSWORD - password.length} more character${MIN_PASSWORD - password.length === 1 ? '' : 's'} needed` : `At least ${MIN_PASSWORD} characters.`}
+            </span>
+          </label>
+          {reset.isError && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{getApiErrorMessage(reset.error, 'Could not reset the password')}</p>}
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="secondary" onClick={onClose} disabled={reset.isPending}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={reset.isPending || password.length < MIN_PASSWORD}>
+              {reset.isPending ? 'Saving…' : 'Set new password'}
+            </Button>
+          </div>
+        </form>
+      )}
+    </Modal>
+  );
+}
+
+export default function UsersPage() {
+  const isAdmin = useCanManageAccess();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pendingRevoke, setPendingRevoke] = useState<UserAssignment | null>(null);
+  const [resetTarget, setResetTarget] = useState<UserAssignment | null>(null);
+
+  const { data: users = [], isLoading, error, refetch } = useQuery({ queryKey: ['library', 'users'], queryFn: getUserAssignments, enabled: isAdmin });
+
+  const revoke = useMutation({
+    mutationFn: (user: UserAssignment) => revokeUserAssignment(user.id),
+    onSuccess: (_, user) => {
+      queryClient.setQueryData<UserAssignment[]>(['library', 'users'], (current) => current?.filter((u) => u.id !== user.id));
+      toast.success(`${user.user_name} can no longer use the Library`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not remove access')),
+    onSettled: () => setPendingRevoke(null),
+  });
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter((u) => [u.user_name, u.user_email, u.username, u.role?.name].some((v) => v?.toLowerCase().includes(q)));
+  }, [users, search]);
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)));
+
+  const newButton = (
+    <Link
+      to="/library/users/new"
+      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-navy to-brand px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand/25 transition hover:brightness-110"
+    >
+      <UserPlus className="h-4 w-4" /> New user
+    </Link>
+  );
+  const header = (
+    <ListHeader
+      icon={Users}
+      title="Users"
+      description="People who can use the Library, and the role that decides what each one can do."
+      actions={
+        isAdmin && (
+          <>
+            <Link to="/library/roles" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50">
+              <Shield className="h-4 w-4" /> Roles
+            </Link>
+            {newButton}
+          </>
+        )
+      }
+    />
+  );
+
+  if (!isAdmin) {
+    return (
+      <div className="space-y-5">
+        {header}
+        <InstituteAdminGuard section="Users" />
       </div>
+    );
+  }
+  if (error) return <ErrorState message={getApiErrorMessage(error, 'Failed to load users')} onRetry={() => refetch()} />;
 
-      <Card className="border-slate-200">
-        <div className="p-4 border-b border-slate-200">
-          <input
-            type="text"
-            placeholder="Search by name, email, username, or role..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
-          />
-        </div>
+  return (
+    <div className="space-y-5">
+      {header}
 
-        {loading ? (
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        ) : error ? (
-          <div className="p-8 text-center text-red-500">{error}</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">User</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Email</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Username</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-700">Role</th>
-                  <th className="text-right py-3 px-4 font-semibold text-slate-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAssignments.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-center py-8 text-slate-500">
-                      No user assignments found
-                    </td>
-                  </tr>
-                ) : (
-                  filteredAssignments.map((assignment) => (
-                    <tr key={assignment.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
-                            <Users className="h-4 w-4 text-slate-600" />
-                          </div>
-                          <div>
-                            <div className="font-medium text-slate-900">{assignment.user_name}</div>
-                            <div className="text-xs text-slate-500">{assignment.eddva_user_id}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">{assignment.user_email}</td>
-                      <td className="py-3 px-4">
-                        <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
-                          {assignment.username}
-                        </code>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                          <Shield className="h-3 w-3" />
-                          {assignment.role?.name ?? `Role #${assignment.role_id}`}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openResetModal(assignment)}
-                            title="Reset password"
-                          >
-                            <KeyRound className="h-4 w-4 text-[#008BE9]" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRevoke(assignment.id, assignment.user_name)}
-                            title="Revoke assignment"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-
-      <Modal
-        isOpen={!!resetTarget}
-        onClose={closeResetModal}
-        title={`Reset Password — ${resetTarget?.username ?? ''}`}
-        size="sm"
-      >
-        {resetSuccess ? (
-          <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-              {resetSuccess}
-            </div>
-            <div className="flex justify-end">
-              <Button variant="primary" onClick={closeResetModal}>
-                Done
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleResetPassword} className="space-y-4">
-            {resetError && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                {resetError}
-              </div>
-            )}
-            <div>
-              <label htmlFor="new_password" className="block text-sm font-medium text-slate-700 mb-1">
-                New Password *
-              </label>
+      {isLoading ? (
+        <ListSkeleton />
+      ) : users.length === 0 ? (
+        <EmptyState icon={Users} title="No users yet" message="Add the people who will issue books, collect fines or manage the catalogue, and give each one a role." action={newButton} />
+      ) : (
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
-                type="password"
-                id="new_password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008BE9] focus:border-transparent"
-                placeholder="NewLibraryPass#2026"
-                required
-                minLength={8}
+                type="search"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search by name, email, username or role"
+                aria-label="Search users"
+                className="w-full rounded-2xl bg-white py-2.5 pl-10 pr-10 text-sm shadow-soft ring-1 ring-slate-200/70 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand"
               />
+              {search && (
+                <button type="button" onClick={() => setSearch('')} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
-            <div className="flex justify-end gap-3">
-              <Button type="button" variant="ghost" onClick={closeResetModal} disabled={resetting}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" disabled={resetting}>
-                {resetting ? 'Resetting...' : 'Reset Password'}
-              </Button>
+            <p className="whitespace-nowrap text-xs text-slate-500">
+              {filtered.length} user{filtered.length === 1 ? '' : 's'}
+            </p>
+          </div>
+
+          {filtered.length === 0 ? (
+            <NoResults onClear={() => setSearch('')} />
+          ) : (
+            <div className="animate-rise overflow-hidden rounded-3xl bg-white shadow-soft ring-1 ring-slate-200/70">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="py-3 pl-5 pr-3">Person</th>
+                      <th className="px-3 py-3">Username</th>
+                      <th className="px-3 py-3">Role</th>
+                      <th className="px-3 py-3">Added on</th>
+                      <th className="py-3 pl-3 pr-5">
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((user) => (
+                      <tr key={user.id} className="transition-colors hover:bg-slate-50/80">
+                        <td className="py-3.5 pl-5 pr-3">
+                          <p className="font-semibold text-slate-900">{user.user_name}</p>
+                          <p className="text-xs text-slate-500">{user.user_email}</p>
+                        </td>
+                        <td className="px-3 py-3.5 font-mono text-xs text-slate-600">{user.username}</td>
+                        <td className="px-3 py-3.5">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-2.5 py-1 text-xs font-semibold text-brand-navy">
+                            <Shield className="h-3.5 w-3.5" /> {user.role?.name ?? `Role #${user.role_id}`}
+                          </span>
+                          {user.is_active === false && <span className="ml-2 text-xs font-medium text-slate-400">Inactive</span>}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 text-slate-600">{shortDate(user.assigned_at)}</td>
+                        <td className="py-3.5 pl-3 pr-5">
+                          <div className="flex items-center justify-end gap-0.5">
+                            <IconAction icon={KeyRound} label="Reset password" onClick={() => setResetTarget(user)} />
+                            <IconAction icon={UserX} label="Remove access" tone="danger" onClick={() => setPendingRevoke(user)} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination page={currentPage} pageSize={PAGE_SIZE} total={filtered.length} onPage={setPage} noun="users" />
             </div>
-          </form>
-        )}
-      </Modal>
+          )}
+        </>
+      )}
+
+      <ConfirmDialog
+        isOpen={pendingRevoke !== null}
+        onClose={() => !revoke.isPending && setPendingRevoke(null)}
+        onConfirm={() => pendingRevoke && revoke.mutate(pendingRevoke)}
+        title="Remove access?"
+        message={pendingRevoke ? `${pendingRevoke.user_name} will no longer be able to sign in to the Library. You can add them again later.` : ''}
+        confirmText={revoke.isPending ? 'Removing…' : 'Remove access'}
+      />
+      {resetTarget && <ResetPasswordDialog user={resetTarget} onClose={() => setResetTarget(null)} />}
     </div>
   );
 }

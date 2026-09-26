@@ -169,7 +169,7 @@ const navItems: NavItem[] = [
       { path: '/library/membership-rules', label: 'Membership Rules', icon: Settings },
       { path: '/library/members', label: 'Members', icon: UserPlus },
       { path: '/library/books', label: 'Books', icon: BookOpen },
-      { path: '/library/issues', label: 'Issues', icon: AlertTriangle },
+      { path: '/library/issues', label: 'Issues & Returns', icon: ArrowRightLeft },
       { path: '/library/reservations', label: 'Reservations', icon: Clock },
     ]
   },

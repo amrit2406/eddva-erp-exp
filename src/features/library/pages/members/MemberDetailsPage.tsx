@@ -1,261 +1,208 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen, AlertTriangle, Clock, Calendar } from 'lucide-react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getMember, getMemberCurrentIssues, getMemberFines, waiveFine, payFine, getFine } from '../../api/library.api';
-import type { Member, BookIssue, Fine, FineWaiveFormData, FinePayFormData } from '../../types/library.types';
-import { ROUTES } from '../../../../constants/routes';
-import FineTable from '../../components/fines/FineTable';
-import WaiveFineModal from '../../components/fines/WaiveFineModal';
-import PayFineModal from '../../components/fines/PayFineModal';
+import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, BookMarked, CircleOff, BookOpen, BookPlus, History, IdCard, IndianRupee, Pencil, UserRound } from 'lucide-react';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { DetailHeader, DetailSkeleton, InfoCard, NextStep } from '../../../../components/premium/detail/DetailParts';
+import IconAction from '../../../../components/premium/list/IconAction';
+import { StatusPill } from '../../../../components/premium/list/ListControls';
+import { btnPrimary, btnSecondary, longDate, shortDate } from '../../../../components/premium/styles';
+import { rupees, toNumber } from '../../../../utils/dashboardFormat';
+import { PayFineDialog, WaiveFineDialog } from '../../components/loans/FineDialogs';
+import { RenewDialog, ReturnDialog } from '../../components/loans/LoanDialogs';
+import LoanList from '../../components/loans/LoanList';
+import { getIssues } from '../../api/issues.api';
+import { getMember, getMemberFines, getMembershipRules } from '../../api/library.api';
+import { getReservations } from '../../api/reservations.api';
+import type { BookIssue, Fine } from '../../types/library.types';
+import { getApiErrorMessage } from '../../utils/errors';
+import { FINE_REASON, fineLeft, fineStatusInfo, isOut, memberStatusInfo, memberTypeInfo, memberTypePlural, reservationStatusInfo, ruleSentence } from '../../utils/labels';
+
+// Unpaid fines at or above this stop new loans (LIBRARY_FINE_BLOCK_THRESHOLD on the server).
+const FINE_BLOCK = 100;
 
 export default function MemberDetailsPage() {
-  const { id } = useParams<{ id: string }>();
-  const [member, setMember] = useState<Member | null>(null);
-  const [currentIssues, setCurrentIssues] = useState<BookIssue[]>([]);
-  const [fines, setFines] = useState<Fine[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedFine, setSelectedFine] = useState<Fine | null>(null);
-  const [isWaiveModalOpen, setIsWaiveModalOpen] = useState(false);
-  const [isPayModalOpen, setIsPayModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { id = '' } = useParams();
+  const [returning, setReturning] = useState<BookIssue | null>(null);
+  const [renewing, setRenewing] = useState<BookIssue | null>(null);
+  const [paying, setPaying] = useState<Fine | null>(null);
+  const [waiving, setWaiving] = useState<Fine | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [id]);
+  const { data: member, isLoading, error, refetch } = useQuery({ queryKey: ['library', 'member', id], queryFn: () => getMember(id), enabled: Boolean(id) });
+  const { data: fines = [] } = useQuery({ queryKey: ['library', 'member-fines', id], queryFn: () => getMemberFines(id), enabled: Boolean(id) });
+  const { data: issues = [] } = useQuery({ queryKey: ['library', 'issues'], queryFn: () => getIssues() });
+  const { data: rules = [] } = useQuery({ queryKey: ['library', 'membership-rules'], queryFn: getMembershipRules });
+  const { data: reservations = [] } = useQuery({ queryKey: ['library', 'reservations'], queryFn: () => getReservations() });
 
-  async function loadData() {
-    if (!id) return;
-    try {
-      setLoading(true);
-      const [memberData, issuesData, finesData] = await Promise.all([
-        getMember(id),
-        getMemberCurrentIssues(id),
-        getMemberFines(id)
-      ]);
-      setMember(memberData);
-      setCurrentIssues(issuesData);
-      setFines(finesData);
-      console.log('Fines data:', finesData);
-      if (finesData.length > 0) {
-        console.log('First fine:', finesData[0]);
-      }
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(err instanceof Error ? err.message : 'Failed to load member details');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const back = (
+    <Link to="/library/members" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+      <ArrowLeft className="h-4 w-4" /> Members
+    </Link>
+  );
 
-  async function handleWaiveFine(fineId: number, data: FineWaiveFormData) {
-    try {
-      setIsSubmitting(true);
-      await waiveFine(fineId, data);
-      // Refresh the specific fine
-      const updatedFine = await getFine(fineId);
-      setFines(fines.map(f => f.fine_id === fineId ? updatedFine : f));
-      setIsWaiveModalOpen(false);
-      setSelectedFine(null);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      console.error('Failed to waive fine:', err);
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function handlePayFine(fineId: number, data: FinePayFormData) {
-    try {
-      setIsSubmitting(true);
-      await payFine(fineId, data);
-      // Refresh the specific fine
-      const updatedFine = await getFine(fineId);
-      setFines(fines.map(f => f.fine_id === fineId ? updatedFine : f));
-      setIsPayModalOpen(false);
-      setSelectedFine(null);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      console.error('Failed to pay fine:', err);
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  function handleWaiveClick(fine: Fine) {
-    setSelectedFine(fine);
-    setIsWaiveModalOpen(true);
-  }
-
-  function handlePayClick(fine: Fine) {
-    setSelectedFine(fine);
-    setIsPayModalOpen(true);
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Member Details</h1>
-          <p className="text-slate-600 mt-1">View member information and activity</p>
-        </div>
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      </div>
-    );
-  }
-
+  if (isLoading) return <DetailSkeleton />;
   if (error || !member) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Member Details</h1>
-          <p className="text-slate-600 mt-1">View member information and activity</p>
-        </div>
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error || 'Member not found'}</div>
-        </Card>
+      <div className="space-y-5">
+        {back}
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load member')} onRetry={() => refetch()} />
       </div>
     );
   }
 
-  const totalFines = fines.reduce((sum, fine) => sum + (fine.paid ? 0 : fine.amount), 0);
+  const type = memberTypeInfo(member.member_type);
+  const status = memberStatusInfo(member.status);
+  const rule = rules.find((r) => r.member_type === member.member_type);
+  const theirs = issues.filter((i) => i.member_id === member.member_id).sort((a, b) => b.issue_date.localeCompare(a.issue_date));
+  const current = theirs.filter(isOut);
+  const history = theirs.filter((i) => !isOut(i));
+  const owed = fines.reduce((sum, f) => sum + fineLeft(f), 0);
+  const waiting = reservations.filter((r) => r.member_id === member.member_id && (r.status === 'pending' || r.status === 'ready_for_pickup'));
+  const slotsLeft = rule ? Math.max(0, rule.max_books_allowed - current.length) : 0;
+
+  // Why they can't borrow right now, if they can't.
+  const blocker =
+    member.status !== 'active'
+      ? `${member.name} is ${status.label.toLowerCase()}, so they can't borrow. Edit the member to make them active again.`
+      : !rule
+        ? `There's no membership rule for ${memberTypePlural(member.member_type).toLowerCase()} yet, so they can't borrow.`
+        : owed >= FINE_BLOCK
+          ? `${member.name} owes ${rupees(owed)} in fines. New loans are blocked until it's below ${rupees(FINE_BLOCK)}.`
+          : slotsLeft === 0
+            ? `${member.name} already has ${current.length} book${current.length === 1 ? '' : 's'}, the most allowed. A book must come back first.`
+            : null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link to={ROUTES.LIBRARY_MEMBERS}>
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Members
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Member Details</h1>
-          <p className="text-slate-600 mt-1">View member information and activity</p>
+    <div className="space-y-5">
+      {back}
+      <DetailHeader
+        icon={UserRound}
+        title={member.name}
+        status={
+          <>
+            <StatusPill label={type.label} color={type.color} />
+            <StatusPill label={status.label} color={status.color} />
+          </>
+        }
+        meta={`Card ${member.library_card_number}${member.external_ref_id ? ` · ${member.external_ref_id}` : ''} · Member since ${longDate(member.created_at)}`}
+        accent={member.status === 'active' ? undefined : status.color}
+        actions={
+          <>
+            {!blocker && (
+              <Link to={`/library/issues/desk?memberId=${member.member_id}`} className={btnPrimary}>
+                <BookPlus className="h-4 w-4" /> Lend a book
+              </Link>
+            )}
+            <Link to={`/library/members/${member.member_id}/edit`} className={btnSecondary}>
+              <Pencil className="h-4 w-4" /> Edit
+            </Link>
+          </>
+        }
+      >
+        {blocker ? (
+          <NextStep tone="bad">{blocker}</NextStep>
+        ) : (
+          <NextStep tone="good">
+            Can borrow {slotsLeft} more book{slotsLeft === 1 ? '' : 's'} right now.
+          </NextStep>
+        )}
+      </DetailHeader>
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <InfoCard title={`Books they have · ${current.length}`} icon={BookOpen}>
+            <LoanList issues={current} show="book" onReturn={setReturning} onRenew={setRenewing} empty="No books with them right now." />
+          </InfoCard>
+
+          <InfoCard title={`Fines · ${fines.length}`} icon={IndianRupee} delay={60} action={owed > 0 && <span className="text-sm font-semibold text-red-600">{rupees(owed)} to pay</span>}>
+            {fines.length === 0 ? (
+              <p className="text-sm text-slate-500">No fines.</p>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {fines.map((f) => {
+                  const s = fineStatusInfo(f.status);
+                  const left = fineLeft(f);
+                  return (
+                    <li key={f.fine_id} className="flex items-center gap-3 py-2.5 text-sm">
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-900">{FINE_REASON[f.reason] ?? 'Fine'}</p>
+                        <p className="text-xs text-slate-500">
+                          {shortDate(f.calculated_at)} ·{' '}
+                          <Link to={`/library/issues/${f.issue_id}`} className="hover:text-brand">
+                            view loan
+                          </Link>
+                        </p>
+                      </div>
+                      <span className="ml-auto whitespace-nowrap text-right">
+                        <span className="block font-semibold tabular-nums text-slate-900">{rupees(toNumber(f.amount))}</span>
+                        {left > 0 && left < toNumber(f.amount) && <span className="block text-[11px] text-slate-500">{rupees(left)} left</span>}
+                      </span>
+                      <StatusPill label={s.label} color={s.color} />
+                      <span className="flex">
+                        <IconAction icon={IndianRupee} label={left > 0 ? 'Collect payment' : 'Nothing left to pay'} disabled={left <= 0} onClick={() => setPaying(f)} />
+                        <IconAction icon={CircleOff} label={left > 0 ? 'Waive fine' : 'Nothing to waive'} disabled={left <= 0} onClick={() => setWaiving(f)} />
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </InfoCard>
+
+          <InfoCard title={`Past loans · ${history.length}`} icon={History} delay={90}>
+            <LoanList issues={history.slice(0, 8)} show="book" empty="Nothing borrowed before." />
+          </InfoCard>
+        </div>
+
+        <div className="space-y-5">
+          <InfoCard
+            title="Borrowing rule"
+            icon={IdCard}
+            rows={
+              rule
+                ? [
+                    ['Books at a time', `${rule.max_books_allowed}`],
+                    ['Keep for', `${rule.loan_period_days} days`],
+                    ['Late fine', `₹${toNumber(rule.fine_per_day)} a day`],
+                  ]
+                : undefined
+            }
+          >
+            <p className="mt-2 text-xs text-slate-500">
+              {rule ? ruleSentence(rule) : 'No rule for this member type yet. '}
+              <Link to="/library/membership-rules" className="ml-1 font-medium text-brand hover:text-brand-navy">
+                Membership rules
+              </Link>
+            </p>
+          </InfoCard>
+          <InfoCard title={`Waiting for · ${waiting.length}`} icon={BookMarked} delay={60}>
+            {waiting.length === 0 ? (
+              <p className="text-sm text-slate-500">No reservations.</p>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {waiting.map((r) => {
+                  const s = reservationStatusInfo(r.status);
+                  return (
+                    <li key={r.reservation_id} className="flex items-center gap-2 py-2 text-sm">
+                      <Link to={`/library/books/${r.book_id}`} className="min-w-0 truncate font-medium text-brand-navy hover:text-brand">
+                        {r.book?.title ?? `Book #${r.book_id}`}
+                      </Link>
+                      <span className="ml-auto">
+                        <StatusPill label={s.label} color={s.color} title={s.hint} />
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </InfoCard>
         </div>
       </div>
 
-      {/* Member Info Card */}
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div>
-              <p className="text-sm text-slate-600 mb-1">External Ref ID</p>
-              <p className="font-mono text-slate-900">{member.external_ref_id}</p>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600 mb-1">Name</p>
-              <p className="font-medium text-slate-900">{member.name}</p>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600 mb-1">Member Type</p>
-              <p className="capitalize text-slate-900">{member.member_type}</p>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600 mb-1">Joined Date</p>
-              <p className="text-slate-900">{new Date(member.created_at).toLocaleDateString()}</p>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Current Issues Card */}
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Current Book Issues
-            </h2>
-            <span className="text-sm text-slate-600">{currentIssues.length} book(s)</span>
-          </div>
-          {currentIssues.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
-              No current book issues
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {currentIssues.map((issue) => (
-                <div key={issue.issue_id} className="border border-slate-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-medium text-slate-900">{issue.book_title}</h3>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-slate-600">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>Issued: {new Date(issue.issue_date).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>Due: {new Date(issue.due_date).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      issue.status === 'overdue' 
-                        ? 'bg-red-100 text-red-700' 
-                        : issue.status === 'returned'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {issue.status}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* Fines Card */}
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Fines
-            </h2>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-600">Total Outstanding:</span>
-              <span className="text-lg font-bold text-red-600">₹{totalFines.toFixed(2)}</span>
-            </div>
-          </div>
-          <FineTable
-            fines={fines}
-            onWaive={handleWaiveClick}
-            onPay={handlePayClick}
-          />
-        </div>
-      </Card>
-
-      {/* Modals */}
-      <WaiveFineModal
-        isOpen={isWaiveModalOpen}
-        onClose={() => setIsWaiveModalOpen(false)}
-        fine={selectedFine}
-        onSubmit={handleWaiveFine}
-        isLoading={isSubmitting}
-      />
-      <PayFineModal
-        isOpen={isPayModalOpen}
-        onClose={() => setIsPayModalOpen(false)}
-        fine={selectedFine}
-        onSubmit={handlePayFine}
-        isLoading={isSubmitting}
-      />
+      <ReturnDialog issue={returning} onClose={() => setReturning(null)} />
+      <RenewDialog issue={renewing} onClose={() => setRenewing(null)} />
+      <PayFineDialog fine={paying} onClose={() => setPaying(null)} />
+      <WaiveFineDialog fine={waiving} onClose={() => setWaiving(null)} />
     </div>
   );
 }

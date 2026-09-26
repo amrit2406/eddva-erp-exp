@@ -768,6 +768,7 @@ export interface Role {
   _count?: {
     user_roles: number;
   };
+  user_roles?: unknown[];
 }
 
 export interface RoleFormData {

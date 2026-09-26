@@ -361,6 +361,7 @@ import LibraryCreateUserPage from '../features/library/pages/rbac/CreateUserPage
 import LibraryCategoriesPage from '../features/library/pages/categories/CategoriesPage';
 import LibraryCreateCategoryPage from '../features/library/pages/categories/CreateCategoryPage';
 import LibraryEditCategoryPage from '../features/library/pages/categories/EditCategoryPage';
+import LibraryCategoryDetailsPage from '../features/library/pages/categories/CategoryDetailsPage';
 // Library Membership Rules
 import LibraryMembershipRulesPage from '../features/library/pages/membership-rules/MembershipRulesPage';
 import LibraryCreateMembershipRulePage from '../features/library/pages/membership-rules/CreateMembershipRulePage';
@@ -2355,6 +2356,11 @@ export const routeConfig = [
   {
     path: '/library/categories/:id/edit',
     element: LibraryEditCategoryPage,
+    isProtected: true,
+  },
+  {
+    path: '/library/categories/:id',
+    element: LibraryCategoryDetailsPage,
     isProtected: true,
   },
   // Library Membership Rules Routes

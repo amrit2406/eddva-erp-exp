@@ -28,9 +28,6 @@ import type {
   UserAssignment,
   UserAssignmentFormData,
   BookIssue,
-  BookIssueFormData,
-  BookIssueReturnData,
-  BookIssueRenewData,
   LibraryNotification,
   MemberSearchParams,
 } from '../types/library.types';
@@ -145,13 +142,10 @@ export async function createCategory(data: CategoryFormData): Promise<Category> 
   return response.data.data || response.data;
 }
 
+// No single-category endpoint: find it in the list.
 export async function getCategory(id: string | number): Promise<Category> {
-  // Get all categories and find the specific one by ID
-  const categories = await getCategories();
-  const category = categories.find(c => c.category_id === Number(id));
-  if (!category) {
-    throw new Error('Category not found');
-  }
+  const category = (await getCategories()).find((c) => c.category_id === Number(id));
+  if (!category) throw new Error('Category not found');
   return category;
 }
 
@@ -175,13 +169,10 @@ export async function createMembershipRule(data: MembershipRuleFormData): Promis
   return response.data.data || response.data;
 }
 
+// No single-rule endpoint: find it in the list.
 export async function getMembershipRule(id: string | number): Promise<MembershipRule> {
-  // Get all rules and find the specific one by ID
-  const rules = await getMembershipRules();
-  const rule = rules.find(r => r.rule_id === Number(id));
-  if (!rule) {
-    throw new Error('Membership rule not found');
-  }
+  const rule = (await getMembershipRules()).find((r) => r.rule_id === Number(id));
+  if (!rule) throw new Error('Membership rule not found');
   return rule;
 }
 
@@ -194,12 +185,13 @@ export async function deleteMembershipRule(id: string | number): Promise<void> {
   await axiosInstance.delete(`/library/membership-rules/${id}`);
 }
 
+// Members and books are paged (20 by default); pages ask for everything at once.
+const ALL = 500;
+
 // Member Management Endpoints
 export async function getMembers(params?: MemberSearchParams): Promise<Member[]> {
-  const response = await axiosInstance.get('/library/members', { params });
-  // Handle nested response structure: response.data.data.data
-  const members = response.data.data?.data || [];
-  return members;
+  const response = await axiosInstance.get('/library/members', { params: { limit: ALL, ...params } });
+  return response.data.data?.data || [];
 }
 
 export async function createMember(data: MemberFormData): Promise<Member> {
@@ -208,13 +200,8 @@ export async function createMember(data: MemberFormData): Promise<Member> {
 }
 
 export async function getMember(id: string | number): Promise<Member> {
-  // Get all members and find the specific one by ID
-  const members = await getMembers();
-  const member = members.find(m => m.member_id === Number(id));
-  if (!member) {
-    throw new Error('Member not found');
-  }
-  return member;
+  const response = await axiosInstance.get(`/library/members/${id}`);
+  return response.data.data || response.data;
 }
 
 export async function updateMember(id: string | number, data: Partial<MemberFormData>): Promise<Member> {
@@ -234,7 +221,7 @@ export async function getMemberFines(id: string | number): Promise<Fine[]> {
 
 // Book Management Endpoints
 export async function getBooks(): Promise<Book[]> {
-  const response = await axiosInstance.get('/library/books');
+  const response = await axiosInstance.get('/library/books', { params: { limit: ALL } });
   return response.data.data?.data || [];
 }
 
@@ -244,13 +231,8 @@ export async function createBook(data: BookFormData): Promise<Book> {
 }
 
 export async function getBook(id: string | number): Promise<Book> {
-  // Get all books and find the specific one by ID
-  const books = await getBooks();
-  const book = books.find(b => b.book_id === Number(id));
-  if (!book) {
-    throw new Error('Book not found');
-  }
-  return book;
+  const response = await axiosInstance.get(`/library/books/${id}`);
+  return response.data.data || response.data;
 }
 
 export async function updateBook(id: string | number, data: Partial<BookFormData>): Promise<Book> {
@@ -286,20 +268,13 @@ export async function createBookCopy(bookId: string | number, data: BookCopyForm
 }
 
 export async function scanCopyByBarcode(barcode: string): Promise<BookCopy> {
-  const response = await axiosInstance.get(`/library/copies/scan/${barcode}`);
+  const response = await axiosInstance.get(`/library/copies/scan/${encodeURIComponent(barcode)}`);
   return response.data.data || response.data;
 }
 
 export async function updateBookCopy(id: string | number, data: BookCopyUpdateData): Promise<BookCopy> {
-  console.log('Updating copy:', id, 'with data:', data);
-  try {
-    const response = await axiosInstance.patch(`/library/copies/${id}`, data);
-    console.log('Update response:', response.data);
-    return response.data.data || response.data;
-  } catch (error: any) {
-    console.error('Update error details:', error.response?.data);
-    throw error;
-  }
+  const response = await axiosInstance.patch(`/library/copies/${id}`, data);
+  return response.data.data || response.data;
 }
 
 // Book Vendor Management Endpoints
@@ -328,11 +303,6 @@ export async function getFine(id: string | number): Promise<Fine> {
   return response.data.data || response.data;
 }
 
-export async function renewIssue(id: string | number, data: BookIssueRenewData): Promise<BookIssue> {
-  const response = await axiosInstance.post(`/library/issues/${id}/renew`, data);
-  return response.data.data || response.data;
-}
-
 export async function waiveFine(id: string | number, data: FineWaiveFormData): Promise<Fine> {
   const response = await axiosInstance.post(`/library/fines/${id}/waive`, data);
   return response.data.data || response.data;
@@ -343,15 +313,10 @@ export async function payFine(id: string | number, data: FinePayFormData): Promi
   return response.data.data || response.data;
 }
 
-// export async function getMemberFines(memberId: string | number): Promise<Fine[]> {
-//   const response = await axiosInstance.get(`/library/members/${memberId}/fines`);
-//   return response.data.data || response.data || [];
-// }
-
 // Library Notifications Endpoints
 export async function getNotifications(): Promise<LibraryNotification[]> {
   const response = await axiosInstance.get('/library/notifications');
   return response.data.data || response.data || [];
 }
 
-// Book Issue Management Endpoints have moved to ./issues.api.ts
+// Book issue (loan) endpoints live in ./issues.api.ts

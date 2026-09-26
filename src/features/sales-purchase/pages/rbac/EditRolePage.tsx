@@ -34,7 +34,8 @@ export default function EditRolePage() {
     onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the role')),
   });
 
-  const users = role?._count?.user_roles ?? 0;
+  // The list endpoint sends a count; a single role sends the assignments themselves.
+  const users = role?._count?.user_roles ?? role?.user_roles?.length ?? 0;
 
   return (
     <div className="space-y-5">

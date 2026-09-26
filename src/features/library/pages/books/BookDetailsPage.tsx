@@ -1,400 +1,301 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Calendar, Edit, CheckCircle, Plus, Barcode, Building2, BookmarkPlus } from 'lucide-react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getBook, getBookCopies, createBookCopy, updateBookCopy, getBookVendors, createBookVendor, updateBookVendor, deleteBookVendor } from '../../api/library.api';
-import type { Book, BookCopy, BookCopyFormData, BookCopyUpdateData, BookVendor, BookVendorFormData, BookVendorUpdateData } from '../../types/library.types';
-import { ROUTES } from '../../../../constants/routes';
-import CopyTable from '../../components/copies/CopyTable';
-import CreateCopyModal from '../../components/copies/CreateCopyModal';
-import EditCopyModal from '../../components/copies/EditCopyModal';
-import VendorTable from '../../components/vendors/VendorTable';
-import CreateVendorModal from '../../components/vendors/CreateVendorModal';
-import EditVendorModal from '../../components/vendors/EditVendorModal';
-import ReserveBookModal from '../../components/reservations/ReserveBookModal';
+import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, BookMarked, BookOpen, BookPlus, Building2, Copy, Pencil, Plus, Trash2, UsersRound, X } from 'lucide-react';
+import ConfirmDialog from '../../../../components/feedback/ConfirmDialog';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { DetailHeader, DetailSkeleton, InfoCard, NextStep } from '../../../../components/premium/detail/DetailParts';
+import IconAction from '../../../../components/premium/list/IconAction';
+import { StatusPill } from '../../../../components/premium/list/ListControls';
+import { btnPrimary, btnSecondary, shortDate } from '../../../../components/premium/styles';
+import { useToast } from '../../../../hooks/useToast';
+import { rupees, toNumber } from '../../../../utils/dashboardFormat';
+import BookCover from '../../components/books/BookCover';
+import { CopyDialog, ReserveDialog, VendorDialog } from '../../components/books/BookDialogs';
+import { RenewDialog, ReturnDialog } from '../../components/loans/LoanDialogs';
+import LoanList from '../../components/loans/LoanList';
+import { getIssues } from '../../api/issues.api';
+import { deleteBookVendor, getBook, getBookCopies, getBookVendors } from '../../api/library.api';
+import { cancelReservation, getReservations } from '../../api/reservations.api';
+import type { BookCopy, BookIssue, BookVendor, Reservation } from '../../types/library.types';
+import { getApiErrorMessage } from '../../utils/errors';
+import { canCancelReservation, conditionInfo, copyStatusInfo, isOut, reservationStatusInfo } from '../../utils/labels';
 
 export default function BookDetailsPage() {
-  const { id } = useParams<{ id: string }>();
-  const [book, setBook] = useState<Book | null>(null);
-  const [copies, setCopies] = useState<BookCopy[]>([]);
-  const [vendors, setVendors] = useState<BookVendor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedCopy, setSelectedCopy] = useState<BookCopy | null>(null);
-  const [isVendorCreateModalOpen, setIsVendorCreateModalOpen] = useState(false);
-  const [isVendorEditModalOpen, setIsVendorEditModalOpen] = useState(false);
-  const [selectedVendor, setSelectedVendor] = useState<BookVendor | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
+  const { id = '' } = useParams();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [copyDialog, setCopyDialog] = useState<{ copy: BookCopy | null } | null>(null);
+  const [vendorDialog, setVendorDialog] = useState<{ vendor: BookVendor | null } | null>(null);
+  const [reserving, setReserving] = useState(false);
+  const [returning, setReturning] = useState<BookIssue | null>(null);
+  const [renewing, setRenewing] = useState<BookIssue | null>(null);
+  const [confirm, setConfirm] = useState<{ vendor?: BookVendor; reservation?: Reservation } | null>(null);
 
-  useEffect(() => {
-    loadBook();
-    loadCopies();
-    loadVendors();
-  }, [id]);
+  const { data: book, isLoading, error, refetch } = useQuery({ queryKey: ['library', 'book', id], queryFn: () => getBook(id), enabled: Boolean(id) });
+  const { data: copies = [] } = useQuery({ queryKey: ['library', 'copies', id], queryFn: () => getBookCopies(id), enabled: Boolean(id) });
+  const { data: vendors = [] } = useQuery({ queryKey: ['library', 'vendors', id], queryFn: () => getBookVendors(id), enabled: Boolean(id) });
+  const { data: issues = [] } = useQuery({ queryKey: ['library', 'issues'], queryFn: () => getIssues() });
+  const { data: reservations = [] } = useQuery({ queryKey: ['library', 'reservations'], queryFn: () => getReservations() });
 
-  async function loadBook() {
-    if (!id) return;
-    try {
-      setLoading(true);
-      const data = await getBook(id);
-      setBook(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(err instanceof Error ? err.message : 'Failed to load book');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const removeVendor = useMutation({
+    mutationFn: (v: BookVendor) => deleteBookVendor(v.book_vendor_id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library', 'vendors', id] });
+      toast.success('Supplier removed');
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not remove the supplier')),
+    onSettled: () => setConfirm(null),
+  });
+  const cancel = useMutation({
+    mutationFn: (r: Reservation) => cancelReservation(r.reservation_id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library'] });
+      toast.success('Reservation cancelled');
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not cancel the reservation')),
+    onSettled: () => setConfirm(null),
+  });
 
-  async function loadCopies() {
-    if (!id) return;
-    try {
-      const data = await getBookCopies(id);
-      setCopies(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      console.error('Failed to load copies:', err);
-    }
-  }
+  const back = (
+    <Link to="/library/books" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+      <ArrowLeft className="h-4 w-4" /> Books
+    </Link>
+  );
 
-  async function loadVendors() {
-    if (!id) return;
-    try {
-      const data = await getBookVendors(id);
-      setVendors(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      console.error('Failed to load vendors:', err);
-    }
-  }
-
-  async function handleCreateCopy(data: BookCopyFormData) {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      await createBookCopy(id, data);
-      await loadCopies();
-      setIsCreateModalOpen(false);
-    } catch (err: any) {
-      if (err.response?.status === 409) {
-        throw new Error('A copy with this barcode already exists');
-      }
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function handleUpdateCopy(copyId: number, data: BookCopyUpdateData) {
-    try {
-      setIsSubmitting(true);
-      console.log('Raw data from form:', data);
-      
-      // Only send fields that have values
-      const updateData: BookCopyUpdateData = {};
-      if (data.barcode) updateData.barcode = data.barcode;
-      if (data.rack_location) updateData.rack_location = data.rack_location;
-      if (data.condition) updateData.condition = data.condition;
-      if (data.acquired_date) {
-        // Convert date string to ISO-8601 format
-        const isoDate = new Date(data.acquired_date).toISOString();
-        console.log('Converting date:', data.acquired_date, 'to ISO:', isoDate);
-        updateData.acquired_date = isoDate;
-      }
-      if (data.price !== undefined) updateData.price = data.price;
-      if (data.status) updateData.status = data.status;
-      
-      console.log('Final updateData:', updateData);
-      await updateBookCopy(copyId, updateData);
-      await loadCopies();
-      setIsEditModalOpen(false);
-      setSelectedCopy(null);
-    } catch (err: any) {
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  function handleEditCopy(copy: BookCopy) {
-    setSelectedCopy(copy);
-    setIsEditModalOpen(true);
-  }
-
-  function handleDeleteCopy(_copyId: number) {
-    // Note: Delete API not provided in requirements
-    // When API is available, implement: await deleteBookCopy(copyId);
-    alert('Delete functionality not yet implemented - API endpoint not provided');
-  }
-
-  async function handleCreateVendor(data: BookVendorFormData) {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      await createBookVendor(id, data);
-      await loadVendors();
-      setIsVendorCreateModalOpen(false);
-    } catch (err: any) {
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function handleUpdateVendor(vendorId: number, data: BookVendorUpdateData) {
-    try {
-      setIsSubmitting(true);
-      await updateBookVendor(vendorId, data);
-      await loadVendors();
-      setIsVendorEditModalOpen(false);
-      setSelectedVendor(null);
-    } catch (err: any) {
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  function handleEditVendor(vendor: BookVendor) {
-    setSelectedVendor(vendor);
-    setIsVendorEditModalOpen(true);
-  }
-
-  async function handleDeleteVendor(vendorId: number) {
-    if (!confirm('Are you sure you want to delete this vendor?')) return;
-    try {
-      await deleteBookVendor(vendorId);
-      await loadVendors();
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      console.error('Failed to delete vendor:', err);
-      alert('Failed to delete vendor');
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Book Details</h1>
-          <p className="text-slate-600 mt-1">View book information</p>
-        </div>
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      </div>
-    );
-  }
-
+  if (isLoading) return <DetailSkeleton />;
   if (error || !book) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Book Details</h1>
-          <p className="text-slate-600 mt-1">View book information</p>
-        </div>
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error || 'Book not found'}</div>
-        </Card>
+      <div className="space-y-5">
+        {back}
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load book')} onRetry={() => refetch()} />
       </div>
     );
   }
 
+  const copyIds = new Set(copies.map((c) => c.copy_id));
+  const out = issues.filter((i) => isOut(i) && (copyIds.has(i.copy_id) || i.copy?.book_id === book.book_id));
+  const free = copies.filter((c) => c.status === 'available').length;
+  const waiting = reservations
+    .filter((r) => r.book_id === book.book_id && canCancelReservation(r.status))
+    .sort((a, b) => a.reserved_date.localeCompare(b.reserved_date));
+  const loanOf = (c: BookCopy) => out.find((i) => i.copy_id === c.copy_id);
+
+  const summary =
+    copies.length === 0
+      ? 'No copies yet. Add each physical copy with its barcode so it can be lent.'
+      : free > 0
+        ? `${free} of ${copies.length} cop${copies.length === 1 ? 'y is' : 'ies are'} on the shelf and can be lent now.`
+        : `All ${copies.length} cop${copies.length === 1 ? 'y is' : 'ies are'} out. You can reserve it for a member — they'll get the next one back.`;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link to={ROUTES.LIBRARY_BOOKS}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Catalog
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Book Details</h1>
-            <p className="text-slate-600 mt-1">View book information</p>
+    <div className="space-y-5">
+      {back}
+      <DetailHeader
+        icon={BookOpen}
+        title={book.title}
+        status={book.category && <StatusPill label={book.category.name} color="#0a4a9c" />}
+        meta={`by ${book.author}`}
+        actions={
+          <>
+            {free > 0 ? (
+              <Link to={`/library/issues/desk?bookId=${book.book_id}`} className={btnPrimary}>
+                <BookPlus className="h-4 w-4" /> Lend a copy
+              </Link>
+            ) : (
+              copies.length > 0 && (
+                <button type="button" onClick={() => setReserving(true)} className={btnPrimary}>
+                  <BookMarked className="h-4 w-4" /> Reserve
+                </button>
+              )
+            )}
+            {free > 0 && (
+              <button type="button" onClick={() => setReserving(true)} className={btnSecondary}>
+                <BookMarked className="h-4 w-4" /> Reserve
+              </button>
+            )}
+            <Link to={`/library/books/${book.book_id}/edit`} className={btnSecondary}>
+              <Pencil className="h-4 w-4" /> Edit
+            </Link>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-5 sm:flex-row">
+          <BookCover src={book.cover_image_url} title={book.title} size="lg" />
+          <div className="flex-1 space-y-3">
+            {book.description && <p className="text-sm text-slate-600">{book.description}</p>}
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+              {[
+                ['Publisher', book.publisher],
+                ['Edition', book.edition],
+                ['Year', book.publish_year],
+                ['Language', book.language],
+                ['ISBN', book.isbn],
+              ]
+                .filter(([, v]) => v)
+                .map(([label, value]) => (
+                  <div key={label as string}>
+                    <dt className="text-xs text-slate-500">{label}</dt>
+                    <dd className="font-medium text-slate-900">{value}</dd>
+                  </div>
+                ))}
+            </dl>
+            <NextStep tone={copies.length === 0 ? 'bad' : free > 0 ? 'good' : 'info'}>{summary}</NextStep>
           </div>
         </div>
-        <Link to={ROUTES.LIBRARY_BOOKS_EDIT.replace(':id', book.book_id.toString())}>
-          <Button variant="primary">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Book
-          </Button>
-        </Link>
+      </DetailHeader>
+
+      <InfoCard
+        title={`Copies · ${copies.length}`}
+        icon={Copy}
+        action={
+          <button type="button" onClick={() => setCopyDialog({ copy: null })} className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:text-brand-navy">
+            <Plus className="h-4 w-4" /> Add copy
+          </button>
+        }
+      >
+        {copies.length === 0 ? (
+          <p className="text-sm text-slate-500">No copies yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="py-2 pr-3">Barcode</th>
+                  <th className="px-3 py-2">Shelf</th>
+                  <th className="px-3 py-2">Condition</th>
+                  <th className="px-3 py-2">Where it is</th>
+                  <th className="px-3 py-2 text-right">Price</th>
+                  <th className="py-2 pl-3">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {copies.map((c) => {
+                  const s = copyStatusInfo(c.status);
+                  const cond = conditionInfo(c.condition);
+                  const loan = loanOf(c);
+                  return (
+                    <tr key={c.copy_id}>
+                      <td className="py-2.5 pr-3">
+                        <span className="font-mono font-medium text-slate-900">{c.barcode}</span>
+                        {c.accession_number && <span className="block text-[11px] text-slate-400">{c.accession_number}</span>}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-600">{c.rack_location || '—'}</td>
+                      <td className="px-3 py-2.5">
+                        <span className="inline-flex items-center gap-1.5 text-slate-700">
+                          <span className="h-2 w-2 rounded-full" style={{ background: cond.color }} />
+                          {cond.label}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <StatusPill label={s.label} color={s.color} />
+                        {loan && (
+                          <Link to={`/library/members/${loan.member_id}`} className="ml-2 text-xs text-slate-500 hover:text-brand">
+                            with {loan.member?.name}
+                          </Link>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-slate-700">{c.price !== null && c.price !== undefined ? rupees(toNumber(c.price)) : '—'}</td>
+                      <td className="py-2.5 pl-3 text-right">
+                        <IconAction icon={Pencil} label="Edit copy" onClick={() => setCopyDialog({ copy: c })} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </InfoCard>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <InfoCard title={`Who has it · ${out.length}`} icon={UsersRound} delay={60}>
+          <LoanList issues={out} show="member" onReturn={setReturning} onRenew={setRenewing} empty="Nobody has this book right now." />
+        </InfoCard>
+
+        <InfoCard title={`Waiting list · ${waiting.length}`} icon={BookMarked} delay={90}>
+          {waiting.length === 0 ? (
+            <p className="text-sm text-slate-500">Nobody is waiting for this book.</p>
+          ) : (
+            <ol className="divide-y divide-slate-100">
+              {waiting.map((r, index) => {
+                const s = reservationStatusInfo(r.status);
+                return (
+                  <li key={r.reservation_id} className="flex items-center gap-3 py-2.5 text-sm">
+                    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">{index + 1}</span>
+                    <div className="min-w-0">
+                      <Link to={`/library/members/${r.member_id}`} className="font-medium text-brand-navy hover:text-brand">
+                        {r.member?.name ?? `Member #${r.member_id}`}
+                      </Link>
+                      <p className="text-xs text-slate-500">Since {shortDate(r.reserved_date)}</p>
+                    </div>
+                    <span className="ml-auto">
+                      <StatusPill label={s.label} color={s.color} title={s.hint} />
+                    </span>
+                    <IconAction icon={X} label="Cancel reservation" tone="danger" onClick={() => setConfirm({ reservation: r })} />
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </InfoCard>
       </div>
 
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            {book.cover_image_url && (
-              <div className="w-full md:w-48 h-64 flex-shrink-0">
-                <img
-                  src={book.cover_image_url}
-                  alt={book.title}
-                  className="w-full h-full object-cover rounded-lg shadow-md"
-                />
-              </div>
-            )}
-            <div className="flex-1 space-y-4">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">{book.title}</h2>
-                <p className="text-slate-600 text-lg">{book.author}</p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {book._count?.copies && book._count.copies > 0 ? (
-                  <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
-                    <CheckCircle className="h-4 w-4" />
-                    <span className="font-medium">{book._count.copies} copies</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full">
-                    <span className="font-medium">No copies</span>
-                  </div>
+      <InfoCard
+        title={`Suppliers · ${vendors.length}`}
+        icon={Building2}
+        delay={120}
+        action={
+          <button type="button" onClick={() => setVendorDialog({ vendor: null })} className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:text-brand-navy">
+            <Plus className="h-4 w-4" /> Add supplier
+          </button>
+        }
+      >
+        {vendors.length === 0 ? (
+          <p className="text-sm text-slate-500">Where this book is bought from — handy when you need more copies.</p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {vendors.map((v) => (
+              <li key={v.book_vendor_id} className="flex items-center gap-3 py-2.5 text-sm">
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-900">{v.vendor_name || v.name}</p>
+                  <p className="truncate text-xs text-slate-500">{[v.contact_person, v.phone, v.email].filter(Boolean).join(' · ') || 'No contact details'}</p>
+                </div>
+                {v.last_purchase_price !== null && v.last_purchase_price !== undefined && (
+                  <span className="ml-auto whitespace-nowrap text-xs text-slate-500">
+                    Last paid <span className="font-semibold text-slate-800">{rupees(toNumber(v.last_purchase_price))}</span>
+                  </span>
                 )}
-                {copies.filter((c) => c.status === 'available').length === 0 && (
-                  <Button variant="secondary" size="sm" onClick={() => setIsReserveModalOpen(true)}>
-                    <BookmarkPlus className="h-4 w-4 mr-2" />
-                    Reserve
-                  </Button>
-                )}
-              </div>
+                <span className={`flex ${v.last_purchase_price === null || v.last_purchase_price === undefined ? 'ml-auto' : ''}`}>
+                  <IconAction icon={Pencil} label="Edit supplier" onClick={() => setVendorDialog({ vendor: v })} />
+                  <IconAction icon={Trash2} label="Remove supplier" tone="danger" onClick={() => setConfirm({ vendor: v })} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </InfoCard>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4">
-                <div>
-                  <div className="text-sm text-slate-500 mb-1">ISBN</div>
-                  <div className="font-mono text-sm text-slate-900">{book.isbn}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-slate-500 mb-1">Publisher</div>
-                  <div className="text-slate-900">{book.publisher}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-slate-500 mb-1">Edition</div>
-                  <div className="text-slate-900">{book.edition}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-slate-500 mb-1">Language</div>
-                  <div className="text-slate-900">{book.language}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-slate-500 mb-1">Publish Year</div>
-                  <div className="text-slate-900">{book.publish_year}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-slate-500 mb-1">Category ID</div>
-                  <div className="text-slate-900">{book.category_id}</div>
-                </div>
-              </div>
-
-              <div className="pt-4">
-                <div className="text-sm text-slate-500 mb-1">Description</div>
-                <p className="text-slate-700">{book.description}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-4 text-sm text-slate-500">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>Added: {new Date(book.created_at).toLocaleDateString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  <span>Updated: {new Date(book.updated_at).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Copies Section */}
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Barcode className="h-5 w-5 text-blue-600" />
-              <h3 className="text-lg font-semibold text-slate-900">Book Copies</h3>
-              <span className="text-sm text-slate-500">({copies.length} copies)</span>
-            </div>
-            <Button variant="primary" size="sm" onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Copy
-            </Button>
-          </div>
-          <CopyTable
-            copies={copies}
-            onEdit={handleEditCopy}
-            onDelete={handleDeleteCopy}
-          />
-        </div>
-      </Card>
-
-      {/* Vendors Section */}
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Building2 className="h-5 w-5 text-blue-600" />
-              <h3 className="text-lg font-semibold text-slate-900">Book Vendors</h3>
-              <span className="text-sm text-slate-500">({vendors.length} vendors)</span>
-            </div>
-            <Button variant="primary" size="sm" onClick={() => setIsVendorCreateModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Vendor
-            </Button>
-          </div>
-          <VendorTable
-            vendors={vendors}
-            onEdit={handleEditVendor}
-            onDelete={handleDeleteVendor}
-          />
-        </div>
-      </Card>
-
-      {/* Modals */}
-      <CreateCopyModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateCopy}
-        isLoading={isSubmitting}
-      />
-      <EditCopyModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        copy={selectedCopy}
-        onSubmit={handleUpdateCopy}
-        isLoading={isSubmitting}
-      />
-      <CreateVendorModal
-        isOpen={isVendorCreateModalOpen}
-        onClose={() => setIsVendorCreateModalOpen(false)}
-        onSubmit={handleCreateVendor}
-        isLoading={isSubmitting}
-      />
-      <EditVendorModal
-        isOpen={isVendorEditModalOpen}
-        onClose={() => setIsVendorEditModalOpen(false)}
-        vendor={selectedVendor}
-        onSubmit={handleUpdateVendor}
-        isLoading={isSubmitting}
-      />
-      <ReserveBookModal
-        isOpen={isReserveModalOpen}
-        onClose={() => setIsReserveModalOpen(false)}
-        bookId={book.book_id}
-        bookTitle={book.title}
+      <CopyDialog open={copyDialog !== null} book={book} copy={copyDialog?.copy ?? null} copies={copies} onClose={() => setCopyDialog(null)} />
+      <VendorDialog open={vendorDialog !== null} book={book} vendor={vendorDialog?.vendor ?? null} onClose={() => setVendorDialog(null)} />
+      <ReserveDialog book={reserving ? book : null} onClose={() => setReserving(false)} />
+      <ReturnDialog issue={returning} onClose={() => setReturning(null)} />
+      <RenewDialog issue={renewing} onClose={() => setRenewing(null)} />
+      <ConfirmDialog
+        isOpen={confirm !== null}
+        onClose={() => !(removeVendor.isPending || cancel.isPending) && setConfirm(null)}
+        onConfirm={() => (confirm?.vendor ? removeVendor.mutate(confirm.vendor) : confirm?.reservation && cancel.mutate(confirm.reservation))}
+        title={confirm?.vendor ? 'Remove this supplier?' : 'Cancel this reservation?'}
+        message={
+          confirm?.vendor
+            ? `${confirm.vendor.vendor_name || confirm.vendor.name} will be removed from this book's suppliers.`
+            : confirm?.reservation
+              ? `${confirm.reservation.member?.name ?? 'The member'} will be taken off the waiting list for “${book.title}”.`
+              : ''
+        }
+        confirmText={confirm?.vendor ? (removeVendor.isPending ? 'Removing…' : 'Remove') : cancel.isPending ? 'Cancelling…' : 'Cancel reservation'}
       />
     </div>
   );
