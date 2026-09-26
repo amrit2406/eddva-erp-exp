@@ -1,259 +1,217 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Input from '../../../../components/ui/Input';
-import Button from '../../../../components/ui/Button';
-import { cn } from '../../../../utils/cn';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { AlertCircle, PackageCheck } from 'lucide-react';
+import { Field, FormActions, FormCard, FormLoading } from '../../../../components/premium/form/FormParts';
+import { inputClass } from '../../../../components/premium/styles';
+import { rupees, toNumber } from '../../../../utils/dashboardFormat';
+import { getPurchaseOrder, getPurchaseOrders, getWarehouses } from '../../api/sales-purchase.api';
 import type { GRNFormData, GRNItemFormData } from '../../types/sales-purchase.types';
-import { getPurchaseOrders, getPurchaseOrder, getWarehouses } from '../../api/sales-purchase.api';
-import type { PurchaseOrder, Warehouse } from '../../types/sales-purchase.types';
+import { awaitingDelivery } from '../../utils/poStatus';
 
 interface GRNFormProps {
   defaultValues?: GRNFormData;
+  // Pre-select this purchase order (e.g. from the order's "Record goods received").
+  initialPoId?: number;
   onSubmit?: (data: GRNFormData) => void;
   submitText?: string;
   isSubmitting?: boolean;
-  className?: string;
 }
 
-const emptyLine: GRNItemFormData = { po_item_id: 0, received_qty: 0, accepted_qty: 0, rejected_qty: 0 };
+interface LineEntry {
+  received: string;
+  rejected: string;
+}
 
-export default function GRNForm({
-  defaultValues,
-  onSubmit,
-  submitText = 'Save',
-  isSubmitting = false,
-  className,
-}: GRNFormProps) {
-  const navigate = useNavigate();
-  const [items, setItems] = useState<GRNItemFormData[]>(
-    defaultValues?.items && defaultValues.items.length > 0 ? defaultValues.items : [{ ...emptyLine }]
+const todayIso = () => new Date().toISOString().split('T')[0];
+const qty = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 3 });
+
+// Pick the purchase order; every line appears with what's still due pre-filled.
+export default function GRNForm({ defaultValues, initialPoId, onSubmit, submitText = 'Save', isSubmitting = false }: GRNFormProps) {
+  const ordersQ = useQuery({ queryKey: ['sales-purchase', 'purchase-orders'], queryFn: getPurchaseOrders });
+  const warehousesQ = useQuery({ queryKey: ['sales-purchase', 'warehouses'], queryFn: getWarehouses });
+  const [poId, setPoId] = useState(defaultValues?.purchase_order_id ?? initialPoId ?? 0);
+  const poQ = useQuery({ queryKey: ['sales-purchase', 'purchase-order', String(poId)], queryFn: () => getPurchaseOrder(poId), enabled: poId > 0 });
+
+  const [date, setDate] = useState(defaultValues?.received_date?.split('T')[0] ?? todayIso());
+  const [warehouseChoice, setWarehouseChoice] = useState(defaultValues?.warehouse_id ?? 0);
+  // Keyed by po_item_id; lines not yet touched fall back to "still due".
+  const [entries, setEntries] = useState<Record<number, LineEntry>>(() =>
+    Object.fromEntries((defaultValues?.items ?? []).map((i) => [i.po_item_id, { received: String(i.received_qty), rejected: String(i.rejected_qty) }])),
   );
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [selectedPOId, setSelectedPOId] = useState<string>(defaultValues?.purchase_order_id ? String(defaultValues.purchase_order_id) : '');
-  const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingPOItems, setLoadingPOItems] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  if (ordersQ.isLoading || warehousesQ.isLoading) return <FormLoading />;
 
-  useEffect(() => {
-    if (!selectedPOId) {
-      setSelectedPO(null);
-      return;
-    }
-    let cancelled = false;
-    setLoadingPOItems(true);
-    getPurchaseOrder(selectedPOId)
-      .then((po) => {
-        if (!cancelled) setSelectedPO(po);
-      })
-      .catch((error) => {
-        console.error('Failed to load purchase order items:', error);
-        if (!cancelled) setSelectedPO(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingPOItems(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedPOId]);
+  // Orders still waiting for goods, plus the one already chosen (when editing).
+  const orders = (ordersQ.data ?? []).filter((o) => awaitingDelivery(o.status) || o.po_id === poId).sort((a, b) => b.po_id - a.po_id);
+  const warehouses = warehousesQ.data ?? [];
+  const po = poId > 0 ? poQ.data : undefined;
+  const warehouseId = warehouseChoice || po?.warehouse_id || 0;
+  const editing = Boolean(defaultValues);
 
-  async function loadData() {
-    try {
-      setLoading(true);
-      const [purchaseOrdersData, warehousesData] = await Promise.all([
-        getPurchaseOrders(),
-        getWarehouses(),
-      ]);
-      setPurchaseOrders(purchaseOrdersData);
-      setWarehouses(warehousesData);
-    } catch (error) {
-      console.error('Failed to load dropdown data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const lines = (po?.items ?? []).map((line) => {
+    const ordered = toNumber(line.quantity);
+    // When editing, this GRN's own quantity is already included in received_qty.
+    const own = editing ? Number(defaultValues?.items.find((i) => i.po_item_id === line.po_item_id)?.received_qty ?? 0) : 0;
+    const already = Math.max(0, toNumber(line.received_qty) - own);
+    const due = Math.max(0, ordered - already);
+    const entry = entries[line.po_item_id] ?? { received: editing ? '0' : String(due), rejected: '0' };
+    const received = entry.received === '' ? 0 : Number(entry.received);
+    const rejected = entry.rejected === '' ? 0 : Number(entry.rejected);
+    return { line, ordered, already, due, entry, received, rejected, accepted: received - rejected };
+  });
 
-  const addItem = () => {
-    setItems([...items, { ...emptyLine }]);
+  const setEntry = (id: number, patch: Partial<LineEntry>, current: LineEntry) => setEntries((e) => ({ ...e, [id]: { ...current, ...patch } }));
+  const receiving = lines.filter((l) => l.received > 0);
+  const lineError = lines.find((l) => l.received < 0 || l.rejected < 0 || l.rejected > l.received || l.received > l.due);
+
+  const errors = {
+    po: poId ? undefined : 'Choose the purchase order these goods came against',
+    warehouse: warehouseId ? undefined : 'Choose where the goods were received',
+    date: date ? undefined : 'Pick the date received',
+    lines: !po ? undefined : lineError ? `Check “${lineError.line.item?.item_name ?? 'an item'}”: received can't be more than still due, and rejected can't be more than received` : receiving.length === 0 ? 'Enter a received quantity for at least one item' : undefined,
   };
-
-  const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
-  };
-
-  const updateItem = (index: number, field: keyof GRNItemFormData, value: number) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setItems(newItems);
-  };
+  const hasErrors = Object.values(errors).some(Boolean);
+  const show = (m?: string) => (showErrors ? m : undefined);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-
-    const data: GRNFormData = {
-      purchase_order_id: Number(formData.get('purchase_order_id')),
-      received_date: formData.get('received_date') as string,
-      warehouse_id: Number(formData.get('warehouse_id')),
-      items: items.filter((item) => item.po_item_id && item.received_qty > 0),
-    };
-
-    onSubmit?.(data);
+    if (hasErrors) {
+      setShowErrors(true);
+      return;
+    }
+    const items: GRNItemFormData[] = receiving.map((l) => ({ po_item_id: l.line.po_item_id, received_qty: l.received, accepted_qty: l.accepted, rejected_qty: l.rejected }));
+    onSubmit?.({ purchase_order_id: poId, received_date: date, warehouse_id: warehouseId, items });
   };
 
   return (
-    <form onSubmit={handleSubmit} className={cn('space-y-6', className)}>
-      {loading ? (
-        <div className="text-center py-8 text-slate-500">Loading dropdown options...</div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Purchase Order <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="purchase_order_id"
-                defaultValue={defaultValues?.purchase_order_id ? String(defaultValues.purchase_order_id) : ''}
-                onChange={(e) => {
-                  setSelectedPOId(e.target.value);
-                  setItems([{ ...emptyLine }]);
-                }}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select purchase order</option>
-                {purchaseOrders.map((po) => (
-                  <option key={po.po_id} value={po.po_id}>
-                    {po.po_number}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Warehouse <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="warehouse_id"
-                defaultValue={defaultValues?.warehouse_id ? String(defaultValues.warehouse_id) : ''}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select warehouse</option>
-                {warehouses.map((warehouse) => (
-                  <option key={warehouse.warehouse_id} value={warehouse.warehouse_id}>
-                    {warehouse.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Received Date <span className="text-red-500">*</span>
-              </label>
-              <Input
-                name="received_date"
-                type="date"
-                defaultValue={defaultValues?.received_date?.split('T')[0]}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="border-t border-slate-200 pt-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-slate-900">Items</h3>
-              <Button variant="secondary" size="sm" type="button" onClick={addItem} disabled={!selectedPOId}>
-                Add Item
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {items.map((item, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-3 p-3 bg-slate-50 rounded-lg">
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Item</label>
-                    <select
-                      value={item.po_item_id || ''}
-                      onChange={(e) => updateItem(index, 'po_item_id', Number(e.target.value))}
-                      disabled={!selectedPOId || loadingPOItems}
-                      className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100"
-                    >
-                      <option value="">
-                        {!selectedPOId
-                          ? 'Select a purchase order first'
-                          : loadingPOItems
-                            ? 'Loading items...'
-                            : 'Select item'}
-                      </option>
-                      {selectedPO?.items?.map((poItem) => (
-                        <option key={poItem.po_item_id} value={poItem.po_item_id}>
-                          {poItem.item?.item_name || poItem.item_id} (ordered: {poItem.quantity})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Received Qty</label>
-                    <Input
-                      type="number"
-                      value={item.received_qty || ''}
-                      onChange={(e) => updateItem(index, 'received_qty', Number(e.target.value))}
-                      min="0"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Accepted Qty</label>
-                    <Input
-                      type="number"
-                      value={item.accepted_qty || ''}
-                      onChange={(e) => updateItem(index, 'accepted_qty', Number(e.target.value))}
-                      min="0"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1">
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Rejected Qty</label>
-                      <Input
-                        type="number"
-                        value={item.rejected_qty || ''}
-                        onChange={(e) => updateItem(index, 'rejected_qty', Number(e.target.value))}
-                        min="0"
-                        className="text-sm"
-                      />
-                    </div>
-                    {items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeItem(index)}
-                        className="p-1.5 hover:bg-red-100 rounded text-red-600"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                </div>
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <FormCard title="Delivery details">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Field label="Purchase order" error={show(errors.po)}>
+            <select
+              value={poId || ''}
+              onChange={(e) => {
+                setPoId(Number(e.target.value));
+                setEntries({});
+              }}
+              disabled={editing}
+              className={inputClass}
+            >
+              <option value="">Choose an order</option>
+              {orders.map((o) => (
+                <option key={o.po_id} value={o.po_id}>
+                  {o.po_number} · {o.vendor?.vendor_name ?? 'Vendor'} · {rupees(toNumber(o.grand_total))}
+                </option>
               ))}
-            </div>
-          </div>
+            </select>
+          </Field>
+          <Field label="Received on" error={show(errors.date)}>
+            <input type="date" value={date} max={todayIso()} onChange={(e) => setDate(e.target.value)} className={inputClass} />
+          </Field>
+          <Field label="Received at" error={show(errors.warehouse)}>
+            <select value={warehouseId || ''} onChange={(e) => setWarehouseChoice(Number(e.target.value))} className={inputClass}>
+              <option value="">Choose a warehouse</option>
+              {warehouses.map((w) => (
+                <option key={w.warehouse_id} value={w.warehouse_id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        {orders.length === 0 && !editing && (
+          <p className="mt-3 text-sm text-slate-500">
+            No purchase orders are waiting for goods. Goods can only be received against an{' '}
+            <Link to="/sales-purchase/purchase-orders?status=APPROVED" className="font-medium text-brand">
+              approved purchase order
+            </Link>
+            .
+          </p>
+        )}
+      </FormCard>
 
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-            <Button variant="secondary" type="button" className="w-full sm:w-auto" onClick={() => navigate('/sales-purchase/grn')}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-              {isSubmitting ? 'Saving...' : submitText}
-            </Button>
+      <FormCard title="What arrived?" description={po ? `From ${po.vendor?.vendor_name ?? 'the vendor'} against ${po.po_number}. Quantities default to what's still due.` : undefined}>
+        {!poId ? (
+          <p className="text-sm text-slate-500">Choose a purchase order to see its items.</p>
+        ) : poQ.isLoading ? (
+          <div className="space-y-2">
+            <div className="skeleton h-12 rounded-xl" />
+            <div className="skeleton h-12 rounded-xl" />
           </div>
-        </>
-      )}
+        ) : lines.length === 0 ? (
+          <p className="text-sm text-slate-500">This order has no items.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[680px] text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="py-2.5 pr-3">Item</th>
+                  <th className="px-3 py-2.5 text-right">Ordered</th>
+                  <th className="px-3 py-2.5 text-right">Still due</th>
+                  <th className="px-3 py-2.5">Received now</th>
+                  <th className="px-3 py-2.5">Rejected</th>
+                  <th className="py-2.5 pl-3 text-right">Accepted</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {lines.map((l) => {
+                  const bad = l.received > l.due || l.rejected > l.received || l.received < 0 || l.rejected < 0;
+                  return (
+                    <tr key={l.line.po_item_id}>
+                      <td className="py-2.5 pr-3">
+                        <p className="font-medium text-slate-900">{l.line.item?.item_name ?? `Item #${l.line.item_id}`}</p>
+                        {l.already > 0 && <p className="text-xs text-slate-500">{qty(l.already)} received earlier</p>}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-slate-600">{qty(l.ordered)}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums font-medium text-slate-900">{l.due > 0 ? qty(l.due) : <span className="text-emerald-700">All in</span>}</td>
+                      <td className="px-3 py-2.5">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          max={l.due}
+                          value={l.entry.received}
+                          onChange={(e) => setEntry(l.line.po_item_id, { received: e.target.value }, l.entry)}
+                          disabled={l.due === 0 && !editing}
+                          aria-label={`Received now: ${l.line.item?.item_name ?? 'item'}`}
+                          className={`${inputClass} w-28 ${bad ? 'ring-red-300' : ''}`}
+                        />
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          value={l.entry.rejected}
+                          onChange={(e) => setEntry(l.line.po_item_id, { rejected: e.target.value }, l.entry)}
+                          disabled={l.received <= 0}
+                          aria-label={`Rejected: ${l.line.item?.item_name ?? 'item'}`}
+                          className={`${inputClass} w-24`}
+                        />
+                      </td>
+                      <td className="py-2.5 pl-3 text-right tabular-nums font-semibold text-slate-900">{l.received > 0 ? qty(Math.max(0, l.accepted)) : '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {show(errors.lines) && (
+          <p className="mt-3 flex items-center gap-1 text-xs text-red-600">
+            <AlertCircle className="h-3.5 w-3.5" /> {errors.lines}
+          </p>
+        )}
+        {po && receiving.length > 0 && (
+          <p className="mt-4 flex items-center gap-2 text-sm text-slate-600">
+            <PackageCheck className="h-4 w-4 text-emerald-600" /> Receiving {receiving.length} of {lines.length} item{lines.length === 1 ? '' : 's'}.
+          </p>
+        )}
+      </FormCard>
+
+      <FormActions submitText={submitText} isSubmitting={isSubmitting} />
     </form>
   );
 }

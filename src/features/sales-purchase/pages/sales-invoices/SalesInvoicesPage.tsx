@@ -1,80 +1,183 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import SalesInvoiceTable from '../../components/sales-invoices/SalesInvoiceTable';
-import { getSalesInvoices, deleteSalesInvoice } from '../../api/sales-purchase.api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle, Eye, FileText, Pencil, Plus, Trash2 } from 'lucide-react';
+import ConfirmDialog from '../../../../components/feedback/ConfirmDialog';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import IconAction from '../../../../components/premium/list/IconAction';
+import { SearchBox, Segmented, StatusPill } from '../../../../components/premium/list/ListControls';
+import ListHeader from '../../../../components/premium/list/ListHeader';
+import { EmptyState, ListSkeleton, NoResults } from '../../../../components/premium/list/ListStates';
+import PagedTable from '../../../../components/premium/list/PagedTable';
+import { btnPrimary, shortDate } from '../../../../components/premium/styles';
+import { useToast } from '../../../../hooks/useToast';
+import { rupees, toNumber } from '../../../../utils/dashboardFormat';
+import { deleteSalesInvoice, getSalesInvoices } from '../../api/sales-purchase.api';
 import type { SalesInvoice } from '../../types/sales-purchase.types';
+import { docStatusInfo } from '../../utils/docStatus';
 import { getApiErrorMessage } from '../../utils/errors';
+import { paymentStatusInfo } from '../../utils/party';
+
+const KEY = ['sales-purchase', 'sales-invoices'];
+const balance = (i: SalesInvoice) => Math.max(0, toNumber(i.grand_total) - toNumber(i.paid_amount));
+const isOverdue = (i: SalesInvoice) => i.status === 'POSTED' && balance(i) > 0 && !!i.due_date && new Date(i.due_date) < new Date(new Date().toDateString());
 
 export default function SalesInvoicesPage() {
-  const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [search, setSearch] = useState('');
+  const [view, setView] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pendingDelete, setPendingDelete] = useState<SalesInvoice | null>(null);
+  const { data: invoices = [], isLoading, error, refetch } = useQuery({ queryKey: KEY, queryFn: getSalesInvoices });
 
-  useEffect(() => {
-    loadSalesInvoices();
-  }, []);
+  const remove = useMutation({
+    mutationFn: (i: SalesInvoice) => deleteSalesInvoice(i.si_id),
+    onSuccess: (_, i) => {
+      queryClient.setQueryData<SalesInvoice[]>(KEY, (current) => current?.filter((x) => x.si_id !== i.si_id));
+      toast.success(`${i.invoice_number} deleted`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not delete this invoice')),
+    onSettled: () => setPendingDelete(null),
+  });
 
-  async function loadSalesInvoices() {
-    try {
-      setLoading(true);
-      const data = await getSalesInvoices();
-      setSalesInvoices(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to load sales invoices'));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this sales invoice?')) {
-      return;
-    }
-    try {
-      await deleteSalesInvoice(id);
-      setSalesInvoices(salesInvoices.filter((si) => si.si_id !== id));
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(err, 'Failed to delete sales invoice'));
-    }
+  const views: Record<string, (i: SalesInvoice) => boolean> = {
+    all: () => true,
+    draft: (i) => i.status === 'DRAFT',
+    unpaid: (i) => i.status === 'POSTED' && balance(i) > 0,
+    overdue: isOverdue,
+    paid: (i) => i.status === 'POSTED' && balance(i) === 0,
   };
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const inView = views[view] ?? views.all;
+    return invoices.filter(inView).filter((i) => !q || [i.invoice_number, i.customer?.customer_name, i.customer?.customer_code].some((v) => v?.toLowerCase().includes(q))).sort((a, b) => b.si_id - a.si_id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoices, search, view]);
+  const toPay = invoices.filter(views.unpaid).reduce((s, i) => s + balance(i), 0);
+
+  const newButton = (
+    <Link to="/sales-purchase/sales-invoices/new" className={btnPrimary}>
+      <Plus className="h-4 w-4" /> New sales invoice
+    </Link>
+  );
+
+  if (error) return <ErrorState message={getApiErrorMessage(error, 'Failed to load sales invoices')} onRetry={() => refetch()} />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Sales Invoices</h1>
-          <p className="text-slate-600 mt-1">Manage your sales invoices</p>
-        </div>
-        <Link to="/sales-purchase/sales-invoices/new">
-          <Button variant="primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Sales Invoice
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-5">
+      <ListHeader icon={FileText} title="Sales invoices" description="Bills you send customers — what they owe, and what's been received." actions={newButton} />
 
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
+      {isLoading ? (
+        <ListSkeleton />
+      ) : invoices.length === 0 ? (
+        <EmptyState icon={FileText} title="No sales invoices yet" message="Bill a customer here, usually from a confirmed sales order. Once posted, you can record money received against it." action={newButton} />
       ) : (
-        <Card className="border-slate-200">
-          <SalesInvoiceTable salesInvoices={salesInvoices} onDelete={handleDelete} />
-        </Card>
+        <>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <SearchBox
+              value={search}
+              onChange={(v) => {
+                setSearch(v);
+                setPage(1);
+              }}
+              placeholder="Search by invoice no. or customer"
+            />
+            <Segmented
+              label="Filter invoices"
+              value={view}
+              onChange={(v) => {
+                setView(v);
+                setPage(1);
+              }}
+              options={[
+                { value: 'all', label: 'All', count: invoices.length },
+                { value: 'draft', label: 'Draft', count: invoices.filter(views.draft).length },
+                { value: 'unpaid', label: 'To receive', count: invoices.filter(views.unpaid).length },
+                { value: 'overdue', label: 'Overdue', count: invoices.filter(views.overdue).length },
+                { value: 'paid', label: 'Paid', count: invoices.filter(views.paid).length },
+              ]}
+            />
+          </div>
+          {toPay > 0 && (
+            <p className="text-sm text-slate-600">
+              Customers owe you <span className="font-semibold text-red-600">{rupees(toPay)}</span> across {invoices.filter(views.unpaid).length} posted invoice(s).
+            </p>
+          )}
+          {filtered.length === 0 ? (
+            <NoResults
+              onClear={() => {
+                setSearch('');
+                setView('all');
+              }}
+            />
+          ) : (
+            <PagedTable
+              rows={filtered}
+              rowKey={(i) => i.si_id}
+              page={page}
+              onPage={setPage}
+              noun="invoices"
+              minWidth={860}
+              columns={[
+                {
+                  header: 'Invoice',
+                  cell: (i) => (
+                    <>
+                      <Link to={`/sales-purchase/sales-invoices/${i.si_id}`} className="font-semibold text-brand-navy hover:text-brand hover:underline">
+                        {i.invoice_number}
+                      </Link>
+                      {i.sales_order && <p className="text-[11px] text-slate-400">From {i.sales_order.so_number}</p>}
+                    </>
+                  ),
+                },
+                { header: 'Customer', cell: (i) => <span className="block max-w-[180px] truncate text-slate-700">{i.customer?.customer_name ?? '—'}</span> },
+                {
+                  header: 'Dates',
+                  cell: (i) => (
+                    <>
+                      <p className="whitespace-nowrap text-slate-600">{shortDate(i.invoice_date)}</p>
+                      {i.due_date && (
+                        <p className={`flex items-center gap-1 whitespace-nowrap text-[11px] ${isOverdue(i) ? 'font-medium text-red-600' : 'text-slate-400'}`}>
+                          {isOverdue(i) && <AlertTriangle className="h-3 w-3" />} Due {shortDate(i.due_date)}
+                        </p>
+                      )}
+                    </>
+                  ),
+                },
+                { header: 'Total', align: 'right', cell: (i) => <span className="font-medium text-slate-900">{rupees(toNumber(i.grand_total))}</span> },
+                { header: 'Still to receive', align: 'right', cell: (i) => (balance(i) > 0 ? <span className="font-semibold text-red-600">{rupees(balance(i))}</span> : <span className="text-slate-400">—</span>) },
+                {
+                  header: 'Status',
+                  cell: (i) => {
+                    const s = i.status === 'POSTED' ? paymentStatusInfo(i.payment_status) : docStatusInfo(i.status);
+                    return <StatusPill label={s.label} color={s.color} />;
+                  },
+                },
+              ]}
+              actions={(i) => {
+                const draft = i.status === 'DRAFT';
+                return (
+                  <>
+                    <IconAction icon={Eye} label="View invoice" to={`/sales-purchase/sales-invoices/${i.si_id}`} tone="brand" />
+                    <IconAction icon={Pencil} label={draft ? 'Edit invoice' : 'Only draft invoices can be edited'} to={draft ? `/sales-purchase/sales-invoices/${i.si_id}/edit` : undefined} disabled={!draft} />
+                    <IconAction icon={Trash2} label={draft ? 'Delete invoice' : 'Only drafts can be deleted — cancel it instead'} tone="danger" onClick={() => setPendingDelete(i)} disabled={!draft} />
+                  </>
+                );
+              }}
+            />
+          )}
+        </>
       )}
+
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        onClose={() => !remove.isPending && setPendingDelete(null)}
+        onConfirm={() => pendingDelete && remove.mutate(pendingDelete)}
+        title="Delete this invoice?"
+        message={pendingDelete ? `Draft ${pendingDelete.invoice_number} from ${pendingDelete.customer?.customer_name ?? 'the customer'} will be removed. This can't be undone.` : ''}
+        confirmText={remove.isPending ? 'Deleting…' : 'Delete invoice'}
+      />
     </div>
   );
 }

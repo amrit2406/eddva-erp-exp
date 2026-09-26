@@ -1,92 +1,59 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { useToast } from '../../../../hooks/useToast';
 import ItemCategoryForm from '../../components/item-categories/ItemCategoryForm';
 import { getItemCategory, updateItemCategory } from '../../api/sales-purchase.api';
 import type { ItemCategoryFormData } from '../../types/sales-purchase.types';
 import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditItemCategoryPage() {
-  const { id } = useParams();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<ItemCategoryFormData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  useEffect(() => {
-    if (id) {
-      loadData(id);
-    }
-  }, [id]);
+  const { data: category, isLoading, error, refetch } = useQuery({
+    queryKey: ['sales-purchase', 'item-category', id],
+    queryFn: () => getItemCategory(id),
+    enabled: Boolean(id),
+  });
 
-  async function loadData(categoryId: string) {
-    try {
-      setLoading(true);
-      const data = await getItemCategory(categoryId);
-      setDefaultValues({
-        name: data.name,
-      });
-    } catch (error: any) {
-      console.error('Failed to load data:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (data: ItemCategoryFormData) => {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      await updateItemCategory(id, data);
-      navigate('/sales-purchase/item-categories');
-    } catch (error: any) {
-      console.error('Failed to update item category:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Failed to update item category'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const save = useMutation({
+    mutationFn: (data: ItemCategoryFormData) => updateItemCategory(id, data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'item-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'item-category', id] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'items'] });
+      toast.success(`Category renamed to “${data.name}”`);
+      navigate(`/sales-purchase/item-categories/${id}`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the category')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/item-categories">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Item Category</h1>
-          <p className="text-slate-600 mt-1">Update category information</p>
-        </div>
+    <div className="space-y-5">
+      <Link to={category ? `/sales-purchase/item-categories/${id}` : '/sales-purchase/item-categories'} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+        <ArrowLeft className="h-4 w-4" /> {category?.name ?? 'Item categories'}
+      </Link>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Rename category</h1>
+        <p className="mt-0.5 text-sm text-slate-500">Items in this category will show the new name.</p>
       </div>
 
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
+      {isLoading ? (
+        <div className="skeleton h-32 rounded-3xl" aria-busy="true" aria-label="Loading" />
+      ) : error || !category ? (
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load category')} onRetry={() => refetch()} />
       ) : (
-        <Card className="border-slate-200">
-          <div className="p-6">
-            {defaultValues && (
-              <ItemCategoryForm
-                defaultValues={defaultValues}
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                submitText="Update Category"
-              />
-            )}
-          </div>
-        </Card>
+        <ItemCategoryForm
+          defaultValues={{ name: category.name }}
+          categoryId={category.category_id}
+          onSubmit={(data) => save.mutate(data)}
+          isSubmitting={save.isPending}
+          submitText="Save name"
+        />
       )}
     </div>
   );

@@ -1,93 +1,51 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { FormLoading } from '../../../../components/premium/form/FormParts';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
 import PaymentTermForm from '../../components/payment-terms/PaymentTermForm';
 import { getPaymentTerm, updatePaymentTerm } from '../../api/sales-purchase.api';
 import type { PaymentTermFormData } from '../../types/sales-purchase.types';
 import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditPaymentTermPage() {
-  const { id } = useParams();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<PaymentTermFormData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: term, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'payment-term', id], queryFn: () => getPaymentTerm(id), enabled: Boolean(id) });
 
-  useEffect(() => {
-    if (id) {
-      loadData(id);
-    }
-  }, [id]);
-
-  async function loadData(termId: string) {
-    try {
-      setLoading(true);
-      const data = await getPaymentTerm(termId);
-      setDefaultValues({
-        term_name: data.term_name,
-        days: data.days,
-      });
-    } catch (error: any) {
-      console.error('Failed to load data:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (data: PaymentTermFormData) => {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      await updatePaymentTerm(id, data);
-      navigate('/sales-purchase/payment-terms');
-    } catch (error: any) {
-      console.error('Failed to update payment term:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Failed to update payment term'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const save = useMutation({
+    mutationFn: (data: PaymentTermFormData) => updatePaymentTerm(id, data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'payment-terms'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'payment-term', id] });
+      toast.success(`“${data.term_name}” saved`);
+      navigate(`/sales-purchase/payment-terms/${id}`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the payment term')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/payment-terms">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Payment Term</h1>
-          <p className="text-slate-600 mt-1">Update payment term information</p>
-        </div>
-      </div>
-
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
+    <div className="space-y-5">
+      <PageTitle
+        back={{ to: term ? `/sales-purchase/payment-terms/${id}` : '/sales-purchase/payment-terms', label: term?.term_name ?? 'Payment terms' }}
+        title="Edit payment term"
+        subtitle="Applies to new invoices for vendors and customers on this term."
+      />
+      {isLoading ? (
+        <FormLoading blocks={1} />
+      ) : error || !term ? (
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load payment term')} onRetry={() => refetch()} />
       ) : (
-        <Card className="border-slate-200">
-          <div className="p-6">
-            {defaultValues && (
-              <PaymentTermForm
-                defaultValues={defaultValues}
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                submitText="Update Payment Term"
-              />
-            )}
-          </div>
-        </Card>
+        <PaymentTermForm
+          defaultValues={{ term_name: term.term_name, days: term.days }}
+          termId={term.payment_term_id}
+          onSubmit={(data) => save.mutate(data)}
+          isSubmitting={save.isPending}
+          submitText="Save changes"
+        />
       )}
     </div>
   );

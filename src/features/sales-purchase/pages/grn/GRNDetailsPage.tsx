@@ -1,212 +1,179 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Package, Calendar, ShoppingCart, Building2, CheckCircle, Ban, Clock } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getGRN, getPurchaseOrder, postGRN, cancelGRN } from '../../api/sales-purchase.api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Ban, CheckCircle2, ClipboardList, FilePlus2, PackageCheck, Pencil, Truck } from 'lucide-react';
+import ConfirmDialog from '../../../../components/feedback/ConfirmDialog';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { DetailHeader, DetailSkeleton, InfoCard, NextStep } from '../../../../components/premium/detail/DetailParts';
+import { StatusPill } from '../../../../components/premium/list/ListControls';
+import { btnPrimary, btnQuietDanger, btnSecondary, longDate } from '../../../../components/premium/styles';
+import { useToast } from '../../../../hooks/useToast';
+import { toNumber } from '../../../../utils/dashboardFormat';
+import { cancelGRN, getGRN, postGRN } from '../../api/sales-purchase.api';
+import { docStatusInfo } from '../../utils/docStatus';
 import { getApiErrorMessage } from '../../utils/errors';
-import { cn } from '../../../../utils/cn';
-import type { GRN, PurchaseOrderItem } from '../../types/sales-purchase.types';
 
-function statusBadgeClass(status: string): string {
-  switch (status) {
-    case 'POSTED':
-      return 'bg-green-100 text-green-800';
-    case 'CANCELLED':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-slate-100 text-slate-800';
-  }
-}
+const qty = (v: string | number) => toNumber(v).toLocaleString('en-IN', { maximumFractionDigits: 3 });
 
 export default function GRNDetailsPage() {
-  const { id } = useParams();
-  const [grn, setGRN] = useState<GRN | null>(null);
-  const [poItemsMap, setPoItemsMap] = useState<Map<number, PurchaseOrderItem>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const { id = '' } = useParams();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [confirm, setConfirm] = useState<'post' | 'cancel' | null>(null);
+  const key = ['sales-purchase', 'grn', id];
+  const { data: grn, isLoading, error, refetch } = useQuery({ queryKey: key, queryFn: () => getGRN(id), enabled: Boolean(id) });
 
-  useEffect(() => {
-    if (id) {
-      loadGRN(id);
-    }
-  }, [id]);
+  const act = useMutation({
+    mutationFn: (action: 'post' | 'cancel') => (action === 'post' ? postGRN(id) : cancelGRN(id)),
+    onSuccess: (_, action) => {
+      toast.success(`${grn?.grn_number} ${action === 'post' ? 'posted' : 'cancelled'}`);
+      queryClient.invalidateQueries({ queryKey: key });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'grns'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'purchase-orders'] });
+      if (grn) queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'purchase-order', String(grn.purchase_order_id)] });
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'That action could not be completed')),
+    onSettled: () => setConfirm(null),
+  });
 
-  async function loadGRN(grnId: string) {
-    try {
-      setLoading(true);
-      const data = await getGRN(grnId);
-      setGRN(data);
-      if (data.purchase_order_id) {
-        try {
-          const po = await getPurchaseOrder(data.purchase_order_id);
-          setPoItemsMap(new Map((po.items || []).map((item) => [item.po_item_id, item])));
-        } catch (err) {
-          console.error('Failed to load purchase order items:', err);
-        }
-      }
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to load GRN'));
-    } finally {
-      setLoading(false);
-    }
+  const back = (
+    <Link to="/sales-purchase/grn" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+      <ArrowLeft className="h-4 w-4" /> Goods received
+    </Link>
+  );
+
+  if (isLoading) return <DetailSkeleton />;
+  if (error || !grn) {
+    return (
+      <div className="space-y-5">
+        {back}
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load goods receipt')} onRetry={() => refetch()} />
+      </div>
+    );
   }
 
-  const handleAction = async (action: () => Promise<unknown>) => {
-    if (!id) return;
-    try {
-      setActionLoading(true);
-      await action();
-      await loadGRN(id);
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Action failed'));
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  const s = docStatusInfo(grn.status);
+  const items = grn.items ?? [];
+  const rejectedTotal = items.reduce((sum, i) => sum + toNumber(i.rejected_qty), 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/grn">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">GRN Details</h1>
-          <p className="text-slate-600 mt-1">View goods received note information</p>
-        </div>
-        {grn?.status === 'DRAFT' && (
-          <Link to={`/sales-purchase/grn/${id}/edit`}>
-            <Button variant="primary" size="sm">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          </Link>
-        )}
-      </div>
+    <div className="space-y-5">
+      {back}
+      <DetailHeader
+        icon={PackageCheck}
+        title={grn.grn_number}
+        accent={s.color}
+        status={<StatusPill label={s.label} color={s.color} />}
+        meta={`Received ${longDate(grn.received_date)} · ${grn.vendor?.vendor_name ?? 'Vendor'}`}
+        actions={
+          grn.status === 'DRAFT' ? (
+            <>
+              <button type="button" onClick={() => setConfirm('post')} disabled={act.isPending} className={btnPrimary}>
+                <CheckCircle2 className="h-4 w-4" /> Post receipt
+              </button>
+              <Link to={`/sales-purchase/grn/${grn.grn_id}/edit`} className={btnSecondary}>
+                <Pencil className="h-4 w-4" /> Edit
+              </Link>
+              <button type="button" onClick={() => setConfirm('cancel')} disabled={act.isPending} className={btnQuietDanger}>
+                <Ban className="h-4 w-4" /> Cancel
+              </button>
+            </>
+          ) : grn.status === 'POSTED' ? (
+            <Link to="/sales-purchase/invoices/new" className={btnPrimary}>
+              <FilePlus2 className="h-4 w-4" /> Record vendor invoice
+            </Link>
+          ) : undefined
+        }
+      >
+        <NextStep tone={grn.status === 'CANCELLED' ? 'bad' : grn.status === 'POSTED' ? 'good' : 'info'}>
+          {grn.status === 'DRAFT'
+            ? 'Check the quantities below, then post it. Posting records the goods against the purchase order.'
+            : grn.status === 'POSTED'
+              ? 'Goods are recorded against the order. Next, record the vendor’s invoice for them.'
+              : 'This receipt was cancelled and no longer counts towards the order.'}
+        </NextStep>
+      </DetailHeader>
 
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
-      ) : grn ? (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="border-slate-200">
-              <div className="p-4">
-                <div className="flex items-center gap-2 text-slate-600 mb-2">
-                  <Package className="h-4 w-4" />
-                  <span className="text-sm font-medium">GRN Number</span>
-                </div>
-                <div className="text-lg font-bold text-slate-900">{grn.grn_number}</div>
-              </div>
-            </Card>
-            <Card className="border-slate-200">
-              <div className="p-4">
-                <div className="flex items-center gap-2 text-slate-600 mb-2">
-                  <ShoppingCart className="h-4 w-4" />
-                  <span className="text-sm font-medium">Purchase Order</span>
-                </div>
-                <div className="text-lg font-bold text-slate-900">{grn.purchase_order?.po_number || '-'}</div>
-              </div>
-            </Card>
-            <Card className="border-slate-200">
-              <div className="p-4">
-                <div className="flex items-center gap-2 text-slate-600 mb-2">
-                  <Calendar className="h-4 w-4" />
-                  <span className="text-sm font-medium">GRN Date</span>
-                </div>
-                <div className="text-lg font-bold text-slate-900">{grn.received_date ? new Date(grn.received_date).toLocaleDateString() : '-'}</div>
-              </div>
-            </Card>
-            <Card className="border-slate-200">
-              <div className="p-4">
-                <div className="flex items-center gap-2 text-slate-600 mb-2">
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">Warehouse</span>
-                </div>
-                <div className="text-lg font-bold text-slate-900">{grn.warehouse?.name || '-'}</div>
-              </div>
-            </Card>
-          </div>
-
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">Actions</h3>
-                <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-semibold', statusBadgeClass(grn.status))}>
-                  {grn.status === 'DRAFT' && <Clock className="h-4 w-4" />}
-                  {grn.status === 'POSTED' && <CheckCircle className="h-4 w-4" />}
-                  {grn.status === 'CANCELLED' && <Ban className="h-4 w-4" />}
-                  {grn.status}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {grn.status === 'DRAFT' && (
-                  <>
-                    <Button variant="primary" size="sm" disabled={actionLoading} onClick={() => handleAction(() => postGRN(grn.grn_id))}>
-                      Post
-                    </Button>
-                    <Button variant="secondary" size="sm" disabled={actionLoading} onClick={() => handleAction(() => cancelGRN(grn.grn_id))}>
-                      Cancel
-                    </Button>
-                  </>
-                )}
-                {grn.status !== 'DRAFT' && (
-                  <p className="text-sm text-slate-500">No actions available for this status.</p>
-                )}
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Items</h3>
+      <div className="grid gap-5 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <InfoCard title={`Items · ${items.length}`} icon={ClipboardList}>
+            {items.length === 0 ? (
+              <p className="text-sm text-slate-500">No items on this receipt.</p>
+            ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[480px] text-sm">
                   <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left py-2 px-4 text-sm font-semibold text-slate-700">Item</th>
-                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Ordered Qty</th>
-                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Received Qty</th>
-                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Accepted Qty</th>
-                      <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Rejected Qty</th>
+                    <tr className="border-b border-slate-100 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="py-2.5 pr-3">Item</th>
+                      <th className="px-3 py-2.5 text-right">Received</th>
+                      <th className="px-3 py-2.5 text-right">Rejected</th>
+                      <th className="py-2.5 pl-3 text-right">Accepted</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {(grn.items || []).map((item) => {
-                      const poItem = poItemsMap.get(item.po_item_id);
-                      return (
-                        <tr key={item.grn_item_id} className="border-b border-slate-100">
-                          <td className="py-2 px-4 text-sm text-slate-900">{item.item?.item_name || poItem?.item?.item_name || item.item_id}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{poItem?.quantity ?? '-'}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.received_qty}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.accepted_qty}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{item.rejected_qty}</td>
-                        </tr>
-                      );
-                    })}
+                  <tbody className="divide-y divide-slate-100">
+                    {items.map((i) => (
+                      <tr key={i.grn_item_id}>
+                        <td className="py-2.5 pr-3">
+                          <p className="font-medium text-slate-900">{i.item?.item_name ?? `Item #${i.item_id}`}</p>
+                          {i.item?.item_code && <p className="font-mono text-[11px] text-slate-400">{i.item.item_code}</p>}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums text-slate-700">{qty(i.received_qty)}</td>
+                        <td className={`px-3 py-2.5 text-right tabular-nums ${toNumber(i.rejected_qty) > 0 ? 'font-medium text-red-600' : 'text-slate-400'}`}>{qty(i.rejected_qty)}</td>
+                        <td className="py-2.5 pl-3 text-right font-semibold tabular-nums text-slate-900">{qty(i.accepted_qty)}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-          </Card>
+            )}
+            {rejectedTotal > 0 && <p className="mt-3 text-xs text-red-600">{qty(rejectedTotal)} unit(s) were rejected — let the vendor know.</p>}
+          </InfoCard>
         </div>
-      ) : null}
+        <InfoCard
+          title="Delivery"
+          icon={Truck}
+          delay={60}
+          rows={[
+            [
+              'Purchase order',
+              grn.purchase_order ? (
+                <Link key="po" to={`/sales-purchase/purchase-orders/${grn.purchase_order.po_id}`} className="text-brand-navy hover:text-brand hover:underline">
+                  {grn.purchase_order.po_number}
+                </Link>
+              ) : (
+                '—'
+              ),
+            ],
+            [
+              'Vendor',
+              grn.vendor ? (
+                <Link key="v" to={`/sales-purchase/vendors/${grn.vendor_id}`} className="text-brand-navy hover:text-brand hover:underline">
+                  {grn.vendor.vendor_name}
+                </Link>
+              ) : (
+                '—'
+              ),
+            ],
+            ['Received at', grn.warehouse?.name ?? '—'],
+            ['Received on', longDate(grn.received_date)],
+            ['Financial year', grn.financial_year],
+          ]}
+        />
+      </div>
+
+      <ConfirmDialog
+        isOpen={confirm !== null}
+        onClose={() => !act.isPending && setConfirm(null)}
+        onConfirm={() => confirm && act.mutate(confirm)}
+        title={confirm === 'post' ? 'Post this goods receipt?' : 'Cancel this goods receipt?'}
+        message={
+          confirm === 'post'
+            ? `${grn.grn_number} will be final: the goods are recorded against ${grn.purchase_order?.po_number ?? 'the order'} and it can no longer be edited.`
+            : `${grn.grn_number} will be cancelled and won't count towards the order.`
+        }
+        confirmText={act.isPending ? 'Working…' : confirm === 'post' ? 'Post receipt' : 'Cancel receipt'}
+        cancelText="Go back"
+      />
     </div>
   );
 }

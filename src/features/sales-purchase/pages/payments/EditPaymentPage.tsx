@@ -1,96 +1,56 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import PaymentForm from '../../components/payments/PaymentForm';
-import { getPayment, updatePayment } from '../../api/sales-purchase.api';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { FormLoading } from '../../../../components/premium/form/FormParts';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
+import { toNumber } from '../../../../utils/dashboardFormat';
+import SettlementForm from '../../components/lines/SettlementForm';
+import { getInvoices, getPayment, updatePayment } from '../../api/sales-purchase.api';
 import type { PaymentFormData } from '../../types/sales-purchase.types';
 import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditPaymentPage() {
-  const { id } = useParams();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<PaymentFormData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: payment, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'purchase-payment', id], queryFn: () => getPayment(id), enabled: Boolean(id) });
+  const { data: invoices = [], isLoading: invLoading } = useQuery({ queryKey: ['sales-purchase', 'purchase-invoices'], queryFn: getInvoices });
 
-  useEffect(() => {
-    if (id) {
-      loadData(id);
-    }
-  }, [id]);
+  const save = useMutation({
+    mutationFn: (data: PaymentFormData) => updatePayment(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'purchase-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'purchase-payment', id] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'purchase-invoices'] });
+      toast.success('Payment saved');
+      navigate(`/sales-purchase/payments/${id}`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the payment')),
+  });
 
-  async function loadData(paymentId: string) {
-    try {
-      setLoading(true);
-      const data = await getPayment(paymentId);
-      setDefaultValues({
-        pi_id: data.pi_id,
-        payment_date: data.payment_date,
-        amount: Number(data.amount),
-        mode: data.mode,
-        reference_no: data.reference_no || undefined,
-      });
-    } catch (error: any) {
-      console.error('Failed to load data:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (data: PaymentFormData) => {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      await updatePayment(id, data);
-      navigate('/sales-purchase/payments');
-    } catch (error: any) {
-      console.error('Failed to update payment:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Failed to update payment'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const inv = payment ? invoices.find((i) => i.pi_id === payment.pi_id) : undefined;
+  // The balance available to this payment includes its own current amount.
+  const options = inv && payment ? [{ id: inv.pi_id, number: inv.invoice_number, party: inv.vendor?.vendor_name ?? 'Vendor', total: toNumber(inv.grand_total), balance: toNumber(inv.grand_total) - toNumber(inv.paid_amount) + toNumber(payment.amount) }] : [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/payments">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Payment</h1>
-          <p className="text-slate-600 mt-1">Update payment information</p>
-        </div>
-      </div>
-
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: payment ? `/sales-purchase/payments/${id}` : '/sales-purchase/payments', label: 'Payment' }} title="Edit payment" />
+      {isLoading || invLoading ? (
+        <FormLoading />
+      ) : error || !payment ? (
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load payment')} onRetry={() => refetch()} />
       ) : (
-        <Card className="border-slate-200">
-          <div className="p-6">
-            {defaultValues && (
-              <PaymentForm
-                defaultValues={defaultValues}
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                submitText="Update Payment"
-              />
-            )}
-          </div>
-        </Card>
+        <SettlementForm
+          kind="payment"
+          invoices={options}
+          lockInvoice
+          defaultValues={{ invoiceId: payment.pi_id, date: payment.payment_date, amount: toNumber(payment.amount), mode: payment.mode, reference: payment.reference_no ?? '' }}
+          onSubmit={(v) => save.mutate({ pi_id: v.invoiceId, payment_date: v.date, amount: v.amount, mode: v.mode, ...(v.reference ? { reference_no: v.reference } : {}) })}
+          isSubmitting={save.isPending}
+          submitText="Save changes"
+        />
       )}
     </div>
   );

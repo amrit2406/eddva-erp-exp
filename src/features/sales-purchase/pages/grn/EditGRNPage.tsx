@@ -1,106 +1,60 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { NextStep } from '../../../../components/premium/detail/DetailParts';
+import { FormLoading } from '../../../../components/premium/form/FormParts';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
+import { toNumber } from '../../../../utils/dashboardFormat';
 import GRNForm from '../../components/grn/GRNForm';
 import { getGRN, updateGRN } from '../../api/sales-purchase.api';
 import type { GRNFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditGRNPage() {
-  const { id } = useParams();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<GRNFormData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: grn, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'grn', id], queryFn: () => getGRN(id), enabled: Boolean(id) });
 
-  useEffect(() => {
-    if (id) {
-      loadData(id);
-    }
-  }, [id]);
-
-  async function loadData(grnId: string) {
-    try {
-      setLoading(true);
-      const data = await getGRN(grnId);
-      setDefaultValues({
-        purchase_order_id: data.purchase_order_id,
-        received_date: data.received_date,
-        warehouse_id: data.warehouse_id,
-        items: (data.items || []).map((item) => ({
-          po_item_id: item.po_item_id,
-          received_qty: Number(item.received_qty),
-          accepted_qty: Number(item.accepted_qty),
-          rejected_qty: Number(item.rejected_qty),
-        })),
-      });
-    } catch (error: any) {
-      console.error('Failed to load data:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (data: GRNFormData) => {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      await updateGRN(id, data);
-      navigate('/sales-purchase/grn');
-    } catch (error: any) {
-      console.error('Failed to update GRN:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      setError(error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Failed to update GRN');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const save = useMutation({
+    mutationFn: (data: GRNFormData) => updateGRN(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'grns'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'grn', id] });
+      toast.success(`${grn?.grn_number ?? 'Goods receipt'} saved`);
+      navigate(`/sales-purchase/grn/${id}`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the goods receipt')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/grn">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit GRN</h1>
-          <p className="text-slate-600 mt-1">Update goods received note information</p>
-        </div>
-      </div>
-
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: grn ? `/sales-purchase/grn/${id}` : '/sales-purchase/grn', label: grn?.grn_number ?? 'Goods received' }} title={grn ? `Edit ${grn.grn_number}` : 'Edit goods receipt'} subtitle="Only draft receipts can be edited." />
+      {isLoading ? (
+        <FormLoading />
+      ) : error || !grn ? (
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load goods receipt')} onRetry={() => refetch()} />
+      ) : grn.status !== 'DRAFT' ? (
+        <NextStep tone="bad">This receipt is {grn.status.toLowerCase()}, so it can't be edited any more.</NextStep>
       ) : (
-        <Card className="border-slate-200">
-          <div className="p-6">
-            {error && (
-              <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-            {defaultValues && (
-              <GRNForm
-                defaultValues={defaultValues}
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                submitText="Update GRN"
-              />
-            )}
-          </div>
-        </Card>
+        <GRNForm
+          defaultValues={{
+            purchase_order_id: grn.purchase_order_id,
+            received_date: grn.received_date,
+            warehouse_id: grn.warehouse_id,
+            items: (grn.items ?? []).map((i) => ({
+              po_item_id: i.po_item_id,
+              received_qty: toNumber(i.received_qty),
+              accepted_qty: toNumber(i.accepted_qty),
+              rejected_qty: toNumber(i.rejected_qty),
+            })),
+          }}
+          onSubmit={(data) => save.mutate(data)}
+          isSubmitting={save.isPending}
+          submitText="Save changes"
+        />
       )}
     </div>
   );

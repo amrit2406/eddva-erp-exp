@@ -1,65 +1,69 @@
 import { Link } from 'react-router-dom';
-import { Eye, Edit, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
+import IconAction from '../../../../components/premium/list/IconAction';
 import type { ItemCategory } from '../../types/sales-purchase.types';
-import { cn } from '../../../../utils/cn';
+
+const shortDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+
+function StatusPill({ status }: { status: ItemCategory['status'] }) {
+  const active = status !== 'INACTIVE';
+  return (
+    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+      {active ? 'Active' : 'Inactive'}
+    </span>
+  );
+}
 
 interface ItemCategoryTableProps {
   categories: ItemCategory[];
-  className?: string;
-  onDelete?: (id: number) => void;
+  // How many items sit in each category (by category_id).
+  itemCounts: Map<number, number>;
+  onDelete: (category: ItemCategory) => void;
 }
 
-export default function ItemCategoryTable({ categories, className, onDelete }: ItemCategoryTableProps) {
+export default function ItemCategoryTable({ categories, itemCounts, onDelete }: ItemCategoryTableProps) {
   return (
-    <div className={cn('overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0', className)}>
-      <table className="w-full min-w-[600px]">
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[560px] text-sm">
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50">
-            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Category Name</th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700 hidden md:table-cell">Created At</th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Actions</th>
+          <tr className="border-b border-slate-100 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <th className="py-3 pl-5 pr-3">Category</th>
+            <th className="px-3 py-3">Items</th>
+            <th className="px-3 py-3">Status</th>
+            <th className="px-3 py-3">Added on</th>
+            <th className="py-3 pl-3 pr-5">
+              <span className="sr-only">Actions</span>
+            </th>
           </tr>
         </thead>
-        <tbody>
-          {categories.length === 0 ? (
-            <tr>
-              <td colSpan={3} className="py-8 text-center text-slate-500">
-                No item categories found. Create your first category.
-              </td>
-            </tr>
-          ) : (
-            categories.map((category) => (
-              <tr key={category.category_id} className="border-b border-slate-100 hover:bg-slate-50">
-                <td className="py-3 px-4">
-                  <div className="font-medium text-slate-900">{category.name}</div>
+        <tbody className="divide-y divide-slate-100">
+          {categories.map((category) => {
+            const path = `/sales-purchase/item-categories/${category.category_id}`;
+            const count = itemCounts.get(category.category_id) ?? 0;
+            return (
+              <tr key={category.category_id} className="transition-colors hover:bg-slate-50/80">
+                <td className="py-3.5 pl-5 pr-3">
+                  <Link to={path} className="font-semibold text-brand-navy hover:text-brand hover:underline">
+                    {category.name}
+                  </Link>
                 </td>
-                <td className="py-3 px-4 text-sm text-slate-600 hidden md:table-cell">
-                  {category.created_at ? new Date(category.created_at).toLocaleDateString() : '-'}
+                <td className="px-3 py-3.5 text-slate-700 tabular-nums">
+                  {count} item{count === 1 ? '' : 's'}
                 </td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-2">
-                    <Link to={`/sales-purchase/item-categories/${category.category_id}`}>
-                      <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="View">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </Link>
-                    <Link to={`/sales-purchase/item-categories/${category.category_id}/edit`}>
-                      <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600" title="Edit">
-                        <Edit className="h-4 w-4" />
-                      </button>
-                    </Link>
-                    <button
-                      className="p-1.5 hover:bg-red-100 rounded-lg text-red-600"
-                      title="Delete"
-                      onClick={() => onDelete?.(category.category_id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                <td className="px-3 py-3.5">
+                  <StatusPill status={category.status} />
+                </td>
+                <td className="whitespace-nowrap px-3 py-3.5 text-slate-600">{shortDate(category.created_at)}</td>
+                <td className="py-3.5 pl-3 pr-5">
+                  <div className="flex items-center justify-end gap-0.5">
+                    <IconAction icon={Eye} label="View category" to={path} tone="brand" />
+                    <IconAction icon={Pencil} label="Rename category" to={`${path}/edit`} />
+                    <IconAction icon={Trash2} label="Delete category" tone="danger" onClick={() => onDelete(category)} />
                   </div>
                 </td>
               </tr>
-            ))
-          )}
+            );
+          })}
         </tbody>
       </table>
     </div>

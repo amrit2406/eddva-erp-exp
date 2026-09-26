@@ -1,102 +1,56 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { NextStep } from '../../../../components/premium/detail/DetailParts';
+import { FormLoading } from '../../../../components/premium/form/FormParts';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
+import { toNumber } from '../../../../utils/dashboardFormat';
 import SalesOrderForm from '../../components/sales-orders/SalesOrderForm';
 import { getSalesOrder, updateSalesOrder } from '../../api/sales-purchase.api';
 import type { SalesOrderFormData } from '../../types/sales-purchase.types';
 import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditSalesOrderPage() {
-  const { id } = useParams();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<SalesOrderFormData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: so, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'sales-order', id], queryFn: () => getSalesOrder(id), enabled: Boolean(id) });
 
-  useEffect(() => {
-    if (id) {
-      loadData(id);
-    }
-  }, [id]);
-
-  async function loadData(salesOrderId: string) {
-    try {
-      setLoading(true);
-      const data = await getSalesOrder(salesOrderId);
-      setDefaultValues({
-        customer_id: data.customer_id,
-        so_date: data.so_date,
-        delivery_date: data.delivery_date || undefined,
-        discount: Number(data.discount) || 0,
-        items: (data.items || []).map((item) => ({
-          item_id: item.item_id,
-          quantity: Number(item.quantity),
-          unit_price: Number(item.unit_price),
-          tax_code_id: item.tax_code_id,
-          line_discount: Number(item.line_discount) || 0,
-        })),
-      });
-    } catch (error: any) {
-      console.error('Failed to load data:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (data: SalesOrderFormData) => {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      await updateSalesOrder(id, data);
-      navigate('/sales-purchase/sales-orders');
-    } catch (error: any) {
-      console.error('Failed to update sales order:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Failed to update sales order'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const save = useMutation({
+    mutationFn: (data: SalesOrderFormData) => updateSalesOrder(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'sales-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'sales-order', id] });
+      toast.success(`${so?.so_number ?? 'Sales order'} saved`);
+      navigate(`/sales-purchase/sales-orders/${id}`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the sales order')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/sales-orders">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Sales Order</h1>
-          <p className="text-slate-600 mt-1">Update sales order information</p>
-        </div>
-      </div>
-
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: so ? `/sales-purchase/sales-orders/${id}` : '/sales-purchase/sales-orders', label: so?.so_number ?? 'Sales orders' }} title={so ? `Edit ${so.so_number}` : 'Edit sales order'} subtitle="Only draft orders can be edited." />
+      {isLoading ? (
+        <FormLoading />
+      ) : error || !so ? (
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load sales order')} onRetry={() => refetch()} />
+      ) : so.status !== 'DRAFT' ? (
+        <NextStep tone="bad">This order is {so.status.toLowerCase().replace(/_/g, ' ')}, so it can't be edited any more.</NextStep>
       ) : (
-        <Card className="border-slate-200">
-          <div className="p-6">
-            {defaultValues && (
-              <SalesOrderForm
-                defaultValues={defaultValues}
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                submitText="Update Sales Order"
-              />
-            )}
-          </div>
-        </Card>
+        <SalesOrderForm
+          defaultValues={{
+            customer_id: so.customer_id,
+            so_date: so.so_date,
+            delivery_date: so.delivery_date ?? undefined,
+            discount: toNumber(so.discount),
+            items: (so.items ?? []).map((l) => ({ item_id: l.item_id, quantity: toNumber(l.quantity), unit_price: toNumber(l.unit_price), tax_code_id: l.tax_code_id, line_discount: toNumber(l.line_discount) })),
+          }}
+          onSubmit={(data) => save.mutate(data)}
+          isSubmitting={save.isPending}
+          submitText="Save changes"
+        />
       )}
     </div>
   );

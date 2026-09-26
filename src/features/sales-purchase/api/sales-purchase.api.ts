@@ -586,15 +586,29 @@ export async function deleteSalesReceipt(id: string | number): Promise<void> {
 }
 
 // Reports
-export async function getPurchaseRegister(): Promise<RegisterResponse<PurchaseRegisterItem>> {
-  const response = await axiosInstance.get('/sales-purchase/reports/purchase-register');
+export async function getPurchaseRegister(params?: { page?: number; limit?: number }): Promise<RegisterResponse<PurchaseRegisterItem>> {
+  const response = await axiosInstance.get('/sales-purchase/reports/purchase-register', { params });
   return response.data;
 }
 
-export async function getSalesRegister(): Promise<RegisterResponse<SalesRegisterItem>> {
-  const response = await axiosInstance.get('/sales-purchase/reports/sales-register');
+export async function getSalesRegister(params?: { page?: number; limit?: number }): Promise<RegisterResponse<SalesRegisterItem>> {
+  const response = await axiosInstance.get('/sales-purchase/reports/sales-register', { params });
   return response.data;
 }
+
+// The register endpoints page at most 200 lines; fetch every page so totals,
+// search and export cover all lines.
+const REGISTER_PAGE = 200;
+async function fetchAllPages<T>(fetchPage: (params: { page: number; limit: number }) => Promise<RegisterResponse<T>>): Promise<RegisterResponse<T>> {
+  const first = await fetchPage({ page: 1, limit: REGISTER_PAGE });
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(0, (first.pagination?.totalPages ?? 1) - 1) }, (_, i) => fetchPage({ page: i + 2, limit: REGISTER_PAGE })),
+  );
+  return { ...first, data: [...first.data, ...rest.flatMap((r) => r.data)] };
+}
+
+export const getFullPurchaseRegister = () => fetchAllPages(getPurchaseRegister);
+export const getFullSalesRegister = () => fetchAllPages(getSalesRegister);
 
 // Dashboard
 export async function getDashboardSummary(): Promise<DashboardSummary> {

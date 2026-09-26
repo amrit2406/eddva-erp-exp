@@ -1,141 +1,113 @@
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, CreditCard, Calendar, IndianRupee, Building2, FileText } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getPayment } from '../../api/sales-purchase.api';
-import type { Payment } from '../../types/sales-purchase.types';
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Pencil, Trash2, Wallet } from 'lucide-react';
+import ConfirmDialog from '../../../../components/feedback/ConfirmDialog';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { DetailHeader, DetailSkeleton, InfoCard } from '../../../../components/premium/detail/DetailParts';
+import { btnQuietDanger, btnSecondary, longDate } from '../../../../components/premium/styles';
+import { useToast } from '../../../../hooks/useToast';
+import { rupees, toNumber } from '../../../../utils/dashboardFormat';
+import { deletePayment, getPayment, getVendors } from '../../api/sales-purchase.api';
+import { paymentModeLabel } from '../../utils/docStatus';
 import { getApiErrorMessage } from '../../utils/errors';
 
+const link = 'text-brand-navy hover:text-brand hover:underline';
+
 export default function PaymentDetailsPage() {
-  const { id } = useParams();
-  const [payment, setPayment] = useState<Payment | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { id = '' } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { data: p, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'purchase-payment', id], queryFn: () => getPayment(id), enabled: Boolean(id) });
+  const { data: vendors = [] } = useQuery({ queryKey: ['sales-purchase', 'vendors'], queryFn: getVendors });
 
-  useEffect(() => {
-    if (id) {
-      loadPayment(id);
-    }
-  }, [id]);
+  const remove = useMutation({
+    mutationFn: () => deletePayment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'purchase-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'purchase-invoices'] });
+      toast.success('Payment deleted');
+      navigate('/sales-purchase/payments');
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not delete this payment')),
+    onSettled: () => setConfirmDelete(false),
+  });
 
-  async function loadPayment(paymentId: string) {
-    try {
-      setLoading(true);
-      const data = await getPayment(paymentId);
-      setPayment(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to load payment'));
-    } finally {
-      setLoading(false);
-    }
+  const back = (
+    <Link to="/sales-purchase/payments" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+      <ArrowLeft className="h-4 w-4" /> Payments
+    </Link>
+  );
+
+  if (isLoading) return <DetailSkeleton />;
+  if (error || !p) {
+    return (
+      <div className="space-y-5">
+        {back}
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load payment')} onRetry={() => refetch()} />
+      </div>
+    );
   }
 
+  const vendor = vendors.find((v) => v.vendor_id === p.invoice?.vendor_id);
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/payments">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">Payment Details</h1>
-          <p className="text-slate-600 mt-1">View payment information</p>
-        </div>
-        <Link to={`/sales-purchase/payments/${id}/edit`}>
-          <Button variant="primary" size="sm">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        </Link>
+    <div className="space-y-5">
+      {back}
+      <DetailHeader
+        icon={Wallet}
+        title={rupees(toNumber(p.amount))}
+        meta={`Paid ${longDate(p.payment_date)} by ${paymentModeLabel(p.mode).toLowerCase()}${vendor ? ` to ${vendor.vendor_name}` : ''}`}
+        actions={
+          <>
+            <Link to={`/sales-purchase/payments/${p.payment_id}/edit`} className={btnSecondary}>
+              <Pencil className="h-4 w-4" /> Edit
+            </Link>
+            <button type="button" onClick={() => setConfirmDelete(true)} className={btnQuietDanger}>
+              <Trash2 className="h-4 w-4" /> Delete
+            </button>
+          </>
+        }
+      />
+      <div className="max-w-xl">
+        <InfoCard
+          title="Payment"
+          icon={Wallet}
+          rows={[
+            ['Amount', rupees(toNumber(p.amount))],
+            ['Paid on', longDate(p.payment_date)],
+            ['How', paymentModeLabel(p.mode)],
+            ['Reference', p.reference_no ? <span key="r" className="font-mono">{p.reference_no}</span> : '—'],
+            [
+              'Invoice',
+              <Link key="i" to={`/sales-purchase/invoices/${p.pi_id}`} className={link}>
+                {p.invoice?.invoice_number ?? `#${p.pi_id}`}
+              </Link>,
+            ],
+            [
+              'Vendor',
+              vendor ? (
+                <Link key="v" to={`/sales-purchase/vendors/${vendor.vendor_id}`} className={link}>
+                  {vendor.vendor_name}
+                </Link>
+              ) : (
+                '—'
+              ),
+            ],
+          ]}
+        />
       </div>
 
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
-      ) : payment ? (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="border-slate-200">
-              <div className="p-4">
-                <div className="flex items-center gap-2 text-slate-600 mb-2">
-                  <CreditCard className="h-4 w-4" />
-                  <span className="text-sm font-medium">Payment Number</span>
-                </div>
-                <div className="text-lg font-bold text-slate-900">Payment #{payment.payment_id}</div>
-              </div>
-            </Card>
-            <Card className="border-slate-200">
-              <div className="p-4">
-                <div className="flex items-center gap-2 text-slate-600 mb-2">
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">Vendor</span>
-                </div>
-                <div className="text-lg font-bold text-slate-900">{payment.invoice?.vendor?.vendor_name || '-'}</div>
-              </div>
-            </Card>
-            <Card className="border-slate-200">
-              <div className="p-4">
-                <div className="flex items-center gap-2 text-slate-600 mb-2">
-                  <Calendar className="h-4 w-4" />
-                  <span className="text-sm font-medium">Payment Date</span>
-                </div>
-                <div className="text-lg font-bold text-slate-900">{payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : '-'}</div>
-              </div>
-            </Card>
-            <Card className="border-slate-200">
-              <div className="p-4">
-                <div className="flex items-center gap-2 text-slate-600 mb-2">
-                  <IndianRupee className="h-4 w-4" />
-                  <span className="text-sm font-medium">Amount</span>
-                </div>
-                <div className="text-lg font-bold text-slate-900">{(Number(payment.amount) || 0).toFixed(2)}</div>
-              </div>
-            </Card>
-          </div>
-
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Payment Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Invoice</label>
-                  <div className="mt-1 flex items-center gap-2 text-slate-900">
-                    <FileText className="h-4 w-4 text-slate-400" />
-                    {payment.invoice?.invoice_number || `Invoice #${payment.pi_id}`}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Payment Mode</label>
-                  <div className="mt-1 text-slate-900">{payment.mode || '-'}</div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Reference</label>
-                  <div className="mt-1 text-slate-900">{payment.reference_no || '-'}</div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Invoice Payment Status</label>
-                  <div className="mt-1">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {payment.invoice?.payment_status || '-'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        onClose={() => !remove.isPending && setConfirmDelete(false)}
+        onConfirm={() => remove.mutate()}
+        title="Delete this payment?"
+        message={`The ${rupees(toNumber(p.amount))} payment will be removed, and that amount will show as owed again.`}
+        confirmText={remove.isPending ? 'Deleting…' : 'Delete payment'}
+      />
     </div>
   );
 }

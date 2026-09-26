@@ -1,79 +1,61 @@
-import Input from '../../../../components/ui/Input';
-import Button from '../../../../components/ui/Button';
-import { cn } from '../../../../utils/cn';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Field, FormActions, FormCard, Toggle } from '../../../../components/premium/form/FormParts';
+import { inputClass } from '../../../../components/premium/styles';
+import { getWarehouses } from '../../api/sales-purchase.api';
 import type { WarehouseFormData } from '../../types/sales-purchase.types';
 
 interface WarehouseFormProps {
   defaultValues?: WarehouseFormData;
+  warehouseId?: number;
   onSubmit?: (data: WarehouseFormData) => void;
   submitText?: string;
   isSubmitting?: boolean;
-  className?: string;
 }
 
-export default function WarehouseForm({
-  defaultValues,
-  onSubmit,
-  submitText = 'Save',
-  isSubmitting = false,
-  className,
-}: WarehouseFormProps) {
+export default function WarehouseForm({ defaultValues, warehouseId, onSubmit, submitText = 'Save', isSubmitting = false }: WarehouseFormProps) {
+  const { data: warehouses = [] } = useQuery({ queryKey: ['sales-purchase', 'warehouses'], queryFn: getWarehouses });
+  const [name, setName] = useState(defaultValues?.name ?? '');
+  const [address, setAddress] = useState(defaultValues?.address ?? '');
+  const [isDefault, setIsDefault] = useState(defaultValues?.is_default ?? false);
+  const [showErrors, setShowErrors] = useState(false);
+
+  const duplicate = warehouses.find((w) => w.warehouse_id !== warehouseId && w.name.trim().toLowerCase() === name.trim().toLowerCase());
+  const currentDefault = warehouses.find((w) => w.is_default && w.warehouse_id !== warehouseId);
+  const nameError = !name.trim() ? 'Enter a name' : duplicate ? `“${duplicate.name}” already exists` : undefined;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const data: WarehouseFormData = {
-      name: formData.get('name') as string,
-      address: formData.get('address') as string,
-      is_default: formData.get('is_default') === 'true',
-    };
-    onSubmit?.(data);
+    if (nameError) {
+      setShowErrors(true);
+      return;
+    }
+    onSubmit?.({ name: name.trim(), address: address.trim(), is_default: isDefault });
   };
 
   return (
-    <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Warehouse Name <span className="text-red-500">*</span>
-        </label>
-        <Input
-          name="name"
-          defaultValue={defaultValues?.name}
-          placeholder="Enter warehouse name (e.g., Central Warehouse)"
-          required
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Address <span className="text-red-500">*</span>
-        </label>
-        <Input
-          name="address"
-          defaultValue={defaultValues?.address}
-          placeholder="Enter warehouse address"
-          required
-        />
-      </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          name="is_default"
-          id="is_default"
-          value="true"
-          defaultChecked={defaultValues?.is_default}
-          className="h-4 w-4 rounded border-slate-300 text-[#008BE9] focus:ring-[#008BE9]"
-        />
-        <label htmlFor="is_default" className="text-sm text-slate-700">
-          Set as default warehouse
-        </label>
-      </div>
-      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-        <Button variant="secondary" type="button" className="w-full sm:w-auto">
-          Cancel
-        </Button>
-        <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-          {isSubmitting ? 'Saving...' : submitText}
-        </Button>
-      </div>
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <FormCard>
+        <div className="grid max-w-2xl gap-4">
+          <Field label="Name" error={duplicate || showErrors ? nameError : undefined}>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Main Store, Science Block Store" autoFocus className={inputClass} />
+          </Field>
+          <Field label="Address (optional)" hint="Where deliveries should be brought.">
+            <textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={2} placeholder="Building, floor, campus" className={inputClass} />
+          </Field>
+          <Toggle
+            label="Default warehouse"
+            description={
+              isDefault && currentDefault
+                ? `Replaces “${currentDefault.name}” as the default for new purchase orders.`
+                : 'New purchase orders deliver here unless someone picks another.'
+            }
+            checked={isDefault}
+            onChange={setIsDefault}
+          />
+        </div>
+      </FormCard>
+      <FormActions submitText={submitText} isSubmitting={isSubmitting} />
     </form>
   );
 }

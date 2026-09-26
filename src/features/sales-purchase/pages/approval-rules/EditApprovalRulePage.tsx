@@ -1,114 +1,54 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { FormLoading } from '../../../../components/premium/form/FormParts';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
 import ApprovalRuleForm from '../../components/approval-rules/ApprovalRuleForm';
 import { getApprovalRule, updateApprovalRule } from '../../api/sales-purchase.api';
-import { getRoles } from '../../api/roles.api';
+import type { ApprovalRuleFormData } from '../../types/sales-purchase.types';
 import { getApiErrorMessage } from '../../utils/errors';
-import type { ApprovalRuleFormData, Role } from '../../types/sales-purchase.types';
 
 export default function EditApprovalRulePage() {
-  const { id } = useParams();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<ApprovalRuleFormData | null>(null);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: rule, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'approval-rule', id], queryFn: () => getApprovalRule(id), enabled: Boolean(id) });
 
-  useEffect(() => {
-    if (id) {
-      loadData(id);
-    }
-  }, [id]);
-
-  async function loadData(ruleId: string) {
-    try {
-      setLoading(true);
-      const [data] = await Promise.all([
-        getApprovalRule(ruleId),
-        getRoles()
-          .then(setRoles)
-          .catch((err) => {
-            if (err.response?.status !== 401) {
-              console.error('Failed to load roles:', err);
-            }
-          }),
-      ]);
-      setDefaultValues({
-        name: data.name,
-        min_amount: data.min_amount ? Number(data.min_amount) : undefined,
-        max_amount: data.max_amount ? Number(data.max_amount) : undefined,
-        approver_role_id: data.approver_role_id || undefined,
-        sequence: data.sequence,
-        is_active: data.is_active,
-      });
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to load approval rule'));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (data: ApprovalRuleFormData) => {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      await updateApprovalRule(id, data);
-      navigate('/sales-purchase/approval-rules');
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to update approval rule'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const save = useMutation({
+    mutationFn: (data: ApprovalRuleFormData) => updateApprovalRule(id, data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'approval-rules'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'approval-rule', id] });
+      toast.success(`Rule “${data.name}” saved`);
+      navigate(`/sales-purchase/approval-rules/${id}`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the rule')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/approval-rules">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Approval Rule</h1>
-          <p className="text-slate-600 mt-1">Update PO approval rule information</p>
-        </div>
-      </div>
-
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: rule ? `/sales-purchase/approval-rules/${id}` : '/sales-purchase/approval-rules', label: rule?.name ?? 'Approval rules' }} title="Edit approval rule" subtitle="Applies to orders sent for approval from now on." />
+      {isLoading ? (
+        <FormLoading />
+      ) : error || !rule ? (
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load rule')} onRetry={() => refetch()} />
       ) : (
-        <Card className="border-slate-200">
-          <div className="p-6">
-            {defaultValues && (
-              <ApprovalRuleForm
-                defaultValues={defaultValues}
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                submitText="Update Rule"
-                roles={roles}
-              />
-            )}
-          </div>
-        </Card>
+        <ApprovalRuleForm
+          ruleId={rule.rule_id}
+          defaultValues={{
+            name: rule.name,
+            min_amount: rule.min_amount !== null ? Number(rule.min_amount) : undefined,
+            max_amount: rule.max_amount !== null ? Number(rule.max_amount) : undefined,
+            approver_role_id: rule.approver_role_id ?? undefined,
+            sequence: rule.sequence,
+            is_active: rule.is_active,
+          }}
+          onSubmit={(data) => save.mutate(data)}
+          isSubmitting={save.isPending}
+          submitText="Save changes"
+        />
       )}
     </div>
   );

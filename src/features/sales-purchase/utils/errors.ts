@@ -25,6 +25,9 @@ function formatValidationDetails(details: unknown): string | null {
 }
 
 export function getApiErrorMessage(error: any, defaultMessage: string): string {
+  // Pages may call this before any error exists (e.g. a record that failed to load).
+  if (!error) return defaultMessage;
+
   if (error?.response?.status === 403) {
     return "You don't have permission to do this. Please contact your administrator if you need access.";
   }

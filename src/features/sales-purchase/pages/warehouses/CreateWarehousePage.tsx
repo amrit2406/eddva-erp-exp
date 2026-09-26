@@ -1,8 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
 import WarehouseForm from '../../components/warehouses/WarehouseForm';
 import { createWarehouse } from '../../api/sales-purchase.api';
 import type { WarehouseFormData } from '../../types/sales-purchase.types';
@@ -10,44 +9,22 @@ import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreateWarehousePage() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (data: WarehouseFormData) => {
-    try {
-      setIsSubmitting(true);
-      await createWarehouse(data);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const create = useMutation({
+    mutationFn: (data: WarehouseFormData) => createWarehouse(data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'warehouses'] });
+      toast.success(`“${data.name}” added`);
       navigate('/sales-purchase/warehouses');
-    } catch (error: any) {
-      console.error('Failed to create warehouse:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Failed to create warehouse'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not add the warehouse')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/warehouses">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Add Warehouse</h1>
-          <p className="text-slate-600 mt-1">Create a new warehouse location</p>
-        </div>
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <WarehouseForm onSubmit={handleSubmit} submitText="Create Warehouse" isSubmitting={isSubmitting} />
-        </div>
-      </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: '/sales-purchase/warehouses', label: 'Warehouses' }} title="New warehouse" subtitle="A store where purchased goods are delivered." />
+      <WarehouseForm onSubmit={(data) => create.mutate(data)} isSubmitting={create.isPending} submitText="Add warehouse" />
     </div>
   );
 }

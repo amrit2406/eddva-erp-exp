@@ -1,8 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useToast } from '../../../../hooks/useToast';
 import ItemCategoryForm from '../../components/item-categories/ItemCategoryForm';
 import { createItemCategory } from '../../api/sales-purchase.api';
 import type { ItemCategoryFormData } from '../../types/sales-purchase.types';
@@ -10,45 +9,29 @@ import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreateItemCategoryPage() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  const handleSubmit = async (data: ItemCategoryFormData) => {
-    try {
-      setIsSubmitting(true);
-      await createItemCategory(data);
+  const create = useMutation({
+    mutationFn: (data: ItemCategoryFormData) => createItemCategory(data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'item-categories'] });
+      toast.success(`Category “${data.name}” added`);
       navigate('/sales-purchase/item-categories');
-    } catch (error: any) {
-      console.error('Failed to create item category:', error);
-      if (error.response?.status === 401) {
-        // Let the axios interceptor handle 401
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Failed to create item category'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not add the category')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/item-categories">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Add Item Category</h1>
-          <p className="text-slate-600 mt-1">Create a new item category</p>
-        </div>
+    <div className="space-y-5">
+      <Link to="/sales-purchase/item-categories" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+        <ArrowLeft className="h-4 w-4" /> Item categories
+      </Link>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">New category</h1>
+        <p className="mt-0.5 text-sm text-slate-500">A group for similar items, like Stationery or Furniture.</p>
       </div>
-
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <ItemCategoryForm onSubmit={handleSubmit} submitText="Create Category" isSubmitting={isSubmitting} />
-        </div>
-      </Card>
+      <ItemCategoryForm onSubmit={(data) => create.mutate(data)} isSubmitting={create.isPending} submitText="Add category" />
     </div>
   );
 }

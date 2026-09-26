@@ -1,131 +1,113 @@
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Building2, Calendar, IndianRupee } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getSalesReceipt } from '../../api/sales-purchase.api';
-import type { SalesReceipt } from '../../types/sales-purchase.types';
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, HandCoins, Pencil, Trash2 } from 'lucide-react';
+import ConfirmDialog from '../../../../components/feedback/ConfirmDialog';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { DetailHeader, DetailSkeleton, InfoCard } from '../../../../components/premium/detail/DetailParts';
+import { btnQuietDanger, btnSecondary, longDate } from '../../../../components/premium/styles';
+import { useToast } from '../../../../hooks/useToast';
+import { rupees, toNumber } from '../../../../utils/dashboardFormat';
+import { deleteSalesReceipt, getSalesReceipt, getCustomers } from '../../api/sales-purchase.api';
+import { paymentModeLabel } from '../../utils/docStatus';
 import { getApiErrorMessage } from '../../utils/errors';
 
+const link = 'text-brand-navy hover:text-brand hover:underline';
+
 export default function SalesReceiptDetailsPage() {
-  const { id } = useParams();
-  const [salesReceipt, setSalesReceipt] = useState<SalesReceipt | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { id = '' } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { data: p, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'sales-receipt', id], queryFn: () => getSalesReceipt(id), enabled: Boolean(id) });
+  const { data: customers = [] } = useQuery({ queryKey: ['sales-purchase', 'customers'], queryFn: getCustomers });
 
-  useEffect(() => {
-    if (id) {
-      loadSalesReceipt(id);
-    }
-  }, [id]);
+  const remove = useMutation({
+    mutationFn: () => deleteSalesReceipt(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'sales-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'sales-invoices'] });
+      toast.success('Receipt deleted');
+      navigate('/sales-purchase/sales-receipts');
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not delete this receipt')),
+    onSettled: () => setConfirmDelete(false),
+  });
 
-  async function loadSalesReceipt(salesReceiptId: string) {
-    try {
-      setLoading(true);
-      const data = await getSalesReceipt(salesReceiptId);
-      setSalesReceipt(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to load sales receipt'));
-    } finally {
-      setLoading(false);
-    }
+  const back = (
+    <Link to="/sales-purchase/sales-receipts" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+      <ArrowLeft className="h-4 w-4" /> Money received
+    </Link>
+  );
+
+  if (isLoading) return <DetailSkeleton />;
+  if (error || !p) {
+    return (
+      <div className="space-y-5">
+        {back}
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load receipt')} onRetry={() => refetch()} />
+      </div>
+    );
   }
 
+  const customer = customers.find((v) => v.customer_id === p.invoice?.customer_id);
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/sales-receipts">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">Sales Receipt Details</h1>
-          <p className="text-slate-600 mt-1">View sales receipt information</p>
-        </div>
-        <Link to={`/sales-purchase/sales-receipts/${id}/edit`}>
-          <Button variant="primary" size="sm">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        </Link>
+    <div className="space-y-5">
+      {back}
+      <DetailHeader
+        icon={HandCoins}
+        title={rupees(toNumber(p.amount))}
+        meta={`Received ${longDate(p.receipt_date)} by ${paymentModeLabel(p.mode).toLowerCase()}${customer ? ` from ${customer.customer_name}` : ''}`}
+        actions={
+          <>
+            <Link to={`/sales-purchase/sales-receipts/${p.receipt_id}/edit`} className={btnSecondary}>
+              <Pencil className="h-4 w-4" /> Edit
+            </Link>
+            <button type="button" onClick={() => setConfirmDelete(true)} className={btnQuietDanger}>
+              <Trash2 className="h-4 w-4" /> Delete
+            </button>
+          </>
+        }
+      />
+      <div className="max-w-xl">
+        <InfoCard
+          title="Receipt"
+          icon={HandCoins}
+          rows={[
+            ['Amount', rupees(toNumber(p.amount))],
+            ['Received on', longDate(p.receipt_date)],
+            ['How', paymentModeLabel(p.mode)],
+            ['Reference', p.reference_no ? <span key="r" className="font-mono">{p.reference_no}</span> : '—'],
+            [
+              'Invoice',
+              <Link key="i" to={`/sales-purchase/sales-invoices/${p.si_id}`} className={link}>
+                {p.invoice?.invoice_number ?? `#${p.si_id}`}
+              </Link>,
+            ],
+            [
+              'Customer',
+              customer ? (
+                <Link key="v" to={`/sales-purchase/customers/${customer.customer_id}`} className={link}>
+                  {customer.customer_name}
+                </Link>
+              ) : (
+                '—'
+              ),
+            ],
+          ]}
+        />
       </div>
 
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
-      ) : salesReceipt ? (
-        <div className="space-y-6">
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Sales Receipt Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Sales Invoice</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-slate-400" />
-                    <p className="text-lg font-medium text-slate-900">{salesReceipt.invoice?.invoice_number || `Invoice #${salesReceipt.si_id}`}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Customer</label>
-                  <p className="mt-1 text-slate-900">{salesReceipt.invoice?.customer?.customer_name || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Receipt Date</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{salesReceipt.receipt_date ? new Date(salesReceipt.receipt_date).toLocaleDateString() : '-'}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Amount</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <IndianRupee className="h-4 w-4" />
-                    <p className="text-slate-900">{Number(salesReceipt.amount).toFixed(2)}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Mode</label>
-                  <p className="mt-1 text-slate-900">{salesReceipt.mode}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Reference No</label>
-                  <p className="mt-1 text-slate-900">{salesReceipt.reference_no || '-'}</p>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">System Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Sales Receipt ID</label>
-                  <p className="mt-1 text-slate-900">{salesReceipt.receipt_id}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Created At</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{salesReceipt.created_at ? new Date(salesReceipt.created_at).toLocaleString() : '-'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        onClose={() => !remove.isPending && setConfirmDelete(false)}
+        onConfirm={() => remove.mutate()}
+        title="Delete this receipt?"
+        message={`The ${rupees(toNumber(p.amount))} receipt will be removed, and that amount will show as due again.`}
+        confirmText={remove.isPending ? 'Deleting…' : 'Delete receipt'}
+      />
     </div>
   );
 }

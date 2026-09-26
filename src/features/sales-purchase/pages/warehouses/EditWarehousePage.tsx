@@ -1,94 +1,47 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { FormLoading } from '../../../../components/premium/form/FormParts';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
 import WarehouseForm from '../../components/warehouses/WarehouseForm';
 import { getWarehouse, updateWarehouse } from '../../api/sales-purchase.api';
 import type { WarehouseFormData } from '../../types/sales-purchase.types';
 import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditWarehousePage() {
-  const { id } = useParams();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<WarehouseFormData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: warehouse, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'warehouse', id], queryFn: () => getWarehouse(id), enabled: Boolean(id) });
 
-  useEffect(() => {
-    if (id) {
-      loadData(id);
-    }
-  }, [id]);
-
-  async function loadData(warehouseId: string) {
-    try {
-      setLoading(true);
-      const data = await getWarehouse(warehouseId);
-      setDefaultValues({
-        name: data.name,
-        address: data.address || '',
-        is_default: data.is_default,
-      });
-    } catch (error: any) {
-      console.error('Failed to load data:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (data: WarehouseFormData) => {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      await updateWarehouse(id, data);
-      navigate('/sales-purchase/warehouses');
-    } catch (error: any) {
-      console.error('Failed to update warehouse:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Failed to update warehouse'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const save = useMutation({
+    mutationFn: (data: WarehouseFormData) => updateWarehouse(id, data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'warehouses'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'warehouse', id] });
+      toast.success(`“${data.name}” saved`);
+      navigate(`/sales-purchase/warehouses/${id}`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the warehouse')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/warehouses">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Warehouse</h1>
-          <p className="text-slate-600 mt-1">Update warehouse information</p>
-        </div>
-      </div>
-
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: warehouse ? `/sales-purchase/warehouses/${id}` : '/sales-purchase/warehouses', label: warehouse?.name ?? 'Warehouses' }} title="Edit warehouse" />
+      {isLoading ? (
+        <FormLoading blocks={1} />
+      ) : error || !warehouse ? (
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load warehouse')} onRetry={() => refetch()} />
       ) : (
-        <Card className="border-slate-200">
-          <div className="p-6">
-            {defaultValues && (
-              <WarehouseForm
-                defaultValues={defaultValues}
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                submitText="Update Warehouse"
-              />
-            )}
-          </div>
-        </Card>
+        <WarehouseForm
+          defaultValues={{ name: warehouse.name, address: warehouse.address ?? '', is_default: warehouse.is_default }}
+          warehouseId={warehouse.warehouse_id}
+          onSubmit={(data) => save.mutate(data)}
+          isSubmitting={save.isPending}
+          submitText="Save changes"
+        />
       )}
     </div>
   );

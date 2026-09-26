@@ -1,113 +1,66 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { NextStep } from '../../../../components/premium/detail/DetailParts';
+import { FormLoading } from '../../../../components/premium/form/FormParts';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
+import { toNumber } from '../../../../utils/dashboardFormat';
 import SalesInvoiceForm from '../../components/sales-invoices/SalesInvoiceForm';
-import { getSalesInvoice, updateSalesInvoice } from '../../api/sales-purchase.api';
-import { getApiErrorMessage } from '../../utils/errors';
+import { getItems, getSalesInvoice, updateSalesInvoice } from '../../api/sales-purchase.api';
 import type { SalesInvoiceFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function EditSalesInvoicePage() {
-  const { id } = useParams();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<SalesInvoiceFormData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: inv, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'sales-invoice', id], queryFn: () => getSalesInvoice(id), enabled: Boolean(id) });
+  // Invoice lines store tax rates, not the tax code; recover it from the item's usual code.
+  const { data: catalog = [], isLoading: itemsLoading } = useQuery({ queryKey: ['sales-purchase', 'items'], queryFn: getItems });
 
-  useEffect(() => {
-    if (id) {
-      loadData(id);
-    }
-  }, [id]);
-
-  async function loadData(salesInvoiceId: string) {
-    try {
-      setLoading(true);
-      const data = await getSalesInvoice(salesInvoiceId);
-      setDefaultValues({
-        customer_id: data.customer_id,
-        sales_order_id: data.sales_order_id || undefined,
-        invoice_date: data.invoice_date,
-        due_date: data.due_date || undefined,
-        discount: Number(data.discount) || 0,
-        items: (data.items || []).map((item) => ({
-          item_id: item.item_id,
-          so_item_id: item.so_item_id || undefined,
-          quantity: Number(item.quantity),
-          unit_price: Number(item.unit_price),
-          // The API doesn't return the original tax_code_id on read (only the resulting
-          // cgst/sgst/igst rates), so the tax code must be re-selected when editing a line.
-          tax_code_id: 0,
-          line_discount: Number(item.line_discount) || 0,
-        })),
-      });
-    } catch (error: any) {
-      console.error('Failed to load data:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (data: SalesInvoiceFormData) => {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      await updateSalesInvoice(id, data);
-      navigate('/sales-purchase/sales-invoices');
-    } catch (error: any) {
-      console.error('Failed to update sales invoice:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(error, 'Failed to update sales invoice'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const save = useMutation({
+    mutationFn: (data: SalesInvoiceFormData) => updateSalesInvoice(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'sales-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'sales-invoice', id] });
+      toast.success(`${inv?.invoice_number ?? 'Invoice'} saved`);
+      navigate(`/sales-purchase/sales-invoices/${id}`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the invoice')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/sales-invoices">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Sales Invoice</h1>
-          <p className="text-slate-600 mt-1">Update sales invoice information</p>
-        </div>
-      </div>
-
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: inv ? `/sales-purchase/sales-invoices/${id}` : '/sales-purchase/sales-invoices', label: inv?.invoice_number ?? 'Sales invoices' }} title={inv ? `Edit ${inv.invoice_number}` : 'Edit invoice'} subtitle="Only draft invoices can be edited. Check each line's tax before saving." />
+      {isLoading || itemsLoading ? (
+        <FormLoading blocks={3} />
+      ) : error || !inv ? (
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load invoice')} onRetry={() => refetch()} />
+      ) : inv.status !== 'DRAFT' ? (
+        <NextStep tone="bad">This invoice is {inv.status.toLowerCase()}, so it can't be edited any more.</NextStep>
       ) : (
-        <Card className="border-slate-200">
-          <div className="p-6">
-            {error && (
-              <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm whitespace-pre-line">
-                {error}
-              </div>
-            )}
-            {defaultValues && (
-              <SalesInvoiceForm
-                defaultValues={defaultValues}
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                submitText="Update Sales Invoice"
-              />
-            )}
-          </div>
-        </Card>
+        <SalesInvoiceForm
+          defaultValues={{
+            customer_id: inv.customer_id,
+            sales_order_id: inv.sales_order_id ?? undefined,
+            invoice_date: inv.invoice_date,
+            due_date: inv.due_date ?? undefined,
+            discount: toNumber(inv.discount),
+            items: (inv.items ?? []).map((l) => ({
+              item_id: l.item_id,
+              so_item_id: l.so_item_id ?? undefined,
+              quantity: toNumber(l.quantity),
+              unit_price: toNumber(l.unit_price),
+              tax_code_id: catalog.find((i) => i.item_id === l.item_id)?.tax_code_id ?? 0,
+              line_discount: toNumber(l.line_discount),
+            })),
+          }}
+          onSubmit={(data) => save.mutate(data)}
+          isSubmitting={save.isPending}
+          submitText="Save changes"
+        />
       )}
     </div>
   );

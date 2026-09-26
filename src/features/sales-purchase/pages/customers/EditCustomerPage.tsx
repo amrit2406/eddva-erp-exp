@@ -1,113 +1,51 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import CustomerForm from '../../components/customers/CustomerForm';
-import { getCustomer, updateCustomer, getPaymentTerms } from '../../api/sales-purchase.api';
-import type { CustomerFormData, PaymentTerm } from '../../types/sales-purchase.types';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { FormLoading } from '../../../../components/premium/form/FormParts';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
+import PartyForm from '../../components/parties/PartyForm';
+import { getCustomer, getCustomers, updateCustomer } from '../../api/sales-purchase.api';
+import type { CustomerFormData } from '../../types/sales-purchase.types';
 import { getApiErrorMessage } from '../../utils/errors';
+import { partyPayload, toPartyValues } from '../../utils/party';
 
 export default function EditCustomerPage() {
-  const { id } = useParams();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<CustomerFormData | null>(null);
-  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: customer, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'customer', id], queryFn: () => getCustomer(id), enabled: Boolean(id) });
+  const { data: customers = [] } = useQuery({ queryKey: ['sales-purchase', 'customers'], queryFn: getCustomers });
 
-  useEffect(() => {
-    if (id) {
-      loadData(id);
-    }
-  }, [id]);
-
-  async function loadData(customerId: string) {
-    try {
-      setLoading(true);
-      const [data] = await Promise.all([
-        getCustomer(customerId),
-        getPaymentTerms()
-          .then(setPaymentTerms)
-          .catch((err) => {
-            if (err.response?.status !== 401) {
-              console.error('Failed to load payment terms:', err);
-            }
-          }),
-      ]);
-      setDefaultValues({
-        customer_name: data.customer_name,
-        gstin: data.gstin || undefined,
-        tax_id: data.tax_id || undefined,
-        address_line1: data.address_line1 || undefined,
-        address_line2: data.address_line2 || undefined,
-        city: data.city || undefined,
-        state: data.state || undefined,
-        pincode: data.pincode || undefined,
-        payment_term_id: data.payment_term_id || undefined,
-        credit_limit: data.credit_limit ? Number(data.credit_limit) : undefined,
-        status: data.status,
-      });
-    } catch (error: any) {
-      console.error('Failed to load data:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (data: CustomerFormData) => {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      await updateCustomer(id, data);
-      navigate('/sales-purchase/customers');
-    } catch (error: any) {
-      console.error('Failed to update customer:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Failed to update customer'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const save = useMutation({
+    mutationFn: (data: CustomerFormData) => updateCustomer(id, data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'customers'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'customer', id] });
+      toast.success(`“${data.customer_name}” saved`);
+      navigate(`/sales-purchase/customers/${id}`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the customer')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/customers">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Customer</h1>
-          <p className="text-slate-600 mt-1">Update customer information</p>
-        </div>
-      </div>
-
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: customer ? `/sales-purchase/customers/${id}` : '/sales-purchase/customers', label: customer?.customer_name ?? 'Customers' }} title="Edit customer" subtitle="Contacts are managed on the customer's page." />
+      {isLoading ? (
+        <FormLoading blocks={3} />
+      ) : error || !customer ? (
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load customer')} onRetry={() => refetch()} />
       ) : (
-        <Card className="border-slate-200">
-          <div className="p-6">
-            {defaultValues && (
-              <CustomerForm
-                defaultValues={defaultValues}
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                submitText="Update Customer"
-                paymentTerms={paymentTerms}
-              />
-            )}
-          </div>
-        </Card>
+        <PartyForm
+          kind="customer"
+          editing
+          defaultValues={toPartyValues(customer.customer_name, customer)}
+          takenNames={customers.filter((c) => c.customer_id !== customer.customer_id).map((c) => c.customer_name)}
+          onSubmit={(v) => save.mutate({ customer_name: v.name, ...partyPayload(v) })}
+          isSubmitting={save.isPending}
+          submitText="Save changes"
+        />
       )}
     </div>
   );

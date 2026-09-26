@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
-import Input from '../../../../components/ui/Input';
-import Button from '../../../../components/ui/Button';
-import { cn } from '../../../../utils/cn';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Field, FormActions, FormCard, FormLoading } from '../../../../components/premium/form/FormParts';
+import { cardClass, inputClass } from '../../../../components/premium/styles';
+import LineItemsEditor from '../lines/LineItemsEditor';
+import { getItems, getTaxCodes, getVendors, getWarehouses } from '../../api/sales-purchase.api';
 import type { PurchaseOrderFormData, PurchaseOrderItemFormData } from '../../types/sales-purchase.types';
-import { getVendors, getWarehouses, getItems, getTaxCodes } from '../../api/sales-purchase.api';
-import type { Vendor, Warehouse, Item, TaxCode } from '../../types/sales-purchase.types';
+import { emptyLine } from '../../utils/lines';
 
 interface PurchaseOrderFormProps {
   defaultValues?: PurchaseOrderFormData;
@@ -14,252 +16,109 @@ interface PurchaseOrderFormProps {
   className?: string;
 }
 
-const emptyLine: PurchaseOrderItemFormData = { item_id: 0, quantity: 0, unit_price: 0, tax_code_id: 0, line_discount: 0 };
+const todayIso = () => new Date().toISOString().split('T')[0];
 
-export default function PurchaseOrderForm({
-  defaultValues,
-  onSubmit,
-  submitText = 'Save',
-  isSubmitting = false,
-  className,
-}: PurchaseOrderFormProps) {
-  const [items, setItems] = useState<PurchaseOrderItemFormData[]>(
-    defaultValues?.items && defaultValues.items.length > 0 ? defaultValues.items : [{ ...emptyLine }]
-  );
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [itemsList, setItemsList] = useState<Item[]>([]);
-  const [taxCodes, setTaxCodes] = useState<TaxCode[]>([]);
-  const [loading, setLoading] = useState(true);
+// Purchase order form: details, items, total. Price and tax fill in from the item.
+export default function PurchaseOrderForm({ defaultValues, onSubmit, submitText = 'Save', isSubmitting = false, className }: PurchaseOrderFormProps) {
+  const vendorsQuery = useQuery({ queryKey: ['sales-purchase', 'vendors'], queryFn: getVendors });
+  const warehousesQuery = useQuery({ queryKey: ['sales-purchase', 'warehouses'], queryFn: getWarehouses });
+  const itemsQuery = useQuery({ queryKey: ['sales-purchase', 'items'], queryFn: getItems });
+  const taxQuery = useQuery({ queryKey: ['sales-purchase', 'tax-codes'], queryFn: getTaxCodes });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const [vendorId, setVendorId] = useState(defaultValues?.vendor_id ?? 0);
+  // 0 = not chosen yet; falls back to the default warehouse.
+  const [warehouseChoice, setWarehouseChoice] = useState(defaultValues?.warehouse_id ?? 0);
+  const [poDate, setPoDate] = useState(defaultValues?.po_date?.split('T')[0] ?? todayIso());
+  const [deliveryDate, setDeliveryDate] = useState(defaultValues?.expected_delivery_date?.split('T')[0] ?? '');
+  const [discount, setDiscount] = useState(defaultValues?.discount ?? 0);
+  const [lines, setLines] = useState<PurchaseOrderItemFormData[]>(defaultValues?.items?.length ? defaultValues.items : [{ ...emptyLine }]);
+  const [showErrors, setShowErrors] = useState(false);
 
-  async function loadData() {
-    try {
-      setLoading(true);
-      const [vendorsData, warehousesData, itemsData, taxCodesData] = await Promise.all([
-        getVendors(),
-        getWarehouses(),
-        getItems(),
-        getTaxCodes(),
-      ]);
-      setVendors(vendorsData);
-      setWarehouses(warehousesData);
-      setItemsList(itemsData);
-      setTaxCodes(taxCodesData);
-    } catch (error) {
-      console.error('Failed to load dropdown data:', error);
-    } finally {
-      setLoading(false);
-    }
+  if (vendorsQuery.isLoading || warehousesQuery.isLoading || itemsQuery.isLoading || taxQuery.isLoading) return <FormLoading />;
+  if (vendorsQuery.isError || warehousesQuery.isError || itemsQuery.isError || taxQuery.isError) {
+    return <div className={`${cardClass} text-center text-sm text-red-600`}>We couldn't load vendors, warehouses or items. Please try again.</div>;
   }
 
-  const addItem = () => {
-    setItems([...items, { ...emptyLine }]);
-  };
+  const vendors = (vendorsQuery.data ?? []).filter((v) => v.status !== 'INACTIVE' || v.vendor_id === defaultValues?.vendor_id);
+  const warehouses = warehousesQuery.data ?? [];
+  const warehouseId = warehouseChoice || warehouses.find((w) => w.is_default)?.warehouse_id || 0;
+  const filledLines = lines.filter((line) => line.item_id && line.quantity > 0);
 
-  const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
+  const errors = {
+    vendor: vendorId ? undefined : 'Choose a vendor',
+    warehouse: warehouseId ? undefined : 'Choose a warehouse',
+    poDate: poDate ? undefined : 'Pick a date',
+    delivery: deliveryDate && deliveryDate < poDate ? 'Can’t be before the order date' : undefined,
+    lines: filledLines.length ? undefined : 'Add at least one item with a quantity',
   };
-
-  const updateItem = (index: number, field: keyof PurchaseOrderItemFormData, value: number) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setItems(newItems);
-  };
+  const hasErrors = Object.values(errors).some(Boolean);
+  const show = (message?: string) => (showErrors ? message : undefined);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-
-    const data: PurchaseOrderFormData = {
-      vendor_id: Number(formData.get('vendor_id')),
-      po_date: formData.get('po_date') as string,
-      expected_delivery_date: formData.get('expected_delivery_date') as string,
-      warehouse_id: Number(formData.get('warehouse_id')),
-      discount: formData.get('discount') ? Number(formData.get('discount')) : 0,
-      items: items.filter((item) => item.item_id && item.quantity > 0),
-    };
-
-    onSubmit?.(data);
+    if (hasErrors) {
+      setShowErrors(true);
+      return;
+    }
+    onSubmit?.({ vendor_id: vendorId, po_date: poDate, expected_delivery_date: deliveryDate, warehouse_id: warehouseId, discount, items: filledLines });
   };
 
   return (
-    <form onSubmit={handleSubmit} className={cn('space-y-6', className)}>
-      {loading ? (
-        <div className="text-center py-8 text-slate-500">Loading dropdown options...</div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Vendor <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="vendor_id"
-                defaultValue={defaultValues?.vendor_id ? String(defaultValues.vendor_id) : ''}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select vendor</option>
-                {vendors.map((vendor) => (
-                  <option key={vendor.vendor_id} value={vendor.vendor_id}>
-                    {vendor.vendor_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Warehouse <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="warehouse_id"
-                defaultValue={defaultValues?.warehouse_id ? String(defaultValues.warehouse_id) : ''}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select warehouse</option>
-                {warehouses.map((warehouse) => (
-                  <option key={warehouse.warehouse_id} value={warehouse.warehouse_id}>
-                    {warehouse.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                PO Date <span className="text-red-500">*</span>
-              </label>
-              <Input
-                name="po_date"
-                type="date"
-                defaultValue={defaultValues?.po_date?.split('T')[0]}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Expected Delivery Date
-              </label>
-              <Input
-                name="expected_delivery_date"
-                type="date"
-                defaultValue={defaultValues?.expected_delivery_date?.split('T')[0]}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Discount</label>
-              <Input
-                name="discount"
-                type="number"
-                defaultValue={defaultValues?.discount || 0}
-                min="0"
-                step="0.01"
-              />
-            </div>
-          </div>
-
-          <div className="border-t border-slate-200 pt-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-slate-900">Items</h3>
-              <Button variant="secondary" size="sm" type="button" onClick={addItem}>
-                Add Item
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {items.map((item, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-3 p-3 bg-slate-50 rounded-lg">
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Item</label>
-                    <select
-                      value={item.item_id || ''}
-                      onChange={(e) => updateItem(index, 'item_id', Number(e.target.value))}
-                      className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select item</option>
-                      {itemsList.map((itemOption) => (
-                        <option key={itemOption.item_id} value={itemOption.item_id}>
-                          {itemOption.item_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Quantity</label>
-                    <Input
-                      type="number"
-                      value={item.quantity || ''}
-                      onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
-                      min="1"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Unit Price</label>
-                    <Input
-                      type="number"
-                      value={item.unit_price || ''}
-                      onChange={(e) => updateItem(index, 'unit_price', Number(e.target.value))}
-                      min="0"
-                      step="0.01"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Line Discount</label>
-                    <Input
-                      type="number"
-                      value={item.line_discount || ''}
-                      onChange={(e) => updateItem(index, 'line_discount', Number(e.target.value))}
-                      min="0"
-                      step="0.01"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1">
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Tax Code</label>
-                      <select
-                        value={item.tax_code_id || ''}
-                        onChange={(e) => updateItem(index, 'tax_code_id', Number(e.target.value))}
-                        className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Select tax</option>
-                        {taxCodes.map((taxCode) => (
-                          <option key={taxCode.tax_code_id} value={taxCode.tax_code_id}>
-                            {taxCode.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeItem(index)}
-                        className="p-1.5 hover:bg-red-100 rounded text-red-600"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                </div>
+    <form onSubmit={handleSubmit} noValidate className={`space-y-5 ${className ?? ''}`}>
+      <FormCard title="Order details">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label="Vendor" error={show(errors.vendor)}>
+            <select value={vendorId || ''} onChange={(e) => setVendorId(Number(e.target.value))} className={inputClass}>
+              <option value="">Choose a vendor</option>
+              {vendors.map((v) => (
+                <option key={v.vendor_id} value={v.vendor_id}>
+                  {v.vendor_name}
+                </option>
               ))}
-            </div>
-          </div>
+            </select>
+          </Field>
+          <Field label="Deliver to" error={show(errors.warehouse)}>
+            <select value={warehouseId || ''} onChange={(e) => setWarehouseChoice(Number(e.target.value))} className={inputClass}>
+              <option value="">Choose a warehouse</option>
+              {warehouses.map((w) => (
+                <option key={w.warehouse_id} value={w.warehouse_id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Order date" error={show(errors.poDate)}>
+            <input type="date" value={poDate} onChange={(e) => setPoDate(e.target.value)} className={inputClass} />
+          </Field>
+          <Field label="Needed by (optional)" error={errors.delivery}>
+            <input type="date" value={deliveryDate} min={poDate} onChange={(e) => setDeliveryDate(e.target.value)} className={inputClass} />
+          </Field>
+        </div>
+        {!vendorId && (
+          <p className="mt-3 text-xs text-slate-500">
+            Vendor missing?{' '}
+            <Link to="/sales-purchase/vendors/new" className="font-medium text-brand hover:text-brand-navy">
+              Add a vendor
+            </Link>
+          </p>
+        )}
+      </FormCard>
 
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-            <Button variant="secondary" type="button" className="w-full sm:w-auto">
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-              {isSubmitting ? 'Saving...' : submitText}
-            </Button>
-          </div>
-        </>
-      )}
+      <FormCard title="Items">
+        <LineItemsEditor
+          lines={lines}
+          onChange={setLines}
+          newLine={() => ({ ...emptyLine })}
+          catalog={itemsQuery.data ?? []}
+          taxCodes={taxQuery.data ?? []}
+          priceField="purchase_price"
+          discount={discount}
+          onDiscount={setDiscount}
+          error={show(errors.lines)}
+        />
+      </FormCard>
+
+      <FormActions submitText={submitText} isSubmitting={isSubmitting} />
     </form>
   );
 }

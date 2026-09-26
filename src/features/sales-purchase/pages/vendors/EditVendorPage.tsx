@@ -1,113 +1,51 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import VendorForm from '../../components/vendors/VendorForm';
-import { getVendor, updateVendor, getPaymentTerms } from '../../api/sales-purchase.api';
-import type { VendorFormData, PaymentTerm } from '../../types/sales-purchase.types';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { FormLoading } from '../../../../components/premium/form/FormParts';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
+import PartyForm from '../../components/parties/PartyForm';
+import { getVendor, getVendors, updateVendor } from '../../api/sales-purchase.api';
+import type { VendorFormData } from '../../types/sales-purchase.types';
 import { getApiErrorMessage } from '../../utils/errors';
+import { partyPayload, toPartyValues } from '../../utils/party';
 
 export default function EditVendorPage() {
-  const { id } = useParams();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultValues, setDefaultValues] = useState<VendorFormData | null>(null);
-  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: vendor, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'vendor', id], queryFn: () => getVendor(id), enabled: Boolean(id) });
+  const { data: vendors = [] } = useQuery({ queryKey: ['sales-purchase', 'vendors'], queryFn: getVendors });
 
-  useEffect(() => {
-    if (id) {
-      loadData(id);
-    }
-  }, [id]);
-
-  async function loadData(vendorId: string) {
-    try {
-      setLoading(true);
-      const [data] = await Promise.all([
-        getVendor(vendorId),
-        getPaymentTerms()
-          .then(setPaymentTerms)
-          .catch((err) => {
-            if (err.response?.status !== 401) {
-              console.error('Failed to load payment terms:', err);
-            }
-          }),
-      ]);
-      setDefaultValues({
-        vendor_name: data.vendor_name,
-        gstin: data.gstin || undefined,
-        tax_id: data.tax_id || undefined,
-        address_line1: data.address_line1 || undefined,
-        address_line2: data.address_line2 || undefined,
-        city: data.city || undefined,
-        state: data.state || undefined,
-        pincode: data.pincode || undefined,
-        payment_term_id: data.payment_term_id || undefined,
-        credit_limit: data.credit_limit ? Number(data.credit_limit) : undefined,
-        status: data.status,
-      });
-    } catch (error: any) {
-      console.error('Failed to load data:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleSubmit = async (data: VendorFormData) => {
-    if (!id) return;
-    try {
-      setIsSubmitting(true);
-      await updateVendor(id, data);
-      navigate('/sales-purchase/vendors');
-    } catch (error: any) {
-      console.error('Failed to update vendor:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Failed to update vendor'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const save = useMutation({
+    mutationFn: (data: VendorFormData) => updateVendor(id, data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'vendors'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'vendor', id] });
+      toast.success(`“${data.vendor_name}” saved`);
+      navigate(`/sales-purchase/vendors/${id}`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the vendor')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/vendors">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Vendor</h1>
-          <p className="text-slate-600 mt-1">Update vendor information</p>
-        </div>
-      </div>
-
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: vendor ? `/sales-purchase/vendors/${id}` : '/sales-purchase/vendors', label: vendor?.vendor_name ?? 'Vendors' }} title="Edit vendor" subtitle="Contacts and bank details are managed on the vendor's page." />
+      {isLoading ? (
+        <FormLoading blocks={3} />
+      ) : error || !vendor ? (
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load vendor')} onRetry={() => refetch()} />
       ) : (
-        <Card className="border-slate-200">
-          <div className="p-6">
-            {defaultValues && (
-              <VendorForm
-                defaultValues={defaultValues}
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                submitText="Update Vendor"
-                paymentTerms={paymentTerms}
-              />
-            )}
-          </div>
-        </Card>
+        <PartyForm
+          kind="vendor"
+          editing
+          defaultValues={toPartyValues(vendor.vendor_name, vendor)}
+          takenNames={vendors.filter((v) => v.vendor_id !== vendor.vendor_id).map((v) => v.vendor_name)}
+          onSubmit={(v) => save.mutate({ vendor_name: v.name, ...partyPayload(v) })}
+          isSubmitting={save.isPending}
+          submitText="Save changes"
+        />
       )}
     </div>
   );

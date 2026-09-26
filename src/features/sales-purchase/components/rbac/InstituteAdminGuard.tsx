@@ -1,5 +1,4 @@
 import { ShieldAlert } from 'lucide-react';
-import Card from '../../../../components/ui/Card';
 
 interface InstituteAdminGuardProps {
   section: string;
@@ -7,15 +6,14 @@ interface InstituteAdminGuardProps {
 
 export default function InstituteAdminGuard({ section }: InstituteAdminGuardProps) {
   return (
-    <Card className="border-slate-200">
-      <div className="p-10 text-center">
-        <ShieldAlert className="h-10 w-10 text-amber-500 mx-auto mb-3" />
-        <h2 className="text-lg font-semibold text-slate-900 mb-1">Institute Admin access required</h2>
-        <p className="text-slate-600 max-w-md mx-auto">
-          {section} can only be managed by the Institute Admin. Please log in through the SSO admin flow to access this
-          section.
-        </p>
+    <div className="rounded-3xl bg-white px-6 py-12 text-center shadow-soft ring-1 ring-slate-200/70">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 ring-1 ring-amber-100">
+        <ShieldAlert className="h-7 w-7 text-amber-500" />
       </div>
-    </Card>
+      <h2 className="mt-4 text-lg font-semibold text-slate-900">Only the Institute Admin can do this</h2>
+      <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
+        {section} can only be managed by the Institute Admin. Please sign in through the admin (SSO) login to continue.
+      </p>
+    </div>
   );
 }

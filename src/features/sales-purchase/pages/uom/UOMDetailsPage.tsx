@@ -1,101 +1,48 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Ruler, Calendar } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, Pencil, Ruler } from 'lucide-react';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { DetailHeader, DetailSkeleton } from '../../../../components/premium/detail/DetailParts';
+import { btnSecondary, longDate } from '../../../../components/premium/styles';
+import ItemsUsingList from '../../components/items/ItemsUsingList';
 import { getUOM } from '../../api/sales-purchase.api';
-import type { UOM } from '../../types/sales-purchase.types';
 import { getApiErrorMessage } from '../../utils/errors';
 
 export default function UOMDetailsPage() {
-  const { id } = useParams();
-  const [uom, setUOM] = useState<UOM | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { id = '' } = useParams();
+  const { data: unit, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'uom', id], queryFn: () => getUOM(id), enabled: Boolean(id) });
 
-  useEffect(() => {
-    if (id) {
-      loadUOM(id);
-    }
-  }, [id]);
+  const back = (
+    <Link to="/sales-purchase/uom" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+      <ArrowLeft className="h-4 w-4" /> Units of measure
+    </Link>
+  );
 
-  async function loadUOM(uomId: string) {
-    try {
-      setLoading(true);
-      const data = await getUOM(uomId);
-      setUOM(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to load UOM'));
-    } finally {
-      setLoading(false);
-    }
+  if (isLoading) return <DetailSkeleton />;
+  if (error || !unit) {
+    return (
+      <div className="space-y-5">
+        {back}
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load unit')} onRetry={() => refetch()} />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/uom">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">UOM Details</h1>
-          <p className="text-slate-600 mt-1">View unit of measure information</p>
-        </div>
-        <Link to={`/sales-purchase/uom/${id}/edit`}>
-          <Button variant="primary" size="sm">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        </Link>
-      </div>
-
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
-      ) : uom ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">UOM Information</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-500">UOM Name</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Ruler className="h-5 w-5 text-slate-400" />
-                    <p className="text-lg font-medium text-slate-900">{uom.name}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Symbol</label>
-                  <p className="mt-1 text-slate-900">{uom.symbol}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">UOM ID</label>
-                  <p className="mt-1 text-slate-900">{uom.uom_id}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Created At</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{uom.created_at ? new Date(uom.created_at).toLocaleString() : '-'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      ) : null}
+    <div className="space-y-5">
+      {back}
+      <DetailHeader
+        icon={Ruler}
+        title={unit.name}
+        status={<code className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-sm text-slate-700">{unit.symbol}</code>}
+        meta={`Added ${longDate(unit.created_at)}`}
+        actions={
+          <Link to={`/sales-purchase/uom/${unit.uom_id}/edit`} className={btnSecondary}>
+            <Pencil className="h-4 w-4" /> Edit
+          </Link>
+        }
+      />
+      <ItemsUsingList title="Items measured in this unit" filter={(i) => i.uom_id === unit.uom_id} emptyText="No items use this unit yet." />
     </div>
   );
 }

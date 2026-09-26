@@ -1,147 +1,37 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { Link, useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
+import { useToast } from '../../../../hooks/useToast';
+import PermissionForm from '../../components/rbac/PermissionForm';
 import { createPermission } from '../../api/roles.api';
-import { getApiErrorMessage } from '../../utils/errors';
 import type { PermissionFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreatePermissionPage() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<PermissionFormData>({
-    resource: '',
-    action: '',
-    name: '',
-    category: '',
-    description: '',
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setSubmitting(true);
-      setError(null);
-      await createPermission(formData);
+  const create = useMutation({
+    mutationFn: (data: PermissionFormData) => createPermission(data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'permissions'] });
+      toast.success(`Permission “${data.name}” added`);
       navigate('/sales-purchase/permissions');
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to create permission'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not add the permission')),
+  });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      <Link to="/sales-purchase/permissions" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+        <ArrowLeft className="h-4 w-4" /> Permissions
+      </Link>
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Add Permission</h1>
-        <p className="text-slate-600 mt-1">Create a new sales & purchase permission</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">New permission</h1>
+        <p className="mt-0.5 text-sm text-slate-500">After adding it, give it to people by adding it to a role.</p>
       </div>
-
-      <Card className="border-slate-200">
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="resource" className="block text-sm font-medium text-slate-700 mb-1">
-                Resource *
-              </label>
-              <input
-                type="text"
-                id="resource"
-                value={formData.resource}
-                onChange={(e) => setFormData({ ...formData, resource: e.target.value })}
-                placeholder="e.g., purchase_orders"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="action" className="block text-sm font-medium text-slate-700 mb-1">
-                Action *
-              </label>
-              <input
-                type="text"
-                id="action"
-                value={formData.action}
-                onChange={(e) => setFormData({ ...formData, action: e.target.value })}
-                placeholder="e.g., export"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
-                Name *
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Export Purchase Orders"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-1">
-                Category *
-              </label>
-              <input
-                type="text"
-                id="category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                placeholder="e.g., Purchase Orders"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-1">
-                Description *
-              </label>
-              <textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-                placeholder="e.g., Allows exporting purchase orders to CSV"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => navigate('/sales-purchase/permissions')}
-                disabled={submitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" disabled={submitting}>
-                {submitting ? 'Creating...' : 'Create Permission'}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </Card>
+      <PermissionForm onSubmit={(data) => create.mutate(data)} isSubmitting={create.isPending} submitText="Add permission" />
     </div>
   );
 }

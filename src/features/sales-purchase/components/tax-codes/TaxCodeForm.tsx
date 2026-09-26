@@ -1,80 +1,146 @@
-import Input from '../../../../components/ui/Input';
-import Button from '../../../../components/ui/Button';
-import { cn } from '../../../../utils/cn';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { AlertTriangle, Lock } from 'lucide-react';
+import { Field, FormActions, FormCard } from '../../../../components/premium/form/FormParts';
+import { inputClass } from '../../../../components/premium/styles';
+import { getTaxCodes } from '../../api/sales-purchase.api';
 import type { TaxCodeFormData } from '../../types/sales-purchase.types';
+import { formatRate, taxBreakdown } from '../../utils/taxCode';
+
+type Mode = 'intra' | 'inter' | 'custom';
+
+const MODES: { value: Mode; label: string; hint: string }[] = [
+  { value: 'intra', label: 'Within the state', hint: 'Split equally into CGST + SGST' },
+  { value: 'inter', label: 'Another state', hint: 'Charged fully as IGST' },
+  { value: 'custom', label: 'Custom split', hint: 'Enter each part yourself' },
+];
+
+const todayIso = () => new Date().toISOString().split('T')[0];
+const num = (v: string) => (v === '' ? 0 : Number(v));
 
 interface TaxCodeFormProps {
   onSubmit?: (data: TaxCodeFormData) => void;
   submitText?: string;
   isSubmitting?: boolean;
-  className?: string;
 }
 
-export default function TaxCodeForm({
-  onSubmit,
-  submitText = 'Save',
-  isSubmitting = false,
-  className,
-}: TaxCodeFormProps) {
+// Pick where the trade happens and the total rate; the CGST/SGST/IGST split is done for you.
+export default function TaxCodeForm({ onSubmit, submitText = 'Save', isSubmitting = false }: TaxCodeFormProps) {
+  const { data: existing = [] } = useQuery({ queryKey: ['sales-purchase', 'tax-codes'], queryFn: getTaxCodes });
+  const [mode, setMode] = useState<Mode>('intra');
+  const [rate, setRate] = useState('');
+  const [custom, setCustom] = useState({ cgst: '', sgst: '', igst: '' });
+  const [name, setName] = useState('');
+  const [nameTouched, setNameTouched] = useState(false);
+  const [effectiveFrom, setEffectiveFrom] = useState(todayIso());
+  const [showErrors, setShowErrors] = useState(false);
+
+  const total = num(rate);
+  const split =
+    mode === 'intra'
+      ? { cgst_pct: total / 2, sgst_pct: total / 2, igst_pct: 0 }
+      : mode === 'inter'
+        ? { cgst_pct: 0, sgst_pct: 0, igst_pct: total }
+        : { cgst_pct: num(custom.cgst), sgst_pct: num(custom.sgst), igst_pct: num(custom.igst) };
+  const combined = split.cgst_pct + split.sgst_pct + split.igst_pct;
+  const mixed = split.cgst_pct + split.sgst_pct > 0 && split.igst_pct > 0;
+
+  const suggestedName = rate === '' && mode !== 'custom' ? '' : `${mode === 'inter' ? 'IGST' : 'GST'} ${formatRate(combined)}`;
+  const effectiveName = nameTouched ? name : suggestedName;
+  const duplicate = existing.find((t) => t.name.trim().toLowerCase() === effectiveName.trim().toLowerCase());
+
+  const errors = {
+    rate: mode !== 'custom' && rate === '' ? 'Enter the total tax rate' : combined < 0 || combined > 100 ? 'Rate must be between 0 and 100' : undefined,
+    name: !effectiveName.trim() ? 'Give it a name' : duplicate ? `“${duplicate.name}” already exists` : undefined,
+    date: effectiveFrom ? undefined : 'Pick the date it starts',
+  };
+  const hasErrors = Object.values(errors).some(Boolean);
+  const show = (m?: string) => (showErrors ? m : undefined);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const data: TaxCodeFormData = {
-      name: formData.get('name') as string,
-      cgst_pct: parseFloat(formData.get('cgst_pct') as string),
-      sgst_pct: parseFloat(formData.get('sgst_pct') as string),
-      igst_pct: parseFloat(formData.get('igst_pct') as string),
-      effective_from: formData.get('effective_from') as string,
-    };
-    onSubmit?.(data);
+    if (hasErrors) {
+      setShowErrors(true);
+      return;
+    }
+    onSubmit?.({ name: effectiveName.trim(), ...split, effective_from: effectiveFrom });
   };
 
   return (
-    <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Tax Name <span className="text-red-500">*</span>
-        </label>
-        <Input name="name" placeholder="Enter tax name (e.g., GST 18%)" required />
-      </div>
-      <div className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-        Tax rates and the effective-from date can't be edited once created, since that would change the rate
-        used by historical invoices. To change a rate, create a new tax code instead.
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            CGST % <span className="text-red-500">*</span>
-          </label>
-          <Input name="cgst_pct" type="number" step="0.01" placeholder="e.g., 9" required />
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <FormCard title="Where does the trade happen?" description="GST is split differently for sales within your state and to other states.">
+        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Tax type">
+          {MODES.map((m) => (
+            <button
+              key={m.value}
+              type="button"
+              role="radio"
+              aria-checked={mode === m.value}
+              onClick={() => setMode(m.value)}
+              className={`rounded-2xl px-4 py-3 text-left ring-1 transition ${mode === m.value ? 'bg-brand/5 ring-2 ring-brand' : 'bg-white ring-slate-200 hover:bg-slate-50'}`}
+            >
+              <span className="block text-sm font-semibold text-slate-900">{m.label}</span>
+              <span className="block text-xs text-slate-500">{m.hint}</span>
+            </button>
+          ))}
         </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            SGST % <span className="text-red-500">*</span>
-          </label>
-          <Input name="sgst_pct" type="number" step="0.01" placeholder="e.g., 9" required />
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          {mode === 'custom' ? (
+            (['cgst', 'sgst', 'igst'] as const).map((k) => (
+              <Field key={k} label={`${k.toUpperCase()} %`}>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  value={custom[k]}
+                  onChange={(e) => setCustom((c) => ({ ...c, [k]: e.target.value }))}
+                  placeholder="0"
+                  className={inputClass}
+                />
+              </Field>
+            ))
+          ) : (
+            <Field label="Total rate %" error={show(errors.rate)}>
+              <input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="e.g. 18" autoFocus className={inputClass} />
+            </Field>
+          )}
         </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            IGST % <span className="text-red-500">*</span>
-          </label>
-          <Input name="igst_pct" type="number" step="0.01" placeholder="e.g., 18" required />
+
+        <p className="mt-4 text-sm text-slate-600">
+          Charges <span className="font-semibold text-slate-900">{formatRate(combined)}</span> in total · {taxBreakdown(split)}
+        </p>
+        {mixed && (
+          <p className="mt-2 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" /> CGST, SGST and IGST are all set, so all three will be charged together. Usually it's CGST + SGST <em>or</em> IGST.
+          </p>
+        )}
+      </FormCard>
+
+      <FormCard title="Name and start date">
+        <div className="grid max-w-2xl gap-4 sm:grid-cols-2">
+          <Field label="Name" hint={!nameTouched && suggestedName ? 'Suggested from the rate — you can change it.' : undefined} error={duplicate ? errors.name : show(errors.name)}>
+            <input
+              value={effectiveName}
+              onChange={(e) => {
+                setNameTouched(true);
+                setName(e.target.value);
+              }}
+              placeholder="e.g. GST 18%"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Starts from" error={show(errors.date)}>
+            <input type="date" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} className={inputClass} />
+          </Field>
         </div>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Effective From <span className="text-red-500">*</span>
-        </label>
-        <Input name="effective_from" type="date" required />
-      </div>
-      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-        <Button variant="secondary" type="button" className="w-full sm:w-auto">
-          Cancel
-        </Button>
-        <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-          {isSubmitting ? 'Saving...' : submitText}
-        </Button>
-      </div>
+        <p className="mt-4 flex items-start gap-2 text-xs text-slate-500">
+          <Lock className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" /> The rate and start date can't be changed later, because past invoices depend on them. To change a rate, add a new tax code.
+        </p>
+      </FormCard>
+
+      <FormActions submitText={submitText} isSubmitting={isSubmitting} />
     </form>
   );
 }

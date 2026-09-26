@@ -1,71 +1,40 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import VendorForm from '../../components/vendors/VendorForm';
-import { createVendor, getPaymentTerms } from '../../api/sales-purchase.api';
-import type { VendorFormData, PaymentTerm } from '../../types/sales-purchase.types';
+import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
+import PartyForm from '../../components/parties/PartyForm';
+import { createVendor, getVendors } from '../../api/sales-purchase.api';
+import type { VendorFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
+import { partyPayload } from '../../utils/party';
 
 export default function CreateVendorPage() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([]);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: vendors = [] } = useQuery({ queryKey: ['sales-purchase', 'vendors'], queryFn: getVendors });
 
-  useEffect(() => {
-    getPaymentTerms()
-      .then(setPaymentTerms)
-      .catch((err) => {
-        if (err.response?.status !== 401) {
-          console.error('Failed to load payment terms:', err);
-        }
-      });
-  }, []);
-
-  const handleSubmit = async (data: VendorFormData) => {
-    try {
-      setIsSubmitting(true);
-      console.log('Submitting vendor data:', data);
-      await createVendor(data);
-      navigate('/sales-purchase/vendors');
-    } catch (error: any) {
-      console.error('Failed to create vendor:', error);
-      console.error('Error response:', error.response?.data);
-      if (error.response?.status === 401) {
-        return;
-      }
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
-      alert(errorMessage || 'Failed to create vendor');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const create = useMutation({
+    mutationFn: (data: VendorFormData) => createVendor(data),
+    onSuccess: (vendor, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'vendors'] });
+      toast.success(`“${data.vendor_name}” added`);
+      // Open the vendor so contacts and bank details can be added next.
+      navigate(vendor?.vendor_id ? `/sales-purchase/vendors/${vendor.vendor_id}` : '/sales-purchase/vendors');
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not add the vendor')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/vendors">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Add Vendor</h1>
-          <p className="text-slate-600 mt-1">Create a new vendor</p>
-        </div>
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <VendorForm
-            onSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-            submitText="Create Vendor"
-            paymentTerms={paymentTerms}
-          />
-        </div>
-      </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: '/sales-purchase/vendors', label: 'Vendors' }} title="New vendor" subtitle="A supplier you buy from. You can add contacts and bank details after saving." />
+      <PartyForm
+        kind="vendor"
+        takenNames={vendors.map((v) => v.vendor_name)}
+        onSubmit={(v) => create.mutate({ vendor_name: v.name, ...partyPayload(v) })}
+        isSubmitting={create.isPending}
+        submitText="Add vendor"
+      />
     </div>
   );
 }

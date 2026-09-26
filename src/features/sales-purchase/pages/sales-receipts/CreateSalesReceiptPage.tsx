@@ -1,64 +1,54 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import SalesReceiptForm from '../../components/sales-receipts/SalesReceiptForm';
-import { createSalesReceipt } from '../../api/sales-purchase.api';
-import { getApiErrorMessage } from '../../utils/errors';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { FormLoading } from '../../../../components/premium/form/FormParts';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
+import { toNumber } from '../../../../utils/dashboardFormat';
+import SettlementForm from '../../components/lines/SettlementForm';
+import { createSalesReceipt, getSalesInvoices } from '../../api/sales-purchase.api';
 import type { SalesReceiptFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreateSalesReceiptPage() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  // ?invoice=5 opens the form with that invoice already chosen.
+  const [params] = useSearchParams();
+  const initialInvoiceId = Number(params.get('invoice')) || undefined;
+  const { data: invoices = [], isLoading } = useQuery({ queryKey: ['sales-purchase', 'sales-invoices'], queryFn: getSalesInvoices });
 
-  const handleSubmit = async (data: SalesReceiptFormData) => {
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      await createSalesReceipt(data);
-      navigate('/sales-purchase/sales-receipts');
-    } catch (error: any) {
-      console.error('Failed to create sales receipt:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(error, 'Failed to create sales receipt'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const create = useMutation({
+    mutationFn: (data: SalesReceiptFormData) => createSalesReceipt(data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'sales-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'sales-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'sales-invoice', String(data.si_id)] });
+      toast.success('Money received recorded');
+      navigate(`/sales-purchase/sales-invoices/${data.si_id}`);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not record the receipt')),
+  });
+
+  const receivable = invoices
+    .filter((i) => i.status === 'POSTED' && toNumber(i.grand_total) - toNumber(i.paid_amount) > 0)
+    .map((i) => ({ id: i.si_id, number: i.invoice_number, party: i.customer?.customer_name ?? 'Customer', total: toNumber(i.grand_total), balance: toNumber(i.grand_total) - toNumber(i.paid_amount) }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/sales-receipts">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Add Sales Receipt</h1>
-          <p className="text-slate-600 mt-1">Create a new sales receipt</p>
-        </div>
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm whitespace-pre-line">
-              {error}
-            </div>
-          )}
-          <SalesReceiptForm
-            onSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-            submitText="Create Sales Receipt"
-          />
-        </div>
-      </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: '/sales-purchase/sales-receipts', label: 'Money received' }} title="Record money received" subtitle="A payment a customer made against one of your posted invoices." />
+      {isLoading ? (
+        <FormLoading />
+      ) : (
+        <SettlementForm
+          kind="receipt"
+          invoices={receivable}
+          initialInvoiceId={initialInvoiceId}
+          onSubmit={(v) => create.mutate({ si_id: v.invoiceId, receipt_date: v.date, amount: v.amount, mode: v.mode, ...(v.reference ? { reference_no: v.reference } : {}) })}
+          isSubmitting={create.isPending}
+          submitText="Record receipt"
+        />
+      )}
     </div>
   );
 }

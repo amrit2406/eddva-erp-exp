@@ -1,6 +1,5 @@
-import { useId, type CSSProperties, type ReactNode } from 'react';
+import { useId, type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import type { LucideIcon } from 'lucide-react';
 import {
   Area,
   AreaChart,
@@ -110,7 +109,8 @@ export function ChartCard({
 }: {
   title: string;
   subtitle?: string;
-  icon?: LucideIcon;
+  // Any icon component that takes a className (Lucide or react-icons).
+  icon?: ComponentType<{ className?: string }>;
   action?: ReactNode;
   children: ReactNode;
   tone?: Tone;

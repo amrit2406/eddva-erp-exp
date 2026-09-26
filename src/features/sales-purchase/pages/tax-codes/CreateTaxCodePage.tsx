@@ -1,8 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
 import TaxCodeForm from '../../components/tax-codes/TaxCodeForm';
 import { createTaxCode } from '../../api/sales-purchase.api';
 import type { TaxCodeFormData } from '../../types/sales-purchase.types';
@@ -10,44 +9,22 @@ import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreateTaxCodePage() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (data: TaxCodeFormData) => {
-    try {
-      setIsSubmitting(true);
-      await createTaxCode(data);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const create = useMutation({
+    mutationFn: (data: TaxCodeFormData) => createTaxCode(data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'tax-codes'] });
+      toast.success(`${data.name} added`);
       navigate('/sales-purchase/tax-codes');
-    } catch (error: any) {
-      console.error('Failed to create tax code:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Failed to create tax code'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not add the tax code')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/tax-codes">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Add Tax Code</h1>
-          <p className="text-slate-600 mt-1">Create a new tax code</p>
-        </div>
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <TaxCodeForm onSubmit={handleSubmit} submitText="Create Tax Code" isSubmitting={isSubmitting} />
-        </div>
-      </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: '/sales-purchase/tax-codes', label: 'Tax codes' }} title="New tax code" subtitle="A GST rate you can apply to items and invoices." />
+      <TaxCodeForm onSubmit={(data) => create.mutate(data)} isSubmitting={create.isPending} submitText="Add tax code" />
     </div>
   );
 }

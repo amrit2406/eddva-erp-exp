@@ -1,76 +1,30 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
 import ApprovalRuleForm from '../../components/approval-rules/ApprovalRuleForm';
 import { createApprovalRule } from '../../api/sales-purchase.api';
-import { getRoles } from '../../api/roles.api';
+import type { ApprovalRuleFormData } from '../../types/sales-purchase.types';
 import { getApiErrorMessage } from '../../utils/errors';
-import type { ApprovalRuleFormData, Role } from '../../types/sales-purchase.types';
 
 export default function CreateApprovalRulePage() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [roles, setRoles] = useState<Role[]>([]);
-
-  useEffect(() => {
-    getRoles()
-      .then(setRoles)
-      .catch((err) => {
-        if (err.response?.status !== 401) {
-          console.error('Failed to load roles:', err);
-        }
-      });
-  }, []);
-
-  const handleSubmit = async (data: ApprovalRuleFormData) => {
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      await createApprovalRule(data);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const create = useMutation({
+    mutationFn: (data: ApprovalRuleFormData) => createApprovalRule(data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'approval-rules'] });
+      toast.success(`Rule “${data.name}” added`);
       navigate('/sales-purchase/approval-rules');
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to create approval rule'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not add the rule')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/approval-rules">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Add Approval Rule</h1>
-          <p className="text-slate-600 mt-1">Create a new PO approval rule</p>
-        </div>
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-          <ApprovalRuleForm
-            onSubmit={handleSubmit}
-            submitText="Create Rule"
-            isSubmitting={isSubmitting}
-            roles={roles}
-          />
-        </div>
-      </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: '/sales-purchase/approval-rules', label: 'Approval rules' }} title="New approval rule" subtitle="Decide who approves purchase orders in an amount range." />
+      <ApprovalRuleForm onSubmit={(data) => create.mutate(data)} isSubmitting={create.isPending} submitText="Add rule" />
     </div>
   );
 }

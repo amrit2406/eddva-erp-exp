@@ -1,101 +1,79 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Clock, Calendar } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getPaymentTerm } from '../../api/sales-purchase.api';
-import type { PaymentTerm } from '../../types/sales-purchase.types';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, CalendarClock, Handshake, Pencil, Truck } from 'lucide-react';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { DetailHeader, DetailSkeleton, InfoCard } from '../../../../components/premium/detail/DetailParts';
+import { btnSecondary, longDate } from '../../../../components/premium/styles';
+import { getCustomers, getPaymentTerm, getVendors } from '../../api/sales-purchase.api';
 import { getApiErrorMessage } from '../../utils/errors';
+import { payWithin } from '../../utils/paymentTerm';
+
+function PartyList({ rows, empty }: { rows: { id: number; name: string; code: string; to: string }[]; empty: string }) {
+  if (rows.length === 0) return <p className="py-2 text-sm text-slate-500">{empty}</p>;
+  return (
+    <ul className="divide-y divide-slate-100">
+      {rows.map((r) => (
+        <li key={r.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+          <Link to={r.to} className="truncate font-medium text-slate-900 hover:text-brand">
+            {r.name}
+          </Link>
+          <span className="font-mono text-xs text-slate-400">{r.code}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function PaymentTermDetailsPage() {
-  const { id } = useParams();
-  const [paymentTerm, setPaymentTerm] = useState<PaymentTerm | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { id = '' } = useParams();
+  const { data: term, isLoading, error, refetch } = useQuery({ queryKey: ['sales-purchase', 'payment-term', id], queryFn: () => getPaymentTerm(id), enabled: Boolean(id) });
+  const { data: vendors = [] } = useQuery({ queryKey: ['sales-purchase', 'vendors'], queryFn: getVendors });
+  const { data: customers = [] } = useQuery({ queryKey: ['sales-purchase', 'customers'], queryFn: getCustomers });
 
-  useEffect(() => {
-    if (id) {
-      loadPaymentTerm(id);
-    }
-  }, [id]);
+  const back = (
+    <Link to="/sales-purchase/payment-terms" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+      <ArrowLeft className="h-4 w-4" /> Payment terms
+    </Link>
+  );
 
-  async function loadPaymentTerm(termId: string) {
-    try {
-      setLoading(true);
-      const data = await getPaymentTerm(termId);
-      setPaymentTerm(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to load payment term'));
-    } finally {
-      setLoading(false);
-    }
+  if (isLoading) return <DetailSkeleton />;
+  if (error || !term) {
+    return (
+      <div className="space-y-5">
+        {back}
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load payment term')} onRetry={() => refetch()} />
+      </div>
+    );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/payment-terms">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">Payment Term Details</h1>
-          <p className="text-slate-600 mt-1">View payment term information</p>
-        </div>
-        <Link to={`/sales-purchase/payment-terms/${id}/edit`}>
-          <Button variant="primary" size="sm">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        </Link>
-      </div>
+  const onVendors = vendors
+    .filter((v) => v.payment_term_id === term.payment_term_id)
+    .map((v) => ({ id: v.vendor_id, name: v.vendor_name, code: v.vendor_code, to: `/sales-purchase/vendors/${v.vendor_id}` }));
+  const onCustomers = customers
+    .filter((c) => c.payment_term_id === term.payment_term_id)
+    .map((c) => ({ id: c.customer_id, name: c.customer_name, code: c.customer_code, to: `/sales-purchase/customers/${c.customer_id}` }));
 
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
-      ) : paymentTerm ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Payment Term Information</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Term Name</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-slate-400" />
-                    <p className="text-lg font-medium text-slate-900">{paymentTerm.term_name}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Days</label>
-                  <p className="mt-1 text-slate-900">{paymentTerm.days} days</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Payment Term ID</label>
-                  <p className="mt-1 text-slate-900">{paymentTerm.payment_term_id}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Created At</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{paymentTerm.created_at ? new Date(paymentTerm.created_at).toLocaleString() : '-'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      ) : null}
+  return (
+    <div className="space-y-5">
+      {back}
+      <DetailHeader
+        icon={CalendarClock}
+        title={term.term_name}
+        meta={`${payWithin(term.days)} of the invoice · added ${longDate(term.created_at)}`}
+        actions={
+          <Link to={`/sales-purchase/payment-terms/${term.payment_term_id}/edit`} className={btnSecondary}>
+            <Pencil className="h-4 w-4" /> Edit
+          </Link>
+        }
+      />
+      <div className="grid gap-5 md:grid-cols-2">
+        <InfoCard title={`Vendors on this term · ${onVendors.length}`} icon={Truck}>
+          <PartyList rows={onVendors} empty="No vendors use this term." />
+        </InfoCard>
+        <InfoCard title={`Customers on this term · ${onCustomers.length}`} icon={Handshake} delay={60}>
+          <PartyList rows={onCustomers} empty="No customers use this term." />
+        </InfoCard>
+      </div>
     </div>
   );
 }

@@ -1,99 +1,82 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Package, Calendar } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getItemCategory } from '../../api/sales-purchase.api';
-import type { ItemCategory } from '../../types/sales-purchase.types';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, FolderTree, Pencil } from 'lucide-react';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import ItemsUsingList from '../../components/items/ItemsUsingList';
+import { getItemCategory, getItems } from '../../api/sales-purchase.api';
 import { getApiErrorMessage } from '../../utils/errors';
 
+const longDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—');
+
 export default function ItemCategoryDetailsPage() {
-  const { id } = useParams();
-  const [category, setCategory] = useState<ItemCategory | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { id = '' } = useParams();
+  const { data: category, isLoading, error, refetch } = useQuery({
+    queryKey: ['sales-purchase', 'item-category', id],
+    queryFn: () => getItemCategory(id),
+    enabled: Boolean(id),
+  });
+  // Shared with ItemsUsingList (same query key), so this doesn't fetch twice.
+  const { data: allItems = [] } = useQuery({ queryKey: ['sales-purchase', 'items'], queryFn: getItems });
+  const items = allItems.filter((i) => String(i.category_id) === id);
 
-  useEffect(() => {
-    if (id) {
-      loadCategory(id);
-    }
-  }, [id]);
+  const back = (
+    <Link to="/sales-purchase/item-categories" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+      <ArrowLeft className="h-4 w-4" /> Item categories
+    </Link>
+  );
 
-  async function loadCategory(categoryId: string) {
-    try {
-      setLoading(true);
-      const data = await getItemCategory(categoryId);
-      setCategory(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to load category'));
-    } finally {
-      setLoading(false);
-    }
+  if (isLoading) {
+    return (
+      <div className="space-y-5" aria-busy="true" aria-label="Loading">
+        {back}
+        <div className="skeleton h-28 rounded-3xl" />
+        <div className="skeleton h-64 rounded-3xl" />
+      </div>
+    );
+  }
+  if (error || !category) {
+    return (
+      <div className="space-y-5">
+        {back}
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load category')} onRetry={() => refetch()} />
+      </div>
+    );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/item-categories">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">Item Category Details</h1>
-          <p className="text-slate-600 mt-1">View category information</p>
-        </div>
-        <Link to={`/sales-purchase/item-categories/${id}/edit`}>
-          <Button variant="primary" size="sm">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        </Link>
-      </div>
+  const active = category.status !== 'INACTIVE';
 
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
-      ) : category ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Category Information</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Category Name</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Package className="h-5 w-5 text-slate-400" />
-                    <p className="text-lg font-medium text-slate-900">{category.name}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Category ID</label>
-                  <p className="mt-1 text-slate-900">{category.category_id}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Created At</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">
-                      {category.created_at ? new Date(category.created_at).toLocaleString() : '-'}
-                    </p>
-                  </div>
-                </div>
-              </div>
+  return (
+    <div className="space-y-5">
+      {back}
+
+      <section className="animate-rise rounded-3xl bg-white p-5 sm:p-6 shadow-soft ring-1 ring-slate-200/70">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-navy to-brand shadow-md shadow-brand/25">
+              <FolderTree className="h-6 w-6 text-white" />
             </div>
-          </Card>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{category.name}</h1>
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                  {active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <p className="text-sm text-slate-500">
+                {items.length} item{items.length === 1 ? '' : 's'} · added {longDate(category.created_at)}
+              </p>
+            </div>
+          </div>
+          <Link
+            to={`/sales-purchase/item-categories/${category.category_id}/edit`}
+            className="inline-flex items-center gap-2 self-start rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 sm:self-auto"
+          >
+            <Pencil className="h-4 w-4" /> Rename
+          </Link>
         </div>
-      ) : null}
+      </section>
+
+      <ItemsUsingList title="Items in this category" filter={(i) => i.category_id === category.category_id} emptyText="No items in this category yet." />
     </div>
   );
 }

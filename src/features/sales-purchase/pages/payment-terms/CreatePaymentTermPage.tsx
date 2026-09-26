@@ -1,8 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
 import PaymentTermForm from '../../components/payment-terms/PaymentTermForm';
 import { createPaymentTerm } from '../../api/sales-purchase.api';
 import type { PaymentTermFormData } from '../../types/sales-purchase.types';
@@ -10,44 +9,22 @@ import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreatePaymentTermPage() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (data: PaymentTermFormData) => {
-    try {
-      setIsSubmitting(true);
-      await createPaymentTerm(data);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const create = useMutation({
+    mutationFn: (data: PaymentTermFormData) => createPaymentTerm(data),
+    onSuccess: (_, data) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'payment-terms'] });
+      toast.success(`“${data.term_name}” added`);
       navigate('/sales-purchase/payment-terms');
-    } catch (error: any) {
-      console.error('Failed to create payment term:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Failed to create payment term'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not add the payment term')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/payment-terms">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Add Payment Term</h1>
-          <p className="text-slate-600 mt-1">Create a new payment term</p>
-        </div>
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="p-6">
-          <PaymentTermForm onSubmit={handleSubmit} submitText="Create Payment Term" isSubmitting={isSubmitting} />
-        </div>
-      </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: '/sales-purchase/payment-terms', label: 'Payment terms' }} title="New payment term" subtitle="How many days someone gets to pay an invoice." />
+      <PaymentTermForm onSubmit={(data) => create.mutate(data)} isSubmitting={create.isPending} submitText="Add term" />
     </div>
   );
 }

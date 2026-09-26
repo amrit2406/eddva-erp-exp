@@ -1,291 +1,200 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Building2, Calendar, IndianRupee, CheckCircle, XCircle, FileText } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
-import { getSalesInvoice, postSalesInvoice, cancelSalesInvoice } from '../../api/sales-purchase.api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Ban, CheckCircle2, CreditCard, FileText, HandCoins, Pencil } from 'lucide-react';
+import ConfirmDialog from '../../../../components/feedback/ConfirmDialog';
+import ErrorState from '../../../../components/feedback/ErrorState';
+import { DetailHeader, DetailSkeleton, InfoCard, NextStep } from '../../../../components/premium/detail/DetailParts';
+import { StatusPill } from '../../../../components/premium/list/ListControls';
+import { btnPrimary, btnQuietDanger, btnSecondary, longDate, shortDate } from '../../../../components/premium/styles';
+import { useToast } from '../../../../hooks/useToast';
+import { rupees, toNumber } from '../../../../utils/dashboardFormat';
+import { DocLinesCard, DocTotalsCard } from '../../components/lines/DocParts';
+import { cancelSalesInvoice, getSalesInvoice, postSalesInvoice } from '../../api/sales-purchase.api';
+import { docStatusInfo, paymentModeLabel } from '../../utils/docStatus';
 import { getApiErrorMessage } from '../../utils/errors';
-import { cn } from '../../../../utils/cn';
-import type { SalesInvoice } from '../../types/sales-purchase.types';
+import { paymentStatusInfo } from '../../utils/party';
 
-function statusBadgeClass(status: string): string {
-  switch (status) {
-    case 'POSTED':
-      return 'bg-green-100 text-green-800';
-    case 'CANCELLED':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-slate-100 text-slate-800';
-  }
-}
-
-function paymentStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'PAID':
-      return 'bg-green-100 text-green-800';
-    case 'PARTIAL':
-      return 'bg-yellow-100 text-yellow-800';
-    default:
-      return 'bg-slate-100 text-slate-600';
-  }
-}
+const link = 'text-brand-navy hover:text-brand hover:underline';
 
 export default function SalesInvoiceDetailsPage() {
-  const { id } = useParams();
-  const [salesInvoice, setSalesInvoice] = useState<SalesInvoice | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const { id = '' } = useParams();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [confirm, setConfirm] = useState<'post' | 'cancel' | null>(null);
+  const key = ['sales-purchase', 'sales-invoice', id];
+  const { data: inv, isLoading, error, refetch } = useQuery({ queryKey: key, queryFn: () => getSalesInvoice(id), enabled: Boolean(id) });
 
-  useEffect(() => {
-    if (id) {
-      loadSalesInvoice(id);
-    }
-  }, [id]);
+  const act = useMutation({
+    mutationFn: (a: 'post' | 'cancel') => (a === 'post' ? postSalesInvoice(id) : cancelSalesInvoice(id)),
+    onSuccess: (_, a) => {
+      toast.success(`${inv?.invoice_number} ${a === 'post' ? 'posted' : 'cancelled'}`);
+      queryClient.invalidateQueries({ queryKey: key });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'sales-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'sales-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'dashboard'] });
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'That action could not be completed')),
+    onSettled: () => setConfirm(null),
+  });
 
-  async function loadSalesInvoice(salesInvoiceId: string) {
-    try {
-      setLoading(true);
-      const data = await getSalesInvoice(salesInvoiceId);
-      setSalesInvoice(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        return;
-      }
-      setError(getApiErrorMessage(err, 'Failed to load sales invoice'));
-    } finally {
-      setLoading(false);
-    }
+  const back = (
+    <Link to="/sales-purchase/sales-invoices" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-navy">
+      <ArrowLeft className="h-4 w-4" /> Sales invoices
+    </Link>
+  );
+
+  if (isLoading) return <DetailSkeleton />;
+  if (error || !inv) {
+    return (
+      <div className="space-y-5">
+        {back}
+        <ErrorState message={getApiErrorMessage(error, 'Failed to load invoice')} onRetry={() => refetch()} />
+      </div>
+    );
   }
 
-  const handleAction = async (action: () => Promise<unknown>) => {
-    if (!id) return;
-    try {
-      setActionLoading(true);
-      await action();
-      await loadSalesInvoice(id);
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        return;
-      }
-      alert(getApiErrorMessage(error, 'Action failed'));
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleCancel = () => {
-    if (!salesInvoice) return;
-    if (!window.confirm('Are you sure you want to cancel this sales invoice?')) return;
-    handleAction(() => cancelSalesInvoice(salesInvoice.si_id));
-  };
+  const posted = inv.status === 'POSTED';
+  const balance = Math.max(0, toNumber(inv.grand_total) - toNumber(inv.paid_amount));
+  const overdue = posted && balance > 0 && !!inv.due_date && new Date(inv.due_date) < new Date(new Date().toDateString());
+  const pay = paymentStatusInfo(inv.payment_status);
+  const doc = docStatusInfo(inv.status);
+  const receipts = inv.receipts ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/sales-invoices">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">Sales Invoice Details</h1>
-          <p className="text-slate-600 mt-1">View sales invoice information</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {salesInvoice?.status === 'DRAFT' && (
+    <div className="space-y-5">
+      {back}
+      <DetailHeader
+        icon={FileText}
+        title={inv.invoice_number}
+        accent={overdue ? '#d03b3b' : posted ? pay.color : doc.color}
+        status={
+          <>
+            <StatusPill label={doc.label} color={doc.color} />
+            {posted && <StatusPill label={pay.label} color={pay.color} />}
+          </>
+        }
+        meta={`${inv.customer?.customer_name ?? 'Customer'} · ${longDate(inv.invoice_date)}`}
+        actions={
+          inv.status === 'DRAFT' ? (
             <>
-              <Link to={`/sales-purchase/sales-invoices/${id}/edit`}>
-                <Button variant="secondary" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
+              <button type="button" onClick={() => setConfirm('post')} disabled={act.isPending} className={btnPrimary}>
+                <CheckCircle2 className="h-4 w-4" /> Post invoice
+              </button>
+              <Link to={`/sales-purchase/sales-invoices/${inv.si_id}/edit`} className={btnSecondary}>
+                <Pencil className="h-4 w-4" /> Edit
               </Link>
-              <Button variant="primary" size="sm" disabled={actionLoading} onClick={() => handleAction(() => postSalesInvoice(salesInvoice.si_id))}>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Post
-              </Button>
+              <button type="button" onClick={() => setConfirm('cancel')} disabled={act.isPending} className={btnQuietDanger}>
+                <Ban className="h-4 w-4" /> Cancel
+              </button>
             </>
-          )}
-          {salesInvoice?.status === 'POSTED' && (
-            <Button variant="danger" size="sm" disabled={actionLoading} onClick={handleCancel}>
-              <XCircle className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-          )}
+          ) : posted ? (
+            <>
+              {balance > 0 && (
+                <Link to={`/sales-purchase/sales-receipts/new?invoice=${inv.si_id}`} className={btnPrimary}>
+                  <HandCoins className="h-4 w-4" /> Record money received
+                </Link>
+              )}
+              <button type="button" onClick={() => setConfirm('cancel')} disabled={act.isPending} className={btnQuietDanger}>
+                <Ban className="h-4 w-4" /> Cancel
+              </button>
+            </>
+          ) : undefined
+        }
+      >
+        <NextStep tone={inv.status === 'CANCELLED' || overdue ? 'bad' : posted && balance === 0 ? 'good' : 'info'}>
+          {inv.status === 'DRAFT'
+            ? 'Check the invoice, then post it. Once posted, you can record money received against it.'
+            : inv.status === 'CANCELLED'
+              ? 'This invoice was cancelled and no longer counts.'
+              : balance === 0
+                ? 'Fully paid by the customer. Nothing left to do.'
+                : overdue
+                  ? `${rupees(balance)} is overdue — it was due on ${longDate(inv.due_date)}. Follow up with the customer.`
+                  : `${rupees(balance)} still to receive${inv.due_date ? ` by ${longDate(inv.due_date)}` : ''}.`}
+        </NextStep>
+      </DetailHeader>
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <DocLinesCard
+            lines={(inv.items ?? []).map((l) => ({
+              id: l.si_item_id,
+              name: l.item?.item_name ?? `Item #${l.item_id}`,
+              code: l.item?.item_code,
+              quantity: l.quantity,
+              unitPrice: l.unit_price,
+              discount: l.line_discount,
+              tax: toNumber(l.cgst_amount) + toNumber(l.sgst_amount) + toNumber(l.igst_amount),
+              total: l.line_total,
+            }))}
+          />
+          <InfoCard title={`Money received · ${receipts.length}`} icon={CreditCard} delay={60}>
+            {receipts.length === 0 ? (
+              <p className="text-sm text-slate-500">{posted ? 'Nothing received yet.' : 'Receipts can be recorded once the invoice is posted.'}</p>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {receipts.map((r) => (
+                  <li key={r.receipt_id} className="flex items-center gap-3 py-2 text-sm">
+                    <Link to={`/sales-purchase/sales-receipts/${r.receipt_id}`} className="font-medium text-brand-navy hover:text-brand">
+                      {shortDate(r.receipt_date)}
+                    </Link>
+                    <span className="text-slate-500">{paymentModeLabel(r.mode)}</span>
+                    {r.reference_no && <span className="font-mono text-xs text-slate-400">{r.reference_no}</span>}
+                    <span className="ml-auto font-semibold tabular-nums text-emerald-700">{rupees(toNumber(r.amount))}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </InfoCard>
+        </div>
+        <div className="space-y-5">
+          <DocTotalsCard subtotal={inv.subtotal} discount={inv.discount} tax={inv.tax_amount} total={inv.grand_total} paid={inv.paid_amount} paidLabel="Received" balanceLabel="Still to receive" />
+          <InfoCard
+            title="Linked to"
+            icon={FileText}
+            delay={100}
+            rows={[
+              [
+                'Customer',
+                inv.customer ? (
+                  <Link key="c" to={`/sales-purchase/customers/${inv.customer_id}`} className={link}>
+                    {inv.customer.customer_name}
+                  </Link>
+                ) : (
+                  '—'
+                ),
+              ],
+              [
+                'Sales order',
+                inv.sales_order ? (
+                  <Link key="so" to={`/sales-purchase/sales-orders/${inv.sales_order.so_id}`} className={link}>
+                    {inv.sales_order.so_number}
+                  </Link>
+                ) : (
+                  'Not linked'
+                ),
+              ],
+              ['Due by', inv.due_date ? longDate(inv.due_date) : 'Not set'],
+              ['Financial year', inv.financial_year],
+            ]}
+          />
         </div>
       </div>
 
-      {loading ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-slate-500">Loading...</div>
-        </Card>
-      ) : error ? (
-        <Card className="border-slate-200">
-          <div className="p-8 text-center text-red-500">{error}</div>
-        </Card>
-      ) : salesInvoice ? (
-        <div className="space-y-6">
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">{salesInvoice.invoice_number}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Customer</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-slate-400" />
-                    <p className="text-lg font-medium text-slate-900">{salesInvoice.customer?.customer_name || '-'}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Status</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium', statusBadgeClass(salesInvoice.status))}>
-                      {salesInvoice.status}
-                    </span>
-                    <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium', paymentStatusBadgeClass(salesInvoice.payment_status))}>
-                      {salesInvoice.payment_status} ({Number(salesInvoice.paid_amount || 0).toFixed(2)} paid)
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Invoice / Due Date</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{salesInvoice.invoice_date ? new Date(salesInvoice.invoice_date).toLocaleDateString() : '-'}</p>
-                  </div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    Due: {salesInvoice.due_date ? new Date(salesInvoice.due_date).toLocaleDateString() : '-'}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Sales Order</label>
-                  <p className="mt-1 text-slate-900">{salesInvoice.sales_order?.so_number || '-'}</p>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Items</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-500">Item</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-slate-500">Quantity</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-slate-500">Unit Price</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-slate-500">Line Discount</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-slate-500">Tax</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-slate-500">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(salesInvoice.items || []).map((item) => {
-                      const taxAmount = Number(item.cgst_amount || 0) + Number(item.sgst_amount || 0) + Number(item.igst_amount || 0);
-                      return (
-                        <tr key={item.si_item_id} className="border-b border-slate-100">
-                          <td className="py-3 px-4 text-slate-900">{item.item?.item_name || item.item_id}</td>
-                          <td className="py-3 px-4 text-slate-900 text-right">{item.quantity}</td>
-                          <td className="py-3 px-4 text-slate-900 text-right">{Number(item.unit_price).toFixed(2)}</td>
-                          <td className="py-3 px-4 text-slate-900 text-right">{Number(item.line_discount || 0).toFixed(2)}</td>
-                          <td className="py-3 px-4 text-slate-900 text-right">{taxAmount.toFixed(2)}</td>
-                          <td className="py-3 px-4 text-slate-900 text-right">{Number(item.line_total).toFixed(2)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Summary</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Subtotal</span>
-                  <span className="text-slate-900">{Number(salesInvoice.subtotal || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Tax (GST)</span>
-                  <span className="text-slate-900">{Number(salesInvoice.tax_amount || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Discount</span>
-                  <span className="text-slate-900">{Number(salesInvoice.discount || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm font-semibold border-t border-slate-200 pt-2">
-                  <span className="text-slate-900">Grand Total</span>
-                  <span className="text-slate-900 flex items-center gap-1">
-                    <IndianRupee className="h-4 w-4" />
-                    {Number(salesInvoice.grand_total || 0).toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Paid</span>
-                  <span className="text-slate-900">{Number(salesInvoice.paid_amount || 0).toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {salesInvoice.receipts && salesInvoice.receipts.length > 0 && (
-            <Card className="border-slate-200">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">Receipts</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-slate-200">
-                        <th className="text-left py-2 px-4 text-sm font-semibold text-slate-700">Date</th>
-                        <th className="text-left py-2 px-4 text-sm font-semibold text-slate-700">Mode</th>
-                        <th className="text-left py-2 px-4 text-sm font-semibold text-slate-700">Reference</th>
-                        <th className="text-right py-2 px-4 text-sm font-semibold text-slate-700">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {salesInvoice.receipts.map((receipt) => (
-                        <tr key={receipt.receipt_id} className="border-b border-slate-100">
-                          <td className="py-2 px-4 text-sm text-slate-900">{new Date(receipt.receipt_date).toLocaleDateString()}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900">{receipt.mode}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900">{receipt.reference_no || '-'}</td>
-                          <td className="py-2 px-4 text-sm text-slate-900 text-right">{Number(receipt.amount).toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          <Card className="border-slate-200">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">System Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Sales Invoice ID</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{salesInvoice.si_id}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-500">Created At</label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-slate-400" />
-                    <p className="text-slate-900">{salesInvoice.created_at ? new Date(salesInvoice.created_at).toLocaleString() : '-'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        isOpen={confirm !== null}
+        onClose={() => !act.isPending && setConfirm(null)}
+        onConfirm={() => confirm && act.mutate(confirm)}
+        title={confirm === 'post' ? 'Post this invoice?' : 'Cancel this invoice?'}
+        message={
+          confirm === 'post'
+            ? `${inv.invoice_number} (${rupees(toNumber(inv.grand_total))}) will be final and recorded as owed by ${inv.customer?.customer_name ?? 'the customer'}. It can't be edited afterwards.`
+            : `${inv.invoice_number} will be cancelled and no longer count as owed.`
+        }
+        confirmText={act.isPending ? 'Working…' : confirm === 'post' ? 'Post invoice' : 'Cancel invoice'}
+        cancelText="Go back"
+      />
     </div>
   );
 }

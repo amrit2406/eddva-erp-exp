@@ -1,64 +1,34 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
-import Button from '../../../../components/ui/Button';
-import Card from '../../../../components/ui/Card';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import PageTitle from '../../../../components/premium/page/PageTitle';
+import { useToast } from '../../../../hooks/useToast';
 import GRNForm from '../../components/grn/GRNForm';
 import { createGRN } from '../../api/sales-purchase.api';
 import type { GRNFormData } from '../../types/sales-purchase.types';
+import { getApiErrorMessage } from '../../utils/errors';
 
 export default function CreateGRNPage() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  // ?po=12 opens the form with that purchase order already chosen.
+  const [params] = useSearchParams();
+  const initialPoId = Number(params.get('po')) || undefined;
 
-  const handleSubmit = async (data: GRNFormData) => {
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      await createGRN(data);
-      navigate('/sales-purchase/grn');
-    } catch (error: any) {
-      console.error('Failed to create GRN:', error);
-      if (error.response?.status === 401) {
-        return;
-      }
-      const errorMessage = error.response?.data?.error?.message || error.response?.data?.message || error.message;
-      setError(errorMessage || 'Failed to create GRN');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const create = useMutation({
+    mutationFn: (data: GRNFormData) => createGRN(data),
+    onSuccess: (grn) => {
+      queryClient.invalidateQueries({ queryKey: ['sales-purchase', 'grns'] });
+      toast.success(`${grn?.grn_number ?? 'Goods receipt'} saved as a draft`);
+      navigate(grn?.grn_id ? `/sales-purchase/grn/${grn.grn_id}` : '/sales-purchase/grn');
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not save the goods receipt')),
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link to="/sales-purchase/grn">
-          <Button variant="secondary" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Add Goods Received Note</h1>
-          <p className="text-slate-600 mt-1">Create a new GRN</p>
-        </div>
-      </div>
-
-      <Card className="border-slate-200">
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-          <GRNForm
-            onSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-            submitText="Create GRN"
-          />
-        </div>
-      </Card>
+    <div className="space-y-5">
+      <PageTitle back={{ to: '/sales-purchase/grn', label: 'Goods received' }} title="Record goods received" subtitle="Saved as a draft first — post it once the quantities are checked." />
+      <GRNForm initialPoId={initialPoId} onSubmit={(data) => create.mutate(data)} isSubmitting={create.isPending} submitText="Save receipt" />
     </div>
   );
 }

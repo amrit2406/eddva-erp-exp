@@ -1,67 +1,53 @@
-import Input from '../../../../components/ui/Input';
-import Button from '../../../../components/ui/Button';
-import { cn } from '../../../../utils/cn';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Field, FormActions, FormCard } from '../../../../components/premium/form/FormParts';
+import { inputClass } from '../../../../components/premium/styles';
+import { getUOMs } from '../../api/sales-purchase.api';
 import type { UOMFormData } from '../../types/sales-purchase.types';
 
 interface UOMFormProps {
   defaultValues?: UOMFormData;
+  // The unit being edited, so its own name doesn't count as a duplicate.
+  uomId?: number;
   onSubmit?: (data: UOMFormData) => void;
   submitText?: string;
   isSubmitting?: boolean;
-  className?: string;
 }
 
-export default function UOMForm({
-  defaultValues,
-  onSubmit,
-  submitText = 'Save',
-  isSubmitting = false,
-  className,
-}: UOMFormProps) {
+export default function UOMForm({ defaultValues, uomId, onSubmit, submitText = 'Save', isSubmitting = false }: UOMFormProps) {
+  const { data: units = [] } = useQuery({ queryKey: ['sales-purchase', 'uoms'], queryFn: getUOMs });
+  const [name, setName] = useState(defaultValues?.name ?? '');
+  const [symbol, setSymbol] = useState(defaultValues?.symbol ?? '');
+  const [showErrors, setShowErrors] = useState(false);
+
+  const duplicate = units.find((u) => u.uom_id !== uomId && u.name.trim().toLowerCase() === name.trim().toLowerCase());
+  const errors = {
+    name: !name.trim() ? 'Enter the unit name' : duplicate ? `“${duplicate.name}” already exists` : undefined,
+    symbol: symbol.trim() ? undefined : 'Enter a short symbol',
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const data: UOMFormData = {
-      name: formData.get('name') as string,
-      symbol: formData.get('symbol') as string,
-    };
-    onSubmit?.(data);
+    if (errors.name || errors.symbol) {
+      setShowErrors(true);
+      return;
+    }
+    onSubmit?.({ name: name.trim(), symbol: symbol.trim() });
   };
 
   return (
-    <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            UOM Name <span className="text-red-500">*</span>
-          </label>
-          <Input
-            name="name"
-            defaultValue={defaultValues?.name}
-            placeholder="Enter UOM name (e.g., Kilogram)"
-            required
-          />
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <FormCard>
+        <div className="grid max-w-2xl gap-4 sm:grid-cols-2">
+          <Field label="Unit name" error={duplicate || showErrors ? errors.name : undefined}>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Kilogram, Box, Piece" autoFocus className={inputClass} />
+          </Field>
+          <Field label="Symbol" hint="Shown next to quantities, e.g. 10 kg." error={showErrors ? errors.symbol : undefined}>
+            <input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="e.g. kg, box, pc" className={`${inputClass} font-mono`} />
+          </Field>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Symbol <span className="text-red-500">*</span>
-          </label>
-          <Input
-            name="symbol"
-            defaultValue={defaultValues?.symbol}
-            placeholder="Enter symbol (e.g., kg)"
-            required
-          />
-        </div>
-      </div>
-      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-        <Button variant="secondary" type="button" className="w-full sm:w-auto">
-          Cancel
-        </Button>
-        <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-          {isSubmitting ? 'Saving...' : submitText}
-        </Button>
-      </div>
+      </FormCard>
+      <FormActions submitText={submitText} isSubmitting={isSubmitting} />
     </form>
   );
 }

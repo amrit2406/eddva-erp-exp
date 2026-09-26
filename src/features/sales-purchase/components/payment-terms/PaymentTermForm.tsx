@@ -1,68 +1,79 @@
-import Input from '../../../../components/ui/Input';
-import Button from '../../../../components/ui/Button';
-import { cn } from '../../../../utils/cn';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Field, FormActions, FormCard } from '../../../../components/premium/form/FormParts';
+import { inputClass } from '../../../../components/premium/styles';
+import { getPaymentTerms } from '../../api/sales-purchase.api';
 import type { PaymentTermFormData } from '../../types/sales-purchase.types';
+import { payWithin, suggestTermName } from '../../utils/paymentTerm';
+
+const QUICK_DAYS = [0, 15, 30, 45, 60];
 
 interface PaymentTermFormProps {
   defaultValues?: PaymentTermFormData;
+  termId?: number;
   onSubmit?: (data: PaymentTermFormData) => void;
   submitText?: string;
   isSubmitting?: boolean;
-  className?: string;
 }
 
-export default function PaymentTermForm({
-  defaultValues,
-  onSubmit,
-  submitText = 'Save',
-  isSubmitting = false,
-  className,
-}: PaymentTermFormProps) {
+export default function PaymentTermForm({ defaultValues, termId, onSubmit, submitText = 'Save', isSubmitting = false }: PaymentTermFormProps) {
+  const { data: terms = [] } = useQuery({ queryKey: ['sales-purchase', 'payment-terms'], queryFn: getPaymentTerms });
+  const [days, setDays] = useState(defaultValues ? String(defaultValues.days) : '');
+  const [name, setName] = useState(defaultValues?.term_name ?? '');
+  const [nameTouched, setNameTouched] = useState(Boolean(defaultValues));
+  const [showErrors, setShowErrors] = useState(false);
+
+  const dayCount = days === '' ? NaN : Number(days);
+  const effectiveName = nameTouched ? name : Number.isFinite(dayCount) ? suggestTermName(dayCount) : '';
+  const duplicate = terms.find((t) => t.payment_term_id !== termId && t.term_name.trim().toLowerCase() === effectiveName.trim().toLowerCase());
+  const errors = {
+    days: !Number.isInteger(dayCount) || dayCount < 0 ? 'Enter a whole number of days (0 or more)' : undefined,
+    name: !effectiveName.trim() ? 'Give it a name' : duplicate ? `“${duplicate.term_name}” already exists` : undefined,
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const data: PaymentTermFormData = {
-      term_name: formData.get('term_name') as string,
-      days: parseInt(formData.get('days') as string),
-    };
-    onSubmit?.(data);
+    if (errors.days || errors.name) {
+      setShowErrors(true);
+      return;
+    }
+    onSubmit?.({ term_name: effectiveName.trim(), days: dayCount });
   };
 
   return (
-    <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Term Name <span className="text-red-500">*</span>
-          </label>
-          <Input
-            name="term_name"
-            defaultValue={defaultValues?.term_name}
-            placeholder="Enter term name (e.g., Net 30)"
-            required
-          />
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <FormCard>
+        <div className="grid max-w-2xl gap-4 sm:grid-cols-2">
+          <Field label="Days to pay" hint={Number.isFinite(dayCount) ? `${payWithin(dayCount)} of the invoice.` : 'Use 0 for payment on delivery.'} error={showErrors ? errors.days : undefined}>
+            <input type="number" inputMode="numeric" min="0" step="1" value={days} onChange={(e) => setDays(e.target.value)} placeholder="e.g. 30" autoFocus className={inputClass} />
+          </Field>
+          <Field label="Name" hint={!nameTouched && effectiveName ? 'Suggested — you can change it.' : undefined} error={duplicate ? errors.name : showErrors ? errors.name : undefined}>
+            <input
+              value={effectiveName}
+              onChange={(e) => {
+                setNameTouched(true);
+                setName(e.target.value);
+              }}
+              placeholder="e.g. Net 30"
+              className={inputClass}
+            />
+          </Field>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Days <span className="text-red-500">*</span>
-          </label>
-          <Input
-            name="days"
-            type="number"
-            defaultValue={defaultValues?.days}
-            placeholder="Enter number of days"
-            required
-          />
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-500">Quick pick:</span>
+          {QUICK_DAYS.map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDays(String(d))}
+              className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${dayCount === d ? 'bg-brand-navy text-white ring-brand-navy' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'}`}
+            >
+              {d === 0 ? 'On delivery' : `${d} days`}
+            </button>
+          ))}
         </div>
-      </div>
-      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-        <Button variant="secondary" type="button" className="w-full sm:w-auto">
-          Cancel
-        </Button>
-        <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-          {isSubmitting ? 'Saving...' : submitText}
-        </Button>
-      </div>
+      </FormCard>
+      <FormActions submitText={submitText} isSubmitting={isSubmitting} />
     </form>
   );
 }
